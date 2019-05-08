@@ -1,0 +1,15 @@
+
+
+/*====================================================================================================
+
+The Above contains code for Lidar data ploting in front view and Top view of the image
+
+Before using the header file in the code run ros::init 
+
+And then call the function Laser_Data() without any parameters 
+
+The Function Laser_Data() subscribes to sensor_msgs::Laserscan (FOR LIDAR DATA) and sensor_msgs::Image (FOR CORRESPONDING IMAGE)
+
+The above header file is INCOMPLETE and will be completed once I get lidar data from testing on bot.
+
+/*====================================================================================================
