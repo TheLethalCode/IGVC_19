@@ -1,0 +1,17 @@
+int max (int, int)
+	returns the maximum of the two arguments
+
+int min (int a, int b)
+	returns the minimum of the two arguments
+
+typedef cv::Point3_<uint8_t> Pixel;
+	Pixel is a structure with x, y, and z data members corresponding to the b, g and r values of the pixel.
+
+Mat &CreateObjectMask(Mat &img) 
+	creates object mask on the destination image in which objects are colored white and background black.
+	returns the destination image.
+	
+
+	threshb, threshg, and threshr are lower limit BGR thresholds.
+	threshbW, threshgW, and threshrW are upper limit BGR thresholds.
+	alpha is the amount by which the images green channel is to be increased
