@@ -1,0 +1,1 @@
+To use the White_obstacle detection hpp file, the image to be processed has to be given as input and the an image is given back as the output.
