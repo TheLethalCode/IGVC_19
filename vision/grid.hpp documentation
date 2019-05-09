@@ -1,0 +1,13 @@
+GRID.HPP DOCUMENTATION
+
+void mark_with_grid(Mat img,int grid_row_size,int grid_col_size);
+
+Takes a 3 channel image and divides it by superimposing a yellow grid with respective row and column size of grid.
+
+
+
+void grid_threshold(Mat img,int grid_row_size,int grid_col_size,int threshold_avg_grid,int standard_deviation,int max_pixel):
+
+Takes a greyscale image and divides it into grids and puts 2 thresholds on the invididual grids , if average pixel value and standard is below the threshold then it sets the entire grid to 0. all pixel values above max pixel are set to zero.
+
+
