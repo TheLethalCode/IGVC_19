@@ -35,13 +35,12 @@ float mapped (float a, float ist, float iend, float ost, float oend)
 	return (a-ist)*(oend-ost)/(iend-ist) + ost;
 }
 
-VideoCapture vid("IGVC.mp4");
-
 typedef cv::Point3_<uint8_t> Pixel;
 
-Mat &CreateObjectMask(Mat &img) 
+Mat &CreateObjectMask(Mat &src, Mat &dst) 
 {
-	img.forEach<Pixel>([](Pixel &p, const int * position) -> void 
+	src.copyTo(dst);
+	dst.forEach<Pixel>([](Pixel &p, const int * position) -> void 
 	{
 	    Pixel img2;
 	    bool flag = false;
@@ -76,7 +75,7 @@ Mat &CreateObjectMask(Mat &img)
 			p.z = 0;	
 		}
 	});
-	erode(img, img, Mat(), Point(-1, -1), 4, 1, 1);
-	medianBlur(img, img, 5);
-	return img;
+	erode(dst, dst, Mat(), Point(-1, -1), 4, 1, 1);
+	medianBlur(dst, dst, 5);
+	return dst;
 }
