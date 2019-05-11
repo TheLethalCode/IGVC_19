@@ -1,5 +1,5 @@
-#ifndef POT_HOLE_DETECTION
-#define POT_HOLE_DETECTION
+#ifndef WAY_POINT_GENERATION
+#define WAY_POINT_GENERATION
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -210,7 +210,7 @@ int WayPts(Mat img,int *theta_min,int *theta_max,model xx)
 
 output find_waypoint()
 {
-	Mat img1=imread("/home/naman/untitled(1).png",0);
+	Mat img1=imread("//home/naman/Waypoints/untitled(1).png",0);
 
 	output way_point;
 	Mat img(img1.rows,img1.cols,CV_8UC3,Scalar(0,0,0));
