@@ -23,11 +23,9 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
 {	  
   
 mode=(mode+joy->buttons[4])%2;
+
 estop=(estop+joy->buttons[5])%2;
-
-if(mode==1){
-
-
+manual_control.estop=estop;
 
 if(estop==1||e==1){
  linear = 0;
@@ -37,7 +35,8 @@ if(estop==1||e==1){
  
 }
 
-manual_control.estop=estop;
+if(mode==1){
+
  
 linear+=(joy->buttons[3]-joy->buttons[0]);
 angular+=(joy->buttons[1]-joy->buttons[2]);
@@ -53,9 +52,7 @@ manual_control.mode=mode;
 void autoCallback(const geometry_msgs::Twist auto_command)
 {	  
   
-if(mode==0){
-
-
+manual_control.estop= estop;
 if(estop==1||e==1){
  linear_v = 0;
  angular_v = 0;
@@ -63,7 +60,9 @@ if(estop==1||e==1){
  manual_control.vr= 0 ;
  
 }
-manual_control.estop= estop;
+
+if(mode==0){
+
  
 linear_v = auto_command.linear.x;
 angular_v = auto_command.angular.z;
