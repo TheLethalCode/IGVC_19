@@ -1,0 +1,13 @@
+<launch>
+
+<node pkg="eklavya4_roboteq" type="roboteq_server" name="roboteq_server" respawn="true" output="screen" />
+<node pkg="eklavya4_roboteq" type="roboteq_client" name="roboteq_client" respawn="true" output="screen" />
+
+<node pkg="eklavya4_roboteq" type="manual" name="manual" respawn="true" output="screen" />
+<node pkg="joy" type="joy_node" name="joy_node" respawn="true" output="screen" />
+
+<node pkg="rosserial" type="serial_node" name="serial_node" respawn="true" output="screen" />
+
+</launch>
+
+
