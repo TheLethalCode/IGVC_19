@@ -11,16 +11,13 @@
 #include "eklavya4_roboteq/Constants.h"
 #include "eklavya4_roboteq/control.h"
 
-#include "nav_msgs/Odometry.h"
-
 using namespace std;
 #define r 0.11   //the radius of wheel in centimetre
 #define distance  0.64
 geometry_msgs::Twist vel_msg;
 
-nav_msgs::Odometry odom;
 
-ros::Publisher controller_pub, auto_odom;
+ros::Publisher controller_pub;
 RoboteqDevice device;
 int status = 0;
 int flag = 0;
@@ -83,13 +80,11 @@ bool setSpeed(eklavya4_roboteq::SetSpeed::Request &req, eklavya4_roboteq::SetSpe
 	}
 	vel_msg.linear.x=(left_speed*2*3.1415*r)/60;             //To convert velocity in m/s from RPM
 	vel_msg.linear.y=((-1)*right_speed*2*3.1415*r)/60;
+	vel_msg.angular.z=(vel_msg.linear.x - vel_msg.linear.y)/distance;
          v.vl = left_speed;
          v.vr = right_speed;
 
-        odom.twist.twist.linear.x = (vel_msg.linear.x + vel_msg.linear.y)/2;
-        odom.twist.twist.angular.z = (vel_msg.linear.x - vel_msg.linear.y)/distance;
-
-         
+                 
    
 	/****************************FEEDBACK**************************/
 	usleep(100);
@@ -149,9 +144,7 @@ int main(int argc, char **argv)
     ros::ServiceServer service1 = n.advertiseService("motor_controller", setSpeed);
     controller_pub = n.advertise<geometry_msgs::Twist>("velocity_can",1000);
     ros::Publisher motor_speed_pub = n.advertise<eklavya4_roboteq::control>("rpm_feedback", 1000);
-   
-    auto_odom = n.advertise<nav_msgs::Odometry>("odom_c",1000);
-   
+      
     //ros::ServiceServer service2 = n.advertiseService("motor_speed", getSpeed);
     ROS_INFO("Server initialized...");
     ROS_INFO("Ready to control motors...");
@@ -172,7 +165,6 @@ int main(int argc, char **argv)
 	{
 	controller_pub.publish(vel_msg); 
         motor_speed_pub.publish(v);
-        auto_odom.publish(odom);
 
 	ros::spinOnce();
 	ROS_INFO("%f", vel_msg.linear.x);
