@@ -19,108 +19,111 @@ OdometryImuCombiner::OdometryImuCombiner() {
 void OdometryImuCombiner::odomCallback(const geometry_msgs::Twist msg)
 {
   if (ros::ok())
-{
+  {
     vr=msg.linear.y/**(5.0/18)*/;//fix for kmph to mps for mahindra car
     vl=msg.linear.x/**(5.0/18)*/;
     v=(vl+vr)/2;
-
+    odom.twist.twist.angular = msg.angular;
   }
 }
 
-void OdometryImuCombiner::imuCallback(sensor_msgs::Imu imu_msg) {
-  if (ros::ok()) {
+// void OdometryImuCombiner::imuCallback(sensor_msgs::Imu imu_msg) {
+//   if (ros::ok()) {
 
 
-      quat= imu_msg.orientation;
-      odom.twist.twist.angular=imu_msg.angular_velocity;
+//       quat= imu_msg.orientation;
+//       odom.twist.twist.angular=imu_msg.angular_velocity;
       
-  }
-}
+//   }
+// }
 
-void OdometryImuCombiner::publishUsing(ros::Publisher& publisher,ros::Publisher& yaw_pub) {
+void OdometryImuCombiner::publishUsing(ros::Publisher& publisher) {
 
    current_time = ros::Time::now();
-   double dt = (current_time - last_time).toSec();
-   ROS_INFO("quat %f ", quat.z);
+  //  double dt = (current_time - last_time).toSec();
+  //  ROS_INFO("quat %f ", quat.z);
 
-   //ROS_INFO("time %lf", dt);
-   tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
-   tf::Matrix3x3 m(q);
+  //  //ROS_INFO("time %lf", dt);
+  //  tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
+  //  tf::Matrix3x3 m(q);
 
-   double roll, pitch, yaw;
-   m.getRPY(roll, pitch, yaw);
-   double delta_th = (yaw-prev_yaw);
-   if(isnan(delta_th))
-    delta_th=0.0;
+  //  double roll, pitch, yaw;
+  //  m.getRPY(roll, pitch, yaw);
 
-   ROS_INFO("yaw %lf ", yaw);
+  //  double delta_th = (yaw-prev_yaw);
+  //  if(isnan(delta_th))
+  //   delta_th=0.0;
+
+  //  ROS_INFO("yaw %lf ", yaw);
 
 
-   vx=v*cos(delta_th);
-   vy=v*sin(delta_th);
+  //  vx=v*cos(delta_th);
+  //  vy=v*sin(delta_th);
 
-  ROS_INFO("vx %lf", vx);
+  // ROS_INFO("vx %lf", vx);
 
-  ROS_INFO("v %lf", v);
-  //compute odometry in a typical way given the velocities of the robot
+  // ROS_INFO("v %lf", v);
+  // //compute odometry in a typical way given the velocities of the robot
 
-  double delta_x = (vx * cos(th) - vy * sin(th)) * dt;
-  double delta_y = (vx * sin(th) + vy * cos(th)) * dt;
+  // double delta_x = (vx * cos(th) - vy * sin(th)) * dt;
+  // double delta_y = (vx * sin(th) + vy * cos(th)) * dt;
 
-    ROS_INFO("vx * cos(th) %lf ", vx * cos(delta_th));
-    ROS_INFO("vx * sin(th) %lf ", vx * sin(delta_th));
+  //   ROS_INFO("vx * cos(th) %lf ", vx * cos(delta_th));
+  //   ROS_INFO("vx * sin(th) %lf ", vx * sin(delta_th));
 
-   x += delta_x;
-   y += delta_y;
+  //  x += delta_x;
+  //  y += delta_y;
 
-    ROS_INFO("h %f ", x);
-    ROS_INFO("h %f ", y);
+  //   ROS_INFO("h %f ", x);
+  //   ROS_INFO("h %f ", y);
 
-   th += delta_th;
-   tf::TransformBroadcaster odom_broadcaster;
+  //  th += delta_th;
+  //  tf::TransformBroadcaster odom_broadcaster;
 
-   //since all odometry is 6DOF we'll need a quaternion created from yaw
-   geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
+  //  //since all odometry is 6DOF we'll need a quaternion created from yaw
+  //  geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(th);
 
-    //first, we'll publish the transform over tf
-   geometry_msgs::TransformStamped odom_trans;
-   odom_trans.header.stamp = current_time;
-   odom_trans.header.frame_id = "odom";
-   odom_trans.child_frame_id = "axle";
+  //   //first, we'll publish the transform over tf
+  //  geometry_msgs::TransformStamped odom_trans;
+  //  odom_trans.header.stamp = current_time;
+  //  odom_trans.header.frame_id = "odom";
+  //  odom_trans.child_frame_id = "axle";
 
-   odom_trans.transform.translation.x = x;
-   odom_trans.transform.translation.y = y;
-   odom_trans.transform.translation.z = 0.0;
-   odom_trans.transform.rotation = odom_quat;
+  //  odom_trans.transform.translation.x = x;
+  //  odom_trans.transform.translation.y = y;
+  //  odom_trans.transform.translation.z = 0.0;
+  //  odom_trans.transform.rotation = odom_quat;
 
-    //send the transform
-    odom_broadcaster.sendTransform(odom_trans);
+  //   //send the transform
+  //   odom_broadcaster.sendTransform(odom_trans);
 
     //next, we'll publish the odometry message over ROS
+    geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(0);
     odom.header.stamp = current_time;
-    odom.header.frame_id = "odom";
+    odom.header.frame_id = "base_link";
 
     //set the position
-    odom.pose.pose.position.x = x;
-    odom.pose.pose.position.y = y;
-    odom.pose.pose.position.z = 0.0;
+    odom.pose.pose.position.x = 0;
+    odom.pose.pose.position.y = 0;
+    odom.pose.pose.position.z = 0;
     odom.pose.pose.orientation = odom_quat;
 
     //set the velocity
-    odom.child_frame_id = "axle";
-    odom.twist.twist.linear.x = vx;
-    odom.twist.twist.linear.y = vy;
+    odom.child_frame_id = "base_link";
+    odom.twist.twist.linear.x = v;
+    odom.twist.twist.linear.y = 0;
 
     //publish the message
 
-    last_time = current_time;
-    prev_yaw=yaw;
+    // last_time = current_time;
+    // prev_yaw=yaw;
     publisher.publish(odom);
-    std_msgs::Float64 theta;
-    theta.data=fmod(th,360.0);
-    theta.data *= (180)/PI;
-    yaw_pub.publish(theta);
-    ROS_INFO("the %f ", odom.pose.pose.position.x);
+
+    // std_msgs::Float64 theta;
+    // theta.data=fmod(th,360.0);
+    // theta.data *= (180)/PI;
+    // yaw_pub.publish(theta);
+    // ROS_INFO("the %f ", odom.pose.pose.position.x);
 }
 
 int main(int argc, char** argv){
@@ -132,13 +135,13 @@ int main(int argc, char** argv){
     //ros::Subscriber odom_sub = n.subscribe<nav_msgs::Odometry>("odom", 50, &OdometryImuCombiner::odomCallback, &combiner);
     ros::Subscriber imu_sub = n.subscribe<sensor_msgs::Imu>("vn_ins/imu", 50, &OdometryImuCombiner::imuCallback, &combiner);
     ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom_imu_combined", 50);
-    ros::Publisher yaw_pub = n.advertise<std_msgs::Float64>("robot_localiztion/yaw_filtered",50);
+    // ros::Publisher yaw_pub = n.advertise<std_msgs::Float64>("robot_localiztion/yaw_filtered",50);
 
     ros::Rate rate(40);
 
     while(ros::ok()) {
         spinOnce();
-        combiner.publishUsing(odom_pub,yaw_pub);
+        combiner.publishUsing(odom_pub);
         rate.sleep();
     }
 

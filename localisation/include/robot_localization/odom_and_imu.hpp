@@ -28,7 +28,7 @@ public:
 	OdometryImuCombiner();
 	void odomCallback(const geometry_msgs::Twist msg);
 	void imuCallback(sensor_msgs::Imu imu_msg);
-	void publishUsing(ros::Publisher & publisher, ros::Publisher & yaw_pub);
+	void publishUsing(ros::Publisher & publisher);
 };
 
 #endif
