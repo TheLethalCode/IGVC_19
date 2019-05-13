@@ -1,4 +1,5 @@
 #include "ros/ros.h"
+#include "std_msgs/Bool.h"
 #include <bits/stdc++.h>
 #include "sensor_msgs/NavSatFix.h"
 #include <bits/stdc++.h>
@@ -28,7 +29,8 @@ void getgps(sensor_msgs::NavSatFix msg)
 	xcurrent = coordinates.latitude;
 	ycurrent = coordinates.longitude;
 	seq = coordinates.header.seq;
-}	
+}
+
 
 double distance(double x1,double y1,double x2,double y2)
 {
@@ -54,13 +56,15 @@ int main(int argc, char** argv)
 	NodeHandle n;
 
 	Subscriber sub = n.subscribe("/fix_c", 1000, &getgps);
+	Publisher decider_pub = n.advertise<std_msgs::Bool>("/decider", 1000);
 
 	double radius1,radius2,radius3,radius4;
 
 	bool flagstart1 = false,flagfinal1 = false;
 	bool flagstart2 = false,flagfinal2 = false;
-	int flag = 0;
-
+	std_msgs::Bool decider_msg;
+	decider_msg.data = true;
+	Rate loop_rate(10);
 	while(ok())
 	{
 		radius1 = distance(xcurrent,ycurrent,xstart1,ystart1);
@@ -71,66 +75,39 @@ int main(int argc, char** argv)
 		if (!flagstart1 && (radius1 < radius))
 		{
 			flagstart1 = true;
-			/// command for killing lane_Detection
-			// system("rosnode kill laneNode");  
-			// cout << "lane die 1\n";      
-
-			/// Launch gps node
-			// system("roslaunch gps_ros gps.launch");
-			// cout << "gps running 1\n";
-			// cout << seq << endl;
-			flag++;
+			decider_msg.data = false;
+			//cout << "gps running 1\n";
+			//cout << seq << endl;
 		}
 
 		if (!flagfinal1 && (radius2 < radius))
 		{
 			flagfinal1 = true;
-			/// command for killing gps node
-			// system("rosnode kill gpsNode");  
-			// cout << "gps die 1\n";      
-
-			/// Launch lane_detection
-			// system("roslaunch lane_ros lane.launch");
-			// cout << "lane running 1\n";
-			// cout << seq << endl;
-			flag++;
+			decider_msg.data = true;
+			//cout << "lane running 1\n";
+			//cout << seq << endl;
 		}
 
 		if (!flagstart2 && (radius3 < radius))
 		{
 			flagstart2 = true;
-			/// command for killing lane_Detection
-			// system("rosnode kill laneNode");  
-			// cout << "lane die 2\n";      
-
-			/// Launch gps node
-			// system("roslaunch gps_ros gps.launch");
-			// cout << "gps running 2\n";
-			// cout << seq << endl;
-			flag++;
+			decider_msg.data = false;
+			//cout << "gps running 2\n";
+			//cout << seq << endl;
 		}
 
 		if (!flagfinal2 && (radius4 < radius))
 		{
 			flagfinal2 = true;
-			/// command for killing gps node
-			// system("rosnode kill gpsNode");  
-			// cout << "gps die 2\n";      
-
-			/// Launch lane_detection
-			// system("roslaunch lane_ros lane.launch");
-			// cout << "lane running 2s\n";
-			// cout << seq << endl;
-			flag++;
+			decider_msg.data = true;
+			//cout << "lane running 2s\n";
+			//cout << seq << endl;
 		}
 
-		if (flag == 4)
-		{
-			break;
-		}
-
+		decider_pub.publish(decider_msg);
+		loop_rate.sleep();
 		spinOnce();
-	}	
+	}
 
 	return 1;
 }
