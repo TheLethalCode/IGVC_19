@@ -28,10 +28,10 @@ ekf_se_odom:
 
   imu0: /imu
   imu0_config: [false, false, false,
-                false,  false,  true,
-                false, false, false,
                 false,  false,  false,
-                true,  true,  false]
+                false, false, false,
+                false,  false,  true,
+                false,  false,  false]
   imu0_nodelay: false
   imu0_differential: false
   imu0_relative: true
@@ -110,10 +110,10 @@ ekf_se_map:
 
   imu0: /imu
   imu0_config: [false, false, false,
-                false,  false,  true,
-                false, false, false,
                 false,  false,  false,
-                true,  true,  false]
+                false, false, false,
+                false,  false,  true,
+                false,  false,  false]
   imu0_nodelay: true
   imu0_differential: false
   imu0_relative: false
@@ -157,10 +157,10 @@ ekf_se_map:
 navsat_transform:
   frequency: 30
   delay: 3.0
-  magnetic_declination_radians: -0.002616667  # For lat/long 55.944831, -3.186998
+  magnetic_declination_radians: -0.1333333333 # For TSC center
   yaw_offset: 0.0  # IMU reads 0 facing magnetic north, not east
   zero_altitude: false
   broadcast_utm_transform: true
-  publish_filtered_gps: false
+  publish_filtered_gps: true
   use_odometry_yaw: false
   wait_for_datum: false

@@ -1,0 +1,8 @@
+1.)Go through this link for understanding and installing tmuxinator - http://shubhagrawal.in/2016/05/21/tutorial-1/
+2.)Replace the given config file in place of original file
+
+Running Instructions
+
+1.) In a new terminal, type "tmux new-session"
+2.) Now in the same terminal type "mux IGVC"
+3.) to end the session type "killall tmux"

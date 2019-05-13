@@ -1,0 +1,53 @@
+# ~/.tmuxinator/mahindra_path_tracking.yml
+
+name: igvc
+root: ~/igvc_ws/src/
+
+# Optional tmux socket
+# socket_name: foo
+
+# Runs before everything. Use it to start daemons etc.
+# pre: sudo /etc/rc.d/mysqld start
+
+# Runs in each window and pane before window/pane specific commands. Useful for setting up interpreter versions.
+# pre_window: cd ~/car_ws/src/path_tracking_ws/src/
+
+# Pass command line options to tmux. Useful for specifying a different tmux.conf.
+# tmux_options: -f ~/.tmux.mac.conf
+
+# Change the command to call tmux.  This can be used by derivatives/wrappers like byobu.
+# tmux_command: byobu
+
+# Specifies (by name or index) which window will be selected on project startup. If not set, the first window is used.
+# startup_window: logs
+
+# Controls whether the tmux session should be attached to automatically. Defaults to true.
+# attach: false
+
+# Runs after everything. Use it to attach to tmux with custom options etc.
+# post: tmux -CC attach -t mahindra_path_tracking
+
+windows:
+  - sensor and controls:
+      layout: tiled
+      panes:
+        - sudo chmod 777 /dev/tty*;roslaunch vn_ins module.launch
+        - sleep 2;roslaunch tf_mahindra tf.launch
+        - sleep 4;roslaunch robot_localization dual_ekf_navsat.launch
+        - sleep 6;roslaunch hokuyo_node hokuyo_test.launch
+        - sleep 8;roslaunch eklavya4_roboteq manual_launch.launch
+        - sleep 10;rosrun rosserial_python serial_node.py /dev/ttyUSB1
+        
+  - camera:
+      layout: tiled
+      panes:
+        
+        - sleep 12;rviz
+        - sleep 2;rosrun pointgrey_camera_driver list_cameras
+        - sleep 4;sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576 
+        - sleep 10;roslaunch pointgrey_camera_driver camera.launch 
+        - #empty
+        - #empty
+
+
+      

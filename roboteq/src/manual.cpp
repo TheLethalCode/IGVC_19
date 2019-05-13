@@ -8,7 +8,7 @@
 
 
 double linear,angular,vl,vr;
-int mode=1;
+int mode=0;
 int estop=0;
 eklavya4_roboteq::control manual_control ;
 int e=0;
@@ -22,9 +22,23 @@ e = estop.data;
 void joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
 {	  
   
-mode=(mode+joy->buttons[4])%2;
+//mode=(mode+joy->buttons[4])%2;
+if(joy->buttons[11]==1){
+mode=1;
+}
+if(joy->buttons[12]==1){
+mode=0;
+}
 
-estop=(estop+joy->buttons[5])%2;
+
+//estop=(estop+joy->buttons[5])%2;
+if(joy->buttons[13]==1){
+estop=1;
+}
+if(joy->buttons[14]==1){
+estop=0;
+}
+
 manual_control.estop=estop;
 
 if(estop==1||e==1){
@@ -35,13 +49,13 @@ if(estop==1||e==1){
  
 }
 
-if(mode==1){
+if(mode==0){
 
- 
+
 linear+=(joy->buttons[3]-joy->buttons[0]);
 angular+=(joy->buttons[1]-joy->buttons[2]);
-manual_control.vl=-(linear*2.5-angular*0.5);
-manual_control.vr=-(linear*2.5+angular*0.5);
+manual_control.vl=-(linear*2.5-angular*2);
+manual_control.vr=-(linear*2.5+angular*2);
 
 }
 md.data = mode;
@@ -61,7 +75,7 @@ if(estop==1||e==1){
  
 }
 
-if(mode==0){
+if(mode==1){
 
  
 linear_v = auto_command.linear.x;

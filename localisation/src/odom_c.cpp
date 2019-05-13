@@ -71,7 +71,7 @@ void odomCallback(nav_msgs::Odometry msg)
       }
     }*/
    
-    msg.header.frame_id="odom";
+    msg.header.frame_id="base_link";
     //publish the message
     odom_pub.publish(msg);
     //last_time = current_time;
