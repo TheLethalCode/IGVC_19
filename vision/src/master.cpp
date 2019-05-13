@@ -12,7 +12,7 @@
 #include "basic.hpp"
 #include "find_pothole.hpp"
 #include <geometry_msgs/Point.h>
-#include "ros/ros.h"
+#include <ros/ros.h>
 #include "sensor_msgs/LaserScan.h"
 #include "sensor_msgs/Image.h"
 #include "obsplot.hpp"
@@ -20,18 +20,22 @@
 #include "lidar_new.hpp"
 #include "waypts1_header.hpp"
 #include "combinedobs.hpp"
+#include <image_transport/image_transport.h>
+// #include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
+
 
 #define ppm 150
 using namespace std;
 using namespace cv;
 using namespace ros;
 
+Publisher ls;
+Mat frame_orig;
+bool MALI = false;
 
-NodeHandle n;
-
-void img_to_ls(Mat img )
+void img_to_ls(Mat img)
 {
-    Publisher ls = n.advertise<sensor_msgs::LaserScan>("ls", 1000);
     sensor_msgs::LaserScan msg;
     msg.angle_min=-CV_PI/2;
     msg.angle_max=CV_PI/2;
@@ -55,12 +59,38 @@ void img_to_ls(Mat img )
     ls.publish(msg);
 }
 
-int main(int argc, char **argv)
+void imageCb(const sensor_msgs::ImageConstPtr& msg)
 {
-	// VideoCapture vid("vid.mp4",0);  
-cout<<"a";
+
+    cv_bridge::CvImagePtr cv_ptr;
+
+  try
+  {
+       cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);    
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
+  }
+
+    // imshow("test", cv_ptr->image);
+    // waitKey(10);
+    frame_orig = (cv_ptr->image);
+
+    // abc(cv_ptr->image);
+    // imshow("frame_orig",frame_orig);
+    // waitKey(0);
+    // cout<<"abfhebjf"<<endl;
+    MALI=true;
+
+}
+
+
+int main(int argc, char **argv)
+{ 
+
+	// cout<<"MALI"<<endl;
 	// Mat frame;
-    int i,j;
     Mat obstacle;
 	Mat inflated; 
 	//int count=500;//frames to be skipped initially
@@ -69,16 +99,35 @@ cout<<"a";
 
 
     init(argc,argv,"master");
+	NodeHandle n;
+    ls = n.advertise<sensor_msgs::LaserScan>("ls", 1000);
    
     // Publisher RANSAC_PUB= n.advertise<beginner_tutorials::model>("ransac_to_costmap",1000);
     Publisher WAYPT_PUB = n.advertise<geometry_msgs::Point>("waypoint",1000);
     // Subscriber COSTMAP_SUB=n.subscribe("ransac_to_costmap",1,waypoint_generate);
-    Subscriber sub1 = n.subscribe("/scan", 10, &laserscan);
-	Subscriber sub2 = n.subscribe("/camera/image_color", 10, &image);
+    // Subscriber sub1 = n.subscribe("/scan", 10, &laserscan);
+	// Subscriber sub2 = n.subscribe("/camera/image_raw", 1, &imageCb);
 
-	while(ok())
+    image_transport::ImageTransport it(n);
+    image_transport::Subscriber sub = it.subscribe("/camera/image_raw", 1000, imageCb);
+
+
+	while(ros::ok())
 	{
-		// vid>>frame;	
+        if(!MALI){
+            spinOnce();
+            continue;
+        }
+
+        // imshow("image ogi",frame_orig);
+        // waitKey(30);
+        // spinOnce();
+        // continue;
+        // return 0;
+		// vid>>frame;
+		// imshow("imgogi", frame_orig);
+  //       waitKey(20);
+			
 		Mat roi;
         
 	/*	if(count>0)
@@ -102,24 +151,37 @@ cout<<"a";
 
         
 		//extraction of region of interest
-        roi=ROI(imgogi,0,1,0,1); 
+        roi=ROI(frame_orig,0,1,0,1); 
         // cout<<"test"<<endl;
+
 
         //to plot ransac on a black image
         Mat lanes_by_ransac(roi.rows,roi.cols,CV_8UC3,Scalar(0,0,0));
-          
+
 
         /*uses perspective transform,
          homography needs to be changed accordingly
          function is in find_pothole.hpp */
         // cout<<"test"<<endl;
         //removing shadows
-        roi=removeShadow(roi);
+
+        imshow("roi", roi);
+        waitKey(20);
+        // roi=removeShadow(roi);
+        // spinOnce();
+        // return 0;
+
 
         obstacle=object_remove(roi);
 
+        // return 0;
+
+
         roi=perspective_transform_3channel(roi);/*homography needs to be changed 
                                         function is in basic.hpp */
+
+                
+
         
 
         // cout<<"test"<<endl;
@@ -173,9 +235,9 @@ cout<<"a";
 
         img_to_ls(pot_hole);
 
-        for(i=0;i<roi.rows;i++)
+        for(int i=0;i<roi.rows;i++)
         {
-            for(j=0;j<roi.cols;j++)
+            for(int j=0;j<roi.cols;j++)
             {
                 if(obstacle.at<uchar>(i,j)==255)
                 {
@@ -190,17 +252,16 @@ cout<<"a";
         }
 
 
-
-
+        
 
         // curve fitting
         lanes=getRansacModel(final_union,lanes);
 
         if(lanes.a1==0 && lanes.b1==0 && lanes.c1==0 && lanes.a2!=0 && lanes.b2!=0 && lanes.c2!=0)
         {
-            for(i=0;i<lanes_by_ransac.rows;i++)
+            for(int i=0;i<lanes_by_ransac.rows;i++)
             {
-                for(j=0;j<lanes_by_ransac.cols;j++)
+                for(int j=0;j<lanes_by_ransac.cols;j++)
                 {
                     if(fabs(lanes.a2*i*i+lanes.b2*i+lanes.c2-j)<3)
                     {
@@ -214,9 +275,9 @@ cout<<"a";
 
         else if(lanes.a1!=0 && lanes.b1!=0 && lanes.c1!=0 && lanes.a2==0 && lanes.b2==0 && lanes.c2==0)
         {
-            for(i=0;i<lanes_by_ransac.rows;i++)
+            for(int i=0;i<lanes_by_ransac.rows;i++)
             {
-                for(j=0;j<lanes_by_ransac.cols;j++)
+                for(int j=0;j<lanes_by_ransac.cols;j++)
                 {
                     if(fabs(lanes.a1*i*i+lanes.b1*i+lanes.c1-j)<3) 
                         {
@@ -230,9 +291,9 @@ cout<<"a";
         
         else
         {
-            for(i=0;i<lanes_by_ransac.rows;i++)
+            for(int i=0;i<lanes_by_ransac.rows;i++)
             {
-                for(j=0;j<lanes_by_ransac.cols;j++)
+                for(int j=0;j<lanes_by_ransac.cols;j++)
                 {
                     if(fabs(lanes.a1*i*i+lanes.b1*i+lanes.c1-j)<3) 
                         {
@@ -242,9 +303,9 @@ cout<<"a";
                         }
                 }
             }
-            for(i=0;i<lanes_by_ransac.rows;i++)
+            for(int i=0;i<lanes_by_ransac.rows;i++)
             {
-                for(j=0;j<lanes_by_ransac.cols;j++)
+                for(int j=0;j<lanes_by_ransac.cols;j++)
                 {
                     if(fabs(lanes.a2*i*i+lanes.b2*i+lanes.c2-j)<3)
                     {
