@@ -10,14 +10,15 @@
 #include "eklavya4_roboteq/ErrorCodes.h"
 #include "eklavya4_roboteq/Constants.h"
 #include "eklavya4_roboteq/control.h"
+#include "eklavya4_roboteq/diagnose_msg.h"
 
-
+eklavya4_roboteq::diagnose_msg state;
 
 using namespace std;
 #define r 0.11   //the radius of wheel in centimetre
 #define distance  0.64
 geometry_msgs::Twist vel_msg;
-
+int c1,c2,volt;
 
 ros::Publisher controller_pub;
 RoboteqDevice device;
@@ -46,7 +47,7 @@ bool setSpeed(eklavya4_roboteq::SetSpeed::Request &req, eklavya4_roboteq::SetSpe
 		return true;
 	}
 	/***************************************************/
-	if((status = device.SetCommand(_GO, 1, req.v_r)) != RQ_SUCCESS) {
+	if((status = device.SetCommand(_GO, 2, req.v_r)) != RQ_SUCCESS) {
 		ROS_INFO("Failed... Error code --> %d", status);
 		
 	}
@@ -54,7 +55,7 @@ bool setSpeed(eklavya4_roboteq::SetSpeed::Request &req, eklavya4_roboteq::SetSpe
 		ROS_DEBUG("Succeeded.");
 	}
 	
-	if((status = device.SetCommand(_GO, 2, (-1)*req.v_l)) != RQ_SUCCESS) {   // multiplied with -1 as the motor rotates in reverse direction due to connection
+	if((status = device.SetCommand(_GO, 1, (-1)*req.v_l)) != RQ_SUCCESS) {   // multiplied with -1 as the motor rotates in reverse direction due to connection
 		ROS_INFO("Failed... Error code --> %d", status);
 	}
 	else {
@@ -80,9 +81,9 @@ bool setSpeed(eklavya4_roboteq::SetSpeed::Request &req, eklavya4_roboteq::SetSpe
 			ROS_DEBUG("Succeeded.");
 		}
 	}
-	vel_msg.linear.x=(left_speed*2*3.1415*r)/60;             //To convert velocity in m/s from RPM
-	vel_msg.linear.y=((-1)*right_speed*2*3.1415*r)/60;
-        vel_msg.angular.z = (vel_msg.linear.x - vel_msg.linear.y)/distance;
+	vel_msg.linear.x=-(left_speed*2*3.1415*r)/60;             //To convert velocity in m/s from RPM
+	vel_msg.linear.y=-((-1)*right_speed*2*3.1415*r)/60;
+        vel_msg.angular.z = (vel_msg.linear.y - vel_msg.linear.x)/distance;
 
          v.vl = left_speed;
          v.vr = right_speed;
@@ -145,8 +146,8 @@ int main(int argc, char **argv)
     ros::ServiceServer service1 = n.advertiseService("motor_controller", setSpeed);
     controller_pub = n.advertise<geometry_msgs::Twist>("velocity_can",1000);
     ros::Publisher motor_speed_pub = n.advertise<eklavya4_roboteq::control>("rpm_feedback", 1000);
-   
-   
+    ros::Publisher diagnosis = n.advertise<eklavya4_roboteq::diagnose_msg>("diagnosis", 1000);
+    
     //ros::ServiceServer service2 = n.advertiseService("motor_speed", getSpeed);
     ROS_INFO("Server initialized...");
     ROS_INFO("Ready to control motors...");
@@ -160,15 +161,26 @@ int main(int argc, char **argv)
 	vel_msg.angular.y=0;
       
 	controller_pub.publish(vel_msg);
-	
+	int status;
 	loop_rate.sleep();
 	
 	while(ros::ok())
 	{
+	
+	status=device.GetValue(_BATAMPS,1,c1);
+	status=device.GetValue(_BATAMPS,2,c2);
+	status=device.GetValue(_VOLTS,2,volt);
+
+        state.M1_current = c1;
+        state.M2_current = c2;
+        state.Voltage = volt;
+
+       
 	controller_pub.publish(vel_msg); 
         motor_speed_pub.publish(v);
+        diagnosis.publish(state);
         
-
+	
 	ros::spinOnce();
 	ROS_INFO("%f", vel_msg.linear.x);
 	}    
