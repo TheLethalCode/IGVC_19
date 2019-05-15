@@ -1,0 +1,14 @@
+digraph G {
+"base_link" -> "laser"[label="Broadcaster: /bl_lidar\nAverage rate: 98.963 Hz\nMost recent transform: 1557829368.290 ( -0.004 sec old)\nBuffer length: 4.941 sec\n"];
+"odom" -> "base_link"[label="Broadcaster: /ekf_se_odom\nAverage rate: 30.359 Hz\nMost recent transform: 1557829368.209 ( 0.078 sec old)\nBuffer length: 4.875 sec\n"];
+"map" -> "odom"[label="Broadcaster: /ekf_se_map\nAverage rate: 30.359 Hz\nMost recent transform: 1557829368.209 ( 0.078 sec old)\nBuffer length: 4.875 sec\n"];
+"base_link" -> "imu"[label="Broadcaster: /bl_imu\nAverage rate: 98.964 Hz\nMost recent transform: 1557829368.290 ( -0.004 sec old)\nBuffer length: 4.931 sec\n"];
+"base_link" -> "axle"[label="Broadcaster: /bl_rear_link\nAverage rate: 98.966 Hz\nMost recent transform: 1557829368.290 ( -0.004 sec old)\nBuffer length: 4.931 sec\n"];
+"base_link" -> "front_axel_link"[label="Broadcaster: /bl_front_link\nAverage rate: 98.969 Hz\nMost recent transform: 1557829368.290 ( -0.004 sec old)\nBuffer length: 4.931 sec\n"];
+"base_link" -> "gps"[label="Broadcaster: /bl_gps\nAverage rate: 98.973 Hz\nMost recent transform: 1557829368.290 ( -0.004 sec old)\nBuffer length: 4.931 sec\n"];
+"base_link" -> "base_footprint"[label="Broadcaster: /bl_bf\nAverage rate: 98.973 Hz\nMost recent transform: 1557829368.290 ( -0.004 sec old)\nBuffer length: 4.931 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1557829368.286"[ shape=plaintext ] ;
+ }->"map";
+}
