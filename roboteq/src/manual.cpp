@@ -11,13 +11,8 @@ double linear,angular,vl,vr;
 int mode=0;
 int estop=0;
 eklavya4_roboteq::control manual_control ;
-int e=0;
 std_msgs::Int8 md;
 double linear_v=0, angular_v=0;
-
-void xbee_EStop(const std_msgs::Int8 estop){
-e = estop.data;
-}
 
 void joyCallback(const sensor_msgs::Joy::ConstPtr& joy)
 {	  
@@ -41,7 +36,7 @@ estop=0;
 
 manual_control.estop=estop;
 
-if(estop==1||e==1){
+if(estop==1){
  linear = 0;
  angular = 0;
  manual_control.vl= 0 ;
@@ -67,7 +62,7 @@ void autoCallback(const geometry_msgs::Twist auto_command)
 {	  
   
 manual_control.estop= estop;
-if(estop==1||e==1){
+if(estop==1){
  linear_v = 0;
  angular_v = 0;
  manual_control.vl= 0 ;
@@ -97,13 +92,12 @@ int main(int argc, char** argv)
   ros::NodeHandle nh_;
 
   ros::Publisher control, flash;
-  ros::Subscriber joy_sub_manual, sub2, auto_sub;
+  ros::Subscriber joy_sub_manual, auto_sub;
   
 
   flash = nh_.advertise<std_msgs::Int8>("mode", 1);
   control = nh_.advertise<eklavya4_roboteq::control>("control", 1);
   joy_sub_manual= nh_.subscribe<sensor_msgs::Joy>("joy", 1000, &joyCallback);
-  sub2 = nh_.subscribe("xbee_estop", 1000, xbee_EStop);
   auto_sub = nh_.subscribe<geometry_msgs::Twist>("cmd_vel", 1000, &autoCallback);
   
 
