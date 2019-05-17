@@ -16,9 +16,9 @@ Mat frame;
 Mat grass;
 Mat roi;
 Mat filter;
-Mat testing(Mat img)//return the 1.9*red-green-blue channel
+Mat testing(Mat img)
 {
-    Mat img1(img.rows,img.cols,CV_8UC1,Scalar(0));      
+    Mat img1(img.rows,img.cols,CV_8UC1,Scalar(0));      //2b-g
     
     for(int i=0;i<img.rows;i++)
     {
@@ -88,7 +88,7 @@ void smoothness_filter(Mat img,Mat frame,int grid_row_size,int grid_col_size,int
 //     }
 // }
 
-void grid_obs(Mat frame,int grid_row_size,int grid_col_size,int standard_deviation_value )
+Mat grid_obs(Mat frame,int grid_row_size,int grid_col_size,int standard_deviation_value )
 {
     frame = ROI(frame,0,1,0,1);
     Mat orange =testing(frame);
@@ -97,7 +97,8 @@ void grid_obs(Mat frame,int grid_row_size,int grid_col_size,int standard_deviati
     Mat br=twoblueonered(frame);
     smoothness_filter(bg,orange,grid_row_size,grid_col_size,standard_deviation_value);
     //image_subtract1(frame,orange);
-    imshow("win",orange);
+    //imshow("win",orange);
+    return orange;
 
 }
 

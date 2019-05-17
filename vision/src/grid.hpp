@@ -55,7 +55,6 @@ double grid_mark(Mat img,int a,int b,int grid_row_size,int grid_col_size)
 	double average=0;
 	int i,j;
     
-
 	for (i = a; i <a+grid_row_size; ++i)
     {
         img.at<Vec3b>(i,b+grid_col_size-1)[0]=0; 
@@ -88,6 +87,25 @@ void grid_set_zero(Mat img,int a,int b,int grid_row_size,int grid_col_size)
 	
 
 }
+void grid_set_white(Mat img,int a,int b,int grid_row_size,int grid_col_size)
+{
+    a=a*grid_row_size;
+    b=b*grid_col_size;
+    int i,j;
+    for (i = a; i <a+grid_row_size; ++i)
+        {
+            for (j = b; j <b+ grid_col_size; ++j)
+            {
+                img.at<uchar>(i,j)=255; 
+                                
+            }
+        }
+
+
+    
+
+}
+
 double grid_standard_deviation(Mat img,int a,int b,int grid_row_size,int grid_col_size,double average)
 {
 	a=a*grid_row_size;
@@ -110,10 +128,11 @@ double grid_standard_deviation(Mat img,int a,int b,int grid_row_size,int grid_co
     return sqrt(variance/counter);
 
 }
+
 void mark_with_grid(Mat img,int grid_row_size,int grid_col_size)
 {
-        int grid_row=grass.rows/grid_row_size;
-        int grid_col=grass.cols/grid_col_size;
+        int grid_row=img.rows/grid_row_size;
+        int grid_col=img.cols/grid_col_size;
         int i,j;
         for (i = 0; i <grid_row; ++i)
         {
@@ -132,12 +151,12 @@ void grid_threshold(Mat img,int grid_row_size,int grid_col_size,int threshold_av
     int i,j;
     int grid_row=img.rows/grid_row_size;
     int grid_col=img.cols/grid_col_size;
-    for (i = 0; i <grass.rows; ++i)//preprocessing and setting all small pixel values to zero
+    for (i = 0; i <img.rows; ++i)//preprocessing and setting all small pixel values to zero
     {
-        for (j = 0; j < grass.cols; ++j)
+        for (j = 0; j < img.cols; ++j)
         {
-            if((grass.at<uchar>(i,j))<10)
-                grass.at<uchar>(i,j)=0;
+            if((img.at<uchar>(i,j))<10)
+                img.at<uchar>(i,j)=0;
         }       
     }
     for (i = 0; i <grid_row; ++i)
@@ -165,42 +184,7 @@ void grid_threshold(Mat img,int grid_row_size,int grid_col_size,int threshold_av
     }
 }
 
-void grid_threshold(Mat img,int grid_row_size,int grid_col_size,int threshold_avg_grid,int standard_deviation,int max_pixel)
-{
-    int i,j;
-    int grid_row=img.rows/grid_row_size;
-    int grid_col=img.cols/grid_col_size;
-    for (i = 0; i <grass.rows; ++i)//preprocessing and setting all small pixel values to zero
-    {
-        for (j = 0; j < grass.cols; ++j)
-        {
-            if((grass.at<uchar>(i,j))<10)
-                grass.at<uchar>(i,j)=0;
-        }       
-    }
-    for (i = 0; i <grid_row; ++i)
-    {
-        for (j = 0; j < grid_col; ++j)
-        {
-            if (grid_average(img,i,j,grid_row_size,grid_col_size)<threshold_avg_grid) 
-            {
-                grid_set_zero(img,i,j,grid_row_size,grid_col_size);
-            }
-            double temp=grid_average1(img,i,j,grid_row_size,grid_col_size);
-            if (grid_standard_deviation(img,i,j,grid_row_size,grid_col_size,temp)<standard_deviation)
-            {
-                grid_set_zero(img,i,j,grid_row_size,grid_col_size);
-            }
-        }
-    }
-    for (i = 0; i <img.rows; ++i)
-    {
-        for (j = 0; j < img.cols; ++j)
-        {
-                if((img.at<uchar>(i,j))>max_pixel)
-                    img.at<uchar>(i,j)=0;
-        }   
-    }
-}
+
+
 
 #endif

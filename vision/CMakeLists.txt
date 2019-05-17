@@ -37,21 +37,22 @@ target_link_libraries(master
 
   add_dependencies(master ${catkin_EXPORTED_TARGETS})
 
-#add_executable(test_vision src/test.cpp)
+add_executable(test_vision src/test.cpp)
 
 
-#target_link_libraries(test_vision
-#       ${catkin_LIBRARIES}
-#     ${OpenCV_LIBRARIES}
-#)
+target_link_libraries(test_vision
+       ${catkin_LIBRARIES}
+     ${OpenCV_LIBRARIES}
+)
 
-#add_dependencies(test_vision ${catkin_EXPORTED_TARGETS})
-#add_executable(lidar src/lidar.cpp)
+add_dependencies(test_vision ${catkin_EXPORTED_TARGETS})
+
+add_executable(lidar src/lidar.cpp)
 
 
-#target_link_libraries(lidar
-#       ${catkin_LIBRARIES}
-#     ${OpenCV_LIBRARIES}
-#)
+target_link_libraries(lidar
+       ${catkin_LIBRARIES}
+     ${OpenCV_LIBRARIES}
+)
 
-#add_dependencies(lidar ${catkin_EXPORTED_TARGETS})
+add_dependencies(lidar ${catkin_EXPORTED_TARGETS})

@@ -27,6 +27,7 @@ Mat image_subtract(Mat img,Mat obj)
     }
     return temp;
 }
+
 Mat ROI(Mat input,double r1,double r2,double c1,double c2)
 {
     Mat roi((r2-r1)*(input.rows), (c2-c1)*(input.cols), CV_8UC3, Scalar(0,0,0));
@@ -87,7 +88,7 @@ Mat convert_to_3_channel(Mat img)
 Mat perspective_transform_3channel(Mat img)
 {
 
-    Mat top_view(img.rows,img.cols,CV_8UC3,Scalar(0));
+    Mat top_view(img.rows,img.cols,CV_8UC3,Scalar(0,0,0));
 
     vector <Point2f> rect(4);
     vector <Point2f> lane1(4);
@@ -117,7 +118,8 @@ Mat perspective_transform_3channel(Mat img)
     /*lane1[5].x=900;
     lane1[5].y=254;*/
 
-    Mat h=findHomography(lane1,rect);
+    //Mat h=findHomography(lane1,rect);
+    Mat h = (Mat_<double>(3,3) << 1309.9771, -267.13065, -106886.57, -73.232407, 373.57166, 110520.03, -0.0063258316, -0.90631282, 992.2868);
 
     // cout<<h<<endl;
 

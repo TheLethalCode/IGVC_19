@@ -1,6 +1,3 @@
-//input: gray-scale Mat and return a model(struct data type)
-//main function: getRansacModel
-
 #ifndef RANSAC
 #define RANSAC
 
@@ -8,7 +5,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <iostream>
+#include <bits/stdc++.h>
 
 using namespace std;
 using namespace cv;
@@ -149,11 +146,42 @@ bool IsNearLane1(model param1, Point p)
   }
 }
 
+float distance_nikaal(Point A,Point B)
+{
+	return (sqrt(pow(A.x-B.x,2)+pow(A.y-B.y,2)));
+}
 
-model getRansacModel(Mat img)
+Point centroid(float a,float b,float c,Mat img)
+{
+	Point A;
+	int i,j,x,y;
+	int sum_x,sum_y,count=0;
+
+	for(j=0;j<img.rows;j++)
+	{
+		x=a*j*j+b*j+c;
+
+		if(x>=0 && x<img.cols)
+		{
+			sum_y+=j;
+			sum_x+=x;
+			count++;
+		}
+	}
+
+	A.x=sum_x/count;
+	A.y=sum_y/count;
+
+	return A;
+
+}
+
+model getRansacModel(Mat img,model previous)
 {
   //apply ransac for first time it will converge for one lane
   vector<Point> ptArray1;
+  Point A,B,C;
+
   for(int i = 0; i < img.rows; ++i)
   {
     for(int j = 0; j < img.cols; ++j)
@@ -197,15 +225,101 @@ model getRansacModel(Mat img)
       }
     }
   }
-
+  float temp1,temp2,temp3;
   //get parameters of second model form ransac function
-  if(ptArray1.size() > 500)
+  if(ptArray2.size() > 500)
   {
     param = ransac(ptArray2, param);
   }
-  
+  if(param.numModel==2)	
+     if(param.a1*img.rows/2*img.rows/2+param.b1*img.rows/2+param.c1>param.a2*img.rows/2*img.rows/2+param.b2*img.rows/2+param.c2)
+     {
+	temp1=param.a1;
+	temp2=param.b1;
+	temp3=param.c1;
+	param.a1=param.a2;
+	param.b1=param.b2;
+	param.c1=param.c2;
+	param.a2=temp1;
+	param.b2=temp2;
+	param.c2=temp3;
+     }
+
+  if(param.numModel==1)
+  {
+  	if(previous.numModel==1)
+  	{
+  		if(previous.a1==0&&previous.b1==0&&previous.c1==0)
+  		{
+  			if(param.a2==0&&param.b2==0&&param.c2==0)
+  			{
+	  			temp1=param.a1;
+				temp2=param.b1;
+				temp3=param.c1;
+				param.a1=param.a2;
+				param.b1=param.b2;
+				param.c1=param.c2;
+				param.a2=temp1;
+				param.b2=temp2;
+				param.c2=temp3;
+			}
+  		}
+  		else if(previous.a2==0&&previous.b2==0&&previous.c2==0)
+  		{
+  			if(param.a1==0&&param.b1==0&&param.c1==0)
+  			{
+	  			temp1=param.a1;
+				temp2=param.b1;
+				temp3=param.c1;
+				param.a1=param.a2;
+				param.b1=param.b2;
+				param.c1=param.c2;
+				param.a2=temp1;
+				param.b2=temp2;
+				param.c2=temp3;
+			}
+  		}
+  	}
+  	if(previous.numModel==2)
+  	{
+  		A=centroid(previous.a1,previous.b1,previous.c1,img);
+  		B=centroid(previous.a2,previous.b2,previous.c2,img);
+
+  		if(param.a1==0&&param.b1==0&&param.c1==0)
+  		{
+  			C=centroid(param.a2,param.b2,param.c2,img);
+	  		if(distance_nikaal(A,C)<distance_nikaal(B,C))
+	  		{
+	  			temp1=param.a1;
+				temp2=param.b1;
+				temp3=param.c1;
+				param.a1=param.a2;
+				param.b1=param.b2;
+				param.c1=param.c2;
+				param.a2=temp1;
+				param.b2=temp2;
+				param.c2=temp3;
+	  		}
+  		}
+  		else
+  		{
+  			C=centroid(param.a1,param.b1,param.c1,img);
+	  		if(distance_nikaal(A,C)>distance_nikaal(B,C))
+	  		{
+	  			temp1=param.a1;
+				temp2=param.b1;
+				temp3=param.c1;
+				param.a1=param.a2;
+				param.b1=param.b2;
+				param.c1=param.c2;
+				param.a2=temp1;
+				param.b2=temp2;
+				param.c2=temp3;
+	  		}
+  		}
+  	}
+  }
   return param;
 }
-
 
 #endif
