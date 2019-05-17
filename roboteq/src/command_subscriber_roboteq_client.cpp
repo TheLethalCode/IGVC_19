@@ -19,7 +19,7 @@ int a2 = 0;   // for wireless estop
 int a =0;
 double vel_l = 0;
 double vel_r = 0;
-int e=0;
+
 
 void commandVelCallback(eklavya4_roboteq::control vel_msg) {
 
@@ -34,7 +34,7 @@ void commandVelCallback(eklavya4_roboteq::control vel_msg) {
 	srv.request.v_r = vel_r;
 	srv.request.v_l = vel_l;	
          
-        if((vel_msg.estop==1)||(e==1)){
+        if(vel_msg.estop==1){
 	srv.request.estop = 1;
 
         }
@@ -54,9 +54,6 @@ void commandVelCallback(eklavya4_roboteq::control vel_msg) {
 		return;
 	}
 }
-void xbee_EStop(const std_msgs::Int8 estop){
-e = estop.data;
-}
 
 
 
@@ -68,14 +65,13 @@ int main(int argc, char **argv)
 	
 	ros::NodeHandle n1;
         
-        ros::Subscriber sub1, sub2;
+        ros::Subscriber sub1;
 	
 	ros::ServiceClient serviceClient = n1.serviceClient<eklavya4_roboteq::SetSpeed>("motor_controller");
 	
 	client = &serviceClient;
 
         sub1 = n1.subscribe("control", 10, commandVelCallback);
-        sub2 = n1.subscribe("xbee_estop", 1000, xbee_EStop);
 	
 	ros::spin();
 	
