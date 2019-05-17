@@ -15,7 +15,7 @@
 eklavya4_roboteq::diagnose_msg state;
 
 using namespace std;
-#define r 0.11   //the radius of wheel in centimetre
+#define r 0.13   //the radius of wheel in centimetre
 #define distance  0.64
 geometry_msgs::Twist vel_msg;
 int c1,c2,volt;
