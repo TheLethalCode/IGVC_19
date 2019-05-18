@@ -1,28 +1,24 @@
+//Node converts NED output of IMU into ENU and adds covariance with timestamps Outputs on imu
 #include <ros/ros.h>
 #include <iostream>
 #include <sensor_msgs/Imu.h>
 #include <boost/assign.hpp>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
-
 #define PI 3.14159265359
-
-sensor_msgs::Imu msg;
 ros::Publisher imu_pub;
+sensor_msgs::Imu imu;
 
 void imuCallback(const sensor_msgs::Imu msg)
 {
-  if(ros::ok())
-  {
-  	sensor_msgs::Imu imu;
-  	imu=msg;
-  	imu.orientation_covariance=boost::assign::list_of(0.001)(0.0)(0.0)
-  		                                                (0.0)(0.001)(0.0)
-  		                                                (0.0)(0.0)(0.0001);
+    imu=msg;
+    imu.orientation_covariance=boost::assign::list_of(0.001)(0.0)(0.0)
+    	                                                (0.0)(0.001)(0.0)
+    	                                                (0.0)(0.0)(0.0001);
 
     imu.angular_velocity_covariance=boost::assign::list_of(0.001)(0.0)(0.0)
-                                                      (0.0)(0.001)(0.0)
-                                                      (0.0)(0.0)(0.0001);
+                                                  (0.0)(0.001)(0.0)
+                                                  (0.0)(0.0)(0.0001);
     imu.header.frame_id="imu";
 
     tf::Quaternion quat;
@@ -32,46 +28,32 @@ void imuCallback(const sensor_msgs::Imu msg)
     double roll, pitch, yaw;
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
-   //convert to ENU
-   pitch = pitch+PI;
+    //convert to ENU
+    pitch = pitch+PI;
+    yaw=yaw+PI/2;
+    pitch=0.0;
+    roll=0.0;
 
-   ROS_INFO_STREAM("NED Yaw: "<<yaw*180/PI<<"\n");
+    tf::Quaternion q;
+    q.setRPY(tfScalar(roll), tfScalar(pitch), tfScalar(yaw));
 
-   yaw=yaw+PI/2;
-
-   ROS_INFO_STREAM("ENU Yaw: "<<yaw*180/PI<<"\n");
-
-   pitch=0.0;
-   roll=0.0;
-   //yaw*=180/PI;
-
-   tf::Quaternion q;
-   q.setRPY(tfScalar(roll), tfScalar(pitch), tfScalar(yaw));
-
-   geometry_msgs::Quaternion odom_quat;
-
-   //ROS_INFO_STREAM("tf.x = "<<q.x<<"\n");
-
-   tf::quaternionTFToMsg(q, odom_quat);
-
-   imu.orientation = odom_quat;
-   
-
-
-   //publish
-   imu_pub.publish(imu);
-  }
+    geometry_msgs::Quaternion odom_quat;
+    tf::quaternionTFToMsg(q, odom_quat);
+    imu.orientation = odom_quat;
+    imu.header.stamp=ros::Time::now();
+    imu_pub.publish(imu);
 }
 
 
 
-int main(int argc, char** argv){
-  ros::init(argc, argv, "imu_node");
+int main(int argc, char** argv)
+{
+    ros::init(argc, argv, "imu_node");
 
-  ros::NodeHandle n;
-  ros::Subscriber imu_sub=n.subscribe<sensor_msgs::Imu>("vn_ins/imu",50,imuCallback);
-  imu_pub = n.advertise<sensor_msgs::Imu>("/imu", 50);
-  ros::spin();
-  return 0;
+    ros::NodeHandle n;
+    ros::Subscriber imu_sub=n.subscribe<sensor_msgs::Imu>("/vn_ins/imu",50,imuCallback);
+    imu_pub = n.advertise<sensor_msgs::Imu>("/imu", 50);
+    ros::spin();
+    return 0;
 }
 

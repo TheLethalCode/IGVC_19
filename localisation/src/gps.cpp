@@ -1,76 +1,33 @@
+//Node adds coveriance and timestamp to gps data and publishes on fix_c
 #include <ros/ros.h>
 #include <boost/assign.hpp>
 #include <sensor_msgs/NavSatFix.h>
 #include "ros/time.h"
-sensor_msgs::NavSatFix msg;
-sensor_msgs::NavSatFix origin,temp;
+#include<iostream>
+using namespace std;
+
 ros::Publisher gps_pub;
-ros::Publisher origin_pub;
-volatile int i=0;
-  //ros::Time current_time;
-  //ros::Time last_time;
-
-  
-void odomCallback(sensor_msgs::NavSatFix msg)
+void gps(sensor_msgs::NavSatFix msg)
 {
-	if (ros::ok())
-{
-    if(i<100)
-    {
-      i++;
-      temp.latitude+=msg.latitude;
-      temp.longitude+=msg.longitude;
-    }
-    else if(i==100)
-    {
-      i++;
-      origin.latitude=temp.latitude/100;
-      origin.longitude=temp.longitude/100;
-      msg.latitude = origin.latitude;
-      msg.longitude = origin.longitude;
-      msg.position_covariance_type=2;
-      msg.position_covariance=boost::assign::list_of(1.0)(0.0)(0.0)
-                                                    (0.0)(1.0)(0.0)
-                                                    (0.0)(0.0)(1.0);
-                                                 
-
-          //publish the message
-
-      msg.header.frame_id="gps";
-                                                    
-      gps_pub.publish(msg);
-     }
-     else
-     {
-
-      //add covariance
-      msg.position_covariance_type=2;
-      msg.position_covariance=boost::assign::list_of(1.0)(0.0)(0.0)
-                                                    (0.0)(1.0)(0.0)
-                                                    (0.0)(0.0)(1.0);
-                                                 
-
-          //publish the message
-
-      msg.header.frame_id="gps";
-                                                    
-      gps_pub.publish(msg);
-      origin_pub.publish(origin);
-    //last_time = current_time;
-    }
-    
-  }
+    sensor_msgs::NavSatFix vn_ins;
+    vn_ins=msg;
+    vn_ins.header.stamp =ros::Time::now();
+    vn_ins.status.service=1;
+    vn_ins.position_covariance_type=1;
+    vn_ins.position_covariance=boost::assign::list_of(100.0)(0.0)(0.0)
+                                              (0.0)(100.0)(0.0)
+                                              (0.0)(0.0)(100.0);
+    vn_ins.header.frame_id="gps";                       
+    gps_pub.publish(vn_ins);
 }
 
+int main(int argc, char** argv)
+{
+    ros::init(argc, argv, "gps");
 
-int main(int argc, char** argv){
-  ros::init(argc, argv, "gps");
-
-  ros::NodeHandle n;
-  //gps covariance
-  ros::Subscriber gps_sub=n.subscribe<sensor_msgs::NavSatFix>("vn_ins/fix",50,odomCallback);
-  gps_pub = n.advertise<sensor_msgs::NavSatFix>("fix_c", 50);
-  origin_pub=n.advertise<sensor_msgs::NavSatFix>("gps/origin",50);
-  ros::spin();
-  return 0;
+    ros::NodeHandle n;
+    ros::Subscriber gps_sub=n.subscribe<sensor_msgs::NavSatFix>("/vn_ins/fix",50,gps);
+    gps_pub = n.advertise<sensor_msgs::NavSatFix>("fix_c", 50);
+    ros::spin();
+    return 0;
 }
