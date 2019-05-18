@@ -1,3 +1,4 @@
+//Node adds yaw_dot of the IMU to the encoder data to fuse into odom_imu_combined
 #include <ros/ros.h>
 #include <geometry_msgs/Quaternion.h>
 #include <sensor_msgs/Imu.h>
