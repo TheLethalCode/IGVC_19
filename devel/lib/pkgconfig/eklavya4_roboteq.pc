@@ -1,0 +1,8 @@
+prefix=/home/mechanical/igvc_19/devel
+
+Name: eklavya4_roboteq
+Description: Description of eklavya4_roboteq
+Version: 0.0.0
+Cflags: -I/home/mechanical/igvc_19/devel/include
+Libs: -L/home/mechanical/igvc_19/devel/lib 
+Requires: roscpp std_msgs message_runtime

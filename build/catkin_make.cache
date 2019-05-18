@@ -1,0 +1,2 @@
+hokuyo_node:localisation:planning/huskey_move:planning/robot_setup_tf:roboteq:tf:videoPub:vision:vn_ins
+-DCATKIN_DEVEL_PREFIX=/home/mechanical/igvc_19/devel -DCMAKE_INSTALL_PREFIX=/home/mechanical/igvc_19/install -G Unix Makefiles

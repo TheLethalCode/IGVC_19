@@ -1,0 +1,8 @@
+prefix=/home/mechanical/igvc_19/install
+
+Name: vision
+Description: Description of vision
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/mechanical/igvc_19/install/lib 
+Requires: 
