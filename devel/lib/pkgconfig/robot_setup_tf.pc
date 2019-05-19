@@ -1,8 +1,0 @@
-prefix=/home/mechanical/igvc_19/devel
-
-Name: robot_setup_tf
-Description: Description of robot_setup_tf
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/mechanical/igvc_19/devel/lib 
-Requires: 

@@ -1,8 +1,0 @@
-prefix=/home/mechanical/igvc_19/install
-
-Name: tf_eklavya
-Description: Description of tf_eklavya
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/mechanical/igvc_19/install/lib 
-Requires: 

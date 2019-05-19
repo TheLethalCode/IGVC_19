@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(vision)
 
+set (CMAKE_CXX_STANDARD 11)
+
 find_package(OpenCV 3)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -22,7 +24,8 @@ catkin_package(
 )
 
 
-include_directories(  
+include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
