@@ -20,8 +20,8 @@ nav_msgs::Odometry odom;
 
 void odomCallback(const geometry_msgs::Twist msg)
 {
-    vr=-msg.linear.y/**(5.0/18)*/;//fix for kmph to mps for mahindra car
-    vl=-msg.linear.x/**(5.0/18)*/;
+    vr=msg.linear.y/**(5.0/18)*/;//fix for kmph to mps for mahindra car
+    vl=msg.linear.x/**(5.0/18)*/;
     v=(vl+vr)/2;
     odom.header.stamp = ros::Time::now();
     odom.header.frame_id = "base_link";
