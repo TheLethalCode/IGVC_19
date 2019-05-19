@@ -6,32 +6,25 @@
 #include <sensor_msgs/image_encodings.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
-#include <geometry_msgs/Point.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Image.h>
+#include "geometry_msgs/PoseStamped.h"
+#include <tf/transform_datatypes.h>
 
 /*
    Custom header files
  */
-#include "lane_segmentation.hpp"
-#include "ransac.hpp"
-//#include "mlesac.hpp"
-#include "shadowRemoval.hpp"
-// #include "beginner_tutorials/model.h"
-#include "basic.hpp"
-#include "find_pothole.hpp"
-// #include "obsplot.hpp"
-#include "cv_bridge/cv_bridge.h"
-#include "lidar_new.hpp"
-#include "waypts1_header.hpp"
-// #include "combinedobs.hpp"
-//#include "object.hpp"
-// #include <grid_object.hpp>
-//#include "white_obstacle.hpp"
-#include "matrixTransformation.hpp"
-#include "obstacles_prev.hpp"
 
-#define ppm 50
+#include <ransac.hpp>
+#include <lane_segmentation.hpp>
+#include <waypoint_generator.hpp>
+
+#include <lidar_new.hpp>
+#include <obstacles_prev.hpp>
+
+#include <matrixTransformation.hpp>
+
+#define PPM 50
 
 using namespace std;
 using namespace cv;
@@ -63,11 +56,11 @@ void img_to_ls(Mat img)
     for(float theta=msg.angle_min;theta<=msg.angle_max;theta+=msg.angle_increment)
     {
         l=0;
-        for(float r=msg.range_min;r<=msg.range_max;r+=1.0/ppm)
+        for(float r=msg.range_min;r<=msg.range_max;r+=1.0/PPM)
         {
             cout<<"loop"<<endl;
-            int i=img.rows-r*cos(theta)*ppm;
-            int j=img.cols/2-r*sin(theta)*ppm;
+            int i=img.rows-r*cos(theta)*PPM;
+            int j=img.cols/2-r*sin(theta)*PPM;
             if(img.at<uchar>(i,j)==255)
             {
                 msg.ranges[k]=r;
@@ -105,15 +98,15 @@ int main(int argc, char **argv)
 { 
 
     Mat obstacle;
-    Mat inflated; 
-    model lanes;		//For Ransac implementation(it is a structure)
+    Mat costmap; 
+    Parabola lanes;		//For Ransac implementation(it is a structure)
     lanes.a1=0;lanes.b1=0;lanes.c1=0;lanes.a2=0;lanes.b2=0;lanes.c2=0;
 
     init(argc,argv,"master");
     NodeHandle n;
     image_transport::ImageTransport it(n);
 
-    Publisher waypoint_publisher = n.advertise<geometry_msgs::Point>("waypoint",1000);
+    Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("waypoint",1000);
 
     Subscriber lidar_subsriber;
     if (use_video == false) {
@@ -165,51 +158,6 @@ int main(int argc, char **argv)
             imshow("roi",roi); 
         }
 
-        /*
-           int ic=roi.rows/2,jc=roi.cols/2;
-           int r;
-           for(int i=0;i<roi.rows;i++)
-           {
-           for(int j=0;j<roi.cols;j++)
-           {
-
-           r=sqrt((i-ic)*(i-ic)+(j-jc)*(j-jc));
-           roi.at<Vec3b>(i,j)=roi.at<Vec3b>(i,j)/(1-(float)(0.9*r/mn(roi.rows,roi.cols)));
-           }
-           }
-         */
-
-
-        //removing shadows
-        /*
-        roi=removeShadow(roi);
-        if (true) {
-            namedWindow("shadowRemoval", WINDOW_NORMAL);
-            imshow("shadowRemoval",roi); 
-            waitKey(10);
-        }
-        */
-
-
-
-        // for(int u = 0; u < roi.rows; u++)
-        // {
-        //     for(int v = 0; v < roi.cols; v++)
-        //     {
-        //         roi.at<Vec3b>(u, v)[0] = min(roi.at<Vec3b>(u, v)[0]+20, 255);
-        //         roi.at<Vec3b>(u, v)[1] = min(roi.at<Vec3b>(u, v)[1]+20, 255);
-        //         roi.at<Vec3b>(u, v)[2] = min(roi.at<Vec3b>(u, v)[2]+40, 255);
-
-        //     }
-        // }
-
-        // Mat roi=object_remove_2(&roi);
-        // namedWindow("obstacle",0);
-        // imshow("obstacle",roi); 
-        //	spinOnce();
-        //	continue;
-
-        //extraction of different channels
         //processing done for various channels
 
         roi = remove_obstacles(roi);
@@ -263,30 +211,13 @@ int main(int argc, char **argv)
         bitwise_and(twob_r, twob_g, intersectionImages);
         bitwise_and(intersectionImages, b, intersectionImages);
 
-        medianBlur(intersectionImages, intersectionImages, 31);
-
+//        medianBlur(intersectionImages, intersectionImages, 31);
 
         if (true) {
             namedWindow("intersectionImages", WINDOW_NORMAL);
             imshow("intersectionImages", intersectionImages);
             waitKey(10);
         }
-
-        //       namedWindow("unionImages",0);
-        // imshow("unionImages",unionImages); 
-        //	spinOnce();
-        //	continue;
-
-        // for(int i=0;i<roi.rows;i++)
-        // {
-        //     for(int j=0;j<roi.cols;j++)
-        //     { 
-        //         if(obstacle.at<uchar>(i,j)==255)
-        //         {
-        //             unionImages.at<uchar>(i,j)=0;
-        //         }
-        //     }
-        // }  
 
         Mat topView = top_view(intersectionImages);
 
@@ -296,66 +227,56 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-
-        // Mat pot_hole=find_pothole(unionImages);
-        // namedWindow("pot_hole",0);
-        // imshow("pot_hole",pot_hole); 
-        //	spinOnce();
-        //	continue;
-
-        // img_to_ls(pot_hole);
-        //	spinOnce();
-        //	continue;
-
-        // for(int i=0;i<roi.rows;i++)
-        // {
-        //     for(int j=0;j<roi.cols;j++)
-        //     {
-        //			if(pot_hole.at<uchar>(i,j)==255)
-        //         {
-        //             unionImages.at<uchar>(i,j)=0;
-        //         }
-        //     }
-        // } 
-        // namedWindow("pot_hole_removed",0);
-        // imshow("pot_hole_removed",unionImages); 
-        //	spinOnce();
-        //	continue; 
+        // Add top view preprocessed image to costmap
+        // img_to_ls(topView);
 
         // curve fitting
-        lanes=getRansacModel(topView,lanes);
+        lanes = getRansacModel(topView,lanes);
         Mat fitLanes = drawLanes(topView, lanes);
 
         if (true) {
-            namedWindow("lanes ftting", WINDOW_NORMAL);
+            namedWindow("lanes fitting", WINDOW_NORMAL);
             imshow("lanes fitting", fitLanes);
             waitKey(10);
         }
 
-        spinOnce();
-        continue;
-        // img_to_ls(lanes_by_ransac);
-        //	spinOnce();
-        //	continue;
-
+        //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
         /*
         namedWindow("lidar_plot",0);
         imshow("lidar_plot",lidar_plot); 
-        inflated=obstaclePlot;
-        namedWindow("lidar_inflated_obs",0);
-        imshow("lidar_inflated_obs",obstaclePlot); 
+        costmap=obstaclePlot;
+        namedWindow("lidar_costmap_obs",0);
+        imshow("lidar_costmap_obs",obstaclePlot); 
         */
 
-        output waypoint=find_waypoint(lanes,inflated);
+        costmap = fitLanes.clone();
 
-        geometry_msgs::Point msg1;
-        msg1.x=waypoint.x;
-        msg1.y=waypoint.y;
-        msg1.z=waypoint.angle;
 
-        // beginner_tutorials::mat msg2;
-        // waypoint_publisher.publish(msg1);
-        //subscribe->from costmap
+        //return waypoint assuming origin at bottom left of image (in pixel coordinates)
+        NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
+        costmap = plotWaypoint(costmap, waypoint_image);
+
+        if (true) {
+            namedWindow("waypoint", WINDOW_NORMAL);
+            imshow("waypoint", costmap);
+            waitKey(10);
+        }
+
+        //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
+        geometry_msgs::PoseStamped waypoint_bot;
+
+        waypoint_bot.pose.position.x = waypoint_image.y/PPM;
+        waypoint_bot.pose.position.y = (costmap.cols/2 - waypoint_image.x)/PPM;
+        waypoint_bot.pose.position.z = 0;
+        float theta = (waypoint_image.angle - CV_PI/2);
+
+        tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
+        waypoint_bot.pose.orientation.x = frame_qt.x();
+        waypoint_bot.pose.orientation.y = frame_qt.y();
+        waypoint_bot.pose.orientation.z = frame_qt.z();
+        waypoint_bot.pose.orientation.w = frame_qt.w();
+
+        waypoint_publisher.publish(waypoint_bot);
 
         waitKey(30);
         spinOnce();

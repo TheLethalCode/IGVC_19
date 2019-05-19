@@ -1,8 +1,0 @@
-prefix=/home/mechanical/igvc_19/install
-
-Name: videoPub
-Description: Description of videoPub
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/mechanical/igvc_19/install/lib 
-Requires: 

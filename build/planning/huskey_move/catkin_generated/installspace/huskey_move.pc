@@ -1,8 +1,0 @@
-prefix=/home/mechanical/igvc_19/install
-
-Name: huskey_move
-Description: Description of huskey_move
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/mechanical/igvc_19/install/lib 
-Requires: 
