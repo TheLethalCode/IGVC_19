@@ -51,11 +51,15 @@ Mat twob_rChannelProcessing(Mat img)
 
     Mat_<int> mean = (Mat_<int>)((channels[0] + channels[1] + channels[2])/3);
     multiply(mean, mean, mean2);
+    
     Mat_<int> zero_moment = (Mat_<int>)(b2 + g2 + r2)/3;
     Mat_<float> variance = (Mat_<float>)(zero_moment - mean2);
 
     Mat mask, result;
-    threshold(variance, mask, 1500, 255, THRESH_BINARY_INV);
+
+    threshold(variance, mask, 1500, 255, THRESH_BINARY);
+    mask.convertTo(mask, CV_8U);
+
     bitwise_and(fin, mask, result);
 
     adaptiveThreshold(result,result,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,71,-50);
