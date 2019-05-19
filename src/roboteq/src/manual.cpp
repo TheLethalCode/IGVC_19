@@ -3,7 +3,7 @@
 #include <eklavya4_roboteq/control.h>
 #include <std_msgs/Int8.h>
 #include <geometry_msgs/Twist.h>
-#define radius  0.1 
+#define radius  0.13 
 #define distance  0.64
 
 

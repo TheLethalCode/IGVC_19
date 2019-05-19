@@ -19,6 +19,9 @@ void imuCallback(const sensor_msgs::Imu msg)
     imu.angular_velocity_covariance=boost::assign::list_of(0.001)(0.0)(0.0)
                                                   (0.0)(0.001)(0.0)
                                                   (0.0)(0.0)(0.0001);
+    imu.linear_acceleration_covariance=boost::assign::list_of(10000)(0.0)(0.0)
+                                                      (0.0)(0.001)(0.0)
+                                                      (0.0)(0.0)(0.0001);
     imu.header.frame_id="imu";
 
     tf::Quaternion quat;

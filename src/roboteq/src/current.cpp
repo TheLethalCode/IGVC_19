@@ -12,7 +12,7 @@
 #include "eklavya4_roboteq/diagnose_msg.h"
 #include "eklavya4_roboteq/RoboteqDevice.cpp"
 using namespace std;
-#define r 0.11   //the radius of wheel in centimetre
+#define r 0.13   //the radius of wheel in centimetre
 
 int main(int argc, char **argv)
 {   
