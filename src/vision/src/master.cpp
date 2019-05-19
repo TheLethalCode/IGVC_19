@@ -58,7 +58,6 @@ void img_to_ls(Mat img)
         l=0;
         for(float r=msg.range_min;r<=msg.range_max;r+=1.0/PPM)
         {
-            cout<<"loop"<<endl;
             int i=img.rows-r*cos(theta)*PPM;
             int j=img.cols/2-r*sin(theta)*PPM;
             if(img.at<uchar>(i,j)==255)
@@ -93,6 +92,31 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
     frame_orig = (cv_ptr->image);
 
 }
+
+
+string type2str(int type) {
+  string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
+
 
 int main(int argc, char **argv)
 { 
@@ -168,9 +192,13 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
+        // cout<<"a"<<endl;
+
         Mat twob_r = twob_rChannelProcessing(roi);
 
-        if (false) {
+        // cout<<"b"<<endl;
+
+        if (true) {
             namedWindow("2b-r", WINDOW_NORMAL);
             imshow("2b-r", twob_r);
             waitKey(10);
@@ -178,31 +206,18 @@ int main(int argc, char **argv)
 
         Mat twob_g = twob_gChannelProcessing(roi);
 
-        if (false) {
+        if (true) {
             namedWindow("2g", WINDOW_NORMAL);
             imshow("2g", twob_g);
             waitKey(10);
         }
 
-
         //processing for blue channel
         Mat b = blueChannelProcessing(roi);
 
-        if (false) {
+        if (true) {
             namedWindow("b", WINDOW_NORMAL);
             imshow("b", b);
-            waitKey(10);
-        }
-
-        //union of all lane filters
-        Mat unionImages;
-        bitwise_or(twob_r, twob_g, unionImages);
-        bitwise_or(unionImages, b, unionImages);
-
-
-        if (false) {
-            namedWindow("unionImages", WINDOW_NORMAL);
-            imshow("unionImages", unionImages);
             waitKey(10);
         }
 
@@ -211,7 +226,13 @@ int main(int argc, char **argv)
         bitwise_and(twob_r, twob_g, intersectionImages);
         bitwise_and(intersectionImages, b, intersectionImages);
 
-//        medianBlur(intersectionImages, intersectionImages, 31);
+		medianBlur(intersectionImages, intersectionImages, 9);
+
+		int erosion_size = 6;
+		Mat element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
+		erode(intersectionImages, intersectionImages, element);
+		dilate(intersectionImages, intersectionImages, element);
+
 
         if (true) {
             namedWindow("intersectionImages", WINDOW_NORMAL);
