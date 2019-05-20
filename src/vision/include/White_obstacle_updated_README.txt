@@ -1,0 +1,2 @@
+To use the White_obstacle_updated.hpp header file call the remove_obstacles function and give the image to be processed as input.
+It will return the processed image with the white obstacles removed as the output
