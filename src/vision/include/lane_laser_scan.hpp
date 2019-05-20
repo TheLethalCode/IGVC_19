@@ -18,43 +18,46 @@ using namespace cv;
 
 sensor_msgs::LaserScan laneLaser(Mat img)    /// Input binary image for conversion to laserscan
 {
-	int row = img.rows;
-	int col = img.cols;
-	sensor_msgs::LaserScan scan;
-	scan.angle_min = -CV_PI/2;
-	scan.angle_max = CV_PI/2;
-	scan.angle_increment = CV_PI/bins;
-	double inf = std::numeric_limits<double>::infinity();
-	scan.range_max = inf; 
-	
-	scan.header.frame_id = "laser";
+    int row = img.rows;
+    int col = img.cols;
+    sensor_msgs::LaserScan scan;
+    scan.angle_min = -CV_PI/2;
+    scan.angle_max = CV_PI/2;
+    scan.angle_increment = CV_PI/bins;
+    double inf = std::numeric_limits<double>::infinity();
+    scan.range_max = inf; 
 
-	for (int i=0;i<bins;i++)
-	{
-		scan.ranges.push_back(scan.range_max);
-	}
+    scan.header.frame_id = "laser";
 
-	scan.range_max = 80;
-	for(int i = 0; i < row; ++i)
-	{
-		for(int j = 0; j < col; ++j)
-		{
-			if(img.at<uchar>(i, j) == 255)
-			{
-				float a = (j - col/2)/pixelsPerMetre;
-				float b = (row - i)/pixelsPerMetre + yshift;
+    for (int i=0;i<bins;i++)
+    {
+        scan.ranges.push_back(scan.range_max);
+    }
 
-				double angle = atan(a/b);
+    scan.range_max = 80;
+    for(int i = 0; i < row; ++i)
+    {
+        for(int j = 0; j < col; ++j)
+        {
+            if(img.at<uchar>(i, j) > 0)
+            {
+                float a = (j - col/2)/pixelsPerMetre;
+                float b = (row - i)/pixelsPerMetre + yshift;
 
-				double r = sqrt(a*a  + b*b);
+                double angle = atan(a/b);
 
-				int k = (angle - scan.angle_min)/(scan.angle_increment);
-				scan.ranges[bins-k-1] = r ;
-			}
-		}
-	}
+                double r = sqrt(a*a  + b*b);
 
-	return scan;    /// returns Laserscan data
+                int k = (angle - scan.angle_min)/(scan.angle_increment);
+                if (r < scan.ranges[bins-k-1]) {
+                    scan.ranges[bins-k-1] = r ;
+                }
+
+            }
+        }
+    }
+
+    return scan;    /// returns Laserscan data
 }
 
 #endif

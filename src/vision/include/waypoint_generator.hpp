@@ -34,6 +34,13 @@ int checklane(int y,int x,Mat img,Parabola lanes)
     return 0;
 }
 
+bool isValid(Mat img, int i, int j) {
+    if (i < 0 || i >= img.rows || j < 0 || j >= img.cols) {
+        return false;
+    }
+    return true;
+}
+
 //check a circle of radius such that the bot can move in that circle without hitting any lanes or obstacles
 int isValid_point(Mat img, int i, int j)
 {
@@ -48,6 +55,10 @@ int isValid_point(Mat img, int i, int j)
             x1=j+r*cos((float)theta*CV_PI/180);
             y1=i-r*sin((float)theta*CV_PI/180);
 
+            if (!isValid(img, y1, x1)) {
+                return 0;
+            }
+
             if((img.at<Vec3b>(y1,x1)[0]==255 && img.at<Vec3b>(y1,x1)[1]==255 && img.at<Vec3b>(y1,x1)[2]==255) ||
                 (img.at<Vec3b>(y1,x1)[0]==255 && img.at<Vec3b>(y1,x1)[1]==0 && img.at<Vec3b>(y1,x1)[2]==0) || 
                 (img.at<Vec3b>(y1,x1)[0]==0 && img.at<Vec3b>(y1,x1)[1]==0 && img.at<Vec3b>(y1,x1)[2]==255))
@@ -55,7 +66,6 @@ int isValid_point(Mat img, int i, int j)
         }
     }
     return 1;
-
 }
 
 //returns the angle assuming  0 (along -ve x axis) to PI, clockwise positive
@@ -137,6 +147,9 @@ int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola lanes)
 
     for(theta=0;theta<(*theta_max-*theta_min)/2;theta++)
     {
+        if (!isValid(img, i, j)) {
+            continue;
+        }
         i=img.rows-stepsize*sin((theta_mid+theta)*CV_PI/180);
         j=img.cols/2-stepsize*cos((theta_mid+theta)*CV_PI/180);
         if(img.at<Vec3b>(i,j)[0]==0&&img.at<Vec3b>(i,j)[1]==0&&img.at<Vec3b>(i,j)[2]==0)
@@ -146,6 +159,10 @@ int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola lanes)
                 theta_head=theta_mid+theta;
                 break;
             }
+        }
+
+        if (!isValid(img, i, j)) {
+            continue;
         }
         i=img.rows-stepsize*sin((theta_mid-theta)*CV_PI/180);
         j=img.cols/2-stepsize*cos((theta_mid-theta)*CV_PI/180);
@@ -179,7 +196,7 @@ NavPoint find_waypoint(Parabola lanes,Mat img)
 }
 
 Mat plotWaypoint(Mat costmap, NavPoint waypoint_image) {
-    Point origin = Point(waypoint_image.x-1, costmap.rows - waypoint_image.y -1);
+    Point origin = Point(waypoint_image.x-1, waypoint_image.y -1);
     float x = origin.x - 150*cos(waypoint_image.angle);
     float y = origin.y - 150*sin(waypoint_image.angle);
     Point dest = Point(x,y);

@@ -18,9 +18,13 @@
 #include <ransac.hpp>
 #include <lane_segmentation.hpp>
 #include <waypoint_generator.hpp>
+#include <lane_laser_scan.hpp>
+#include <lidar_plot.hpp>
+
 
 #include <lidar_new.hpp>
-#include <obstacles_prev.hpp>
+#include <White_obstacle_updated.hpp>
+//#include <obstacles_prev.hpp>
 
 #include <matrixTransformation.hpp>
 
@@ -30,7 +34,7 @@ using namespace std;
 using namespace cv;
 using namespace ros;
 
-Publisher ls;
+Publisher lanes2Costmap_publisher;
 Mat frame_orig;
 
 bool is_image_retrieved = false;
@@ -42,38 +46,6 @@ int mn(int a,int b)
         return a;
     else
         return b;
-}
-
-void img_to_ls(Mat img)
-{
-    sensor_msgs::LaserScan msg;
-    msg.angle_min=-CV_PI/2;
-    msg.angle_max=CV_PI/2;
-    // msg.range_min=0.5;
-    // msg.range_max=4;
-    int k=0,l=0;
-    msg.angle_increment=CV_PI/180;
-    for(float theta=msg.angle_min;theta<=msg.angle_max;theta+=msg.angle_increment)
-    {
-        l=0;
-        for(float r=msg.range_min;r<=msg.range_max;r+=1.0/PPM)
-        {
-            int i=img.rows-r*cos(theta)*PPM;
-            int j=img.cols/2-r*sin(theta)*PPM;
-            if(img.at<uchar>(i,j)==255)
-            {
-                msg.ranges[k]=r;
-                l++;
-                break;
-            }
-        }
-        if(l==0)
-            msg.ranges[k]=msg.range_max;
-        k++;
-
-
-    }
-    ls.publish(msg);
 }
 
 void imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -93,31 +65,6 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
 
 }
 
-
-string type2str(int type) {
-  string r;
-
-  uchar depth = type & CV_MAT_DEPTH_MASK;
-  uchar chans = 1 + (type >> CV_CN_SHIFT);
-
-  switch ( depth ) {
-    case CV_8U:  r = "8U"; break;
-    case CV_8S:  r = "8S"; break;
-    case CV_16U: r = "16U"; break;
-    case CV_16S: r = "16S"; break;
-    case CV_32S: r = "32S"; break;
-    case CV_32F: r = "32F"; break;
-    case CV_64F: r = "64F"; break;
-    default:     r = "User"; break;
-  }
-
-  r += "C";
-  r += (chans+'0');
-
-  return r;
-}
-
-
 int main(int argc, char **argv)
 { 
 
@@ -130,16 +77,16 @@ int main(int argc, char **argv)
     NodeHandle n;
     image_transport::ImageTransport it(n);
 
-    Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("waypoint",1000);
+    Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",1000);
 
     Subscriber lidar_subsriber;
     if (use_video == false) {
-        lidar_subsriber = n.subscribe("/scan", 10, &laserscan);
+        lidar_subsriber = n.subscribe("/scan", 1, &laserscan);
     }
 
-    image_transport::Subscriber sub = it.subscribe("/camera/image_color", 1000, imageCb);
+    image_transport::Subscriber sub = it.subscribe("/camera/image_color", 1, imageCb);
 
-    ls = n.advertise<sensor_msgs::LaserScan>("ls", 1000);       //declared globally
+    lanes2Costmap_publisher = n.advertise<sensor_msgs::LaserScan>("/lanes", 1000);       //declared globally
 
 
     while(ros::ok())
@@ -165,6 +112,7 @@ int main(int argc, char **argv)
         Mat br_processed;
 
         if (true) {
+            cout << "Original" << endl;
             namedWindow("original",WINDOW_NORMAL);
             imshow("original", frame_orig);
         }
@@ -178,27 +126,32 @@ int main(int argc, char **argv)
         roi = frame_orig(roi_rect);
 
         if (true) {
+            cout << "ROI" << endl;
             namedWindow("roi",WINDOW_NORMAL);
             imshow("roi",roi); 
         }
 
         //processing done for various channels
 
-        roi = remove_obstacles(roi);
+        Mat homo = (Mat_<float>(3,3) << 0,0,0,0,0,0,0,0,0);
+        vector<Point> obs_by_lidar = lidar_plot(lidar_scan, homo, frame_orig.rows, frame_orig.cols);
+        roi = remove_obstacles(roi, obs_by_lidar);
 
         if (true) {
+            cout << "Obstacles removed" << endl;
             namedWindow("obstacles removed", WINDOW_NORMAL);
             imshow("obstacles removed", roi);
             waitKey(10);
         }
 
-        // cout<<"a"<<endl;
+        //cout<<"a"<<endl;
 
         Mat twob_r = twob_rChannelProcessing(roi);
 
         // cout<<"b"<<endl;
 
         if (true) {
+            cout << "2b-r done" << endl;
             namedWindow("2b-r", WINDOW_NORMAL);
             imshow("2b-r", twob_r);
             waitKey(10);
@@ -207,8 +160,9 @@ int main(int argc, char **argv)
         Mat twob_g = twob_gChannelProcessing(roi);
 
         if (true) {
-            namedWindow("2g", WINDOW_NORMAL);
-            imshow("2g", twob_g);
+            cout << "2b-g done" << endl;
+            namedWindow("2b-g", WINDOW_NORMAL);
+            imshow("2b-g", twob_g);
             waitKey(10);
         }
 
@@ -216,6 +170,7 @@ int main(int argc, char **argv)
         Mat b = blueChannelProcessing(roi);
 
         if (true) {
+            cout << "b done" << endl;
             namedWindow("b", WINDOW_NORMAL);
             imshow("b", b);
             waitKey(10);
@@ -226,23 +181,39 @@ int main(int argc, char **argv)
         bitwise_and(twob_r, twob_g, intersectionImages);
         bitwise_and(intersectionImages, b, intersectionImages);
 
-		medianBlur(intersectionImages, intersectionImages, 9);
-
-		int erosion_size = 6;
-		Mat element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
-		erode(intersectionImages, intersectionImages, element);
-		dilate(intersectionImages, intersectionImages, element);
-
+        cout << "intersection done" << endl;
 
         if (true) {
-            namedWindow("intersectionImages", WINDOW_NORMAL);
-            imshow("intersectionImages", intersectionImages);
+            cout << "intersection image" << endl;
+            namedWindow("intersectionImages_before", WINDOW_NORMAL);
+            imshow("intersectionImages_before", intersectionImages);
+            waitKey(10);
+        }
+
+        resize(intersectionImages, intersectionImages, Size(intersectionImages.cols/3, intersectionImages.rows/3));
+        medianBlur(intersectionImages, intersectionImages, 7);
+
+        int erosion_size = 2;
+        Mat element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
+        erode(intersectionImages, intersectionImages, element);
+
+        erosion_size = 3;
+        element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
+        dilate(intersectionImages, intersectionImages, element);
+
+        resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows));
+
+        if (true) {
+            cout << "intersection image cleaned" << endl;
+            namedWindow("intersectionImages_after", WINDOW_NORMAL);
+            imshow("intersectionImages_after", intersectionImages);
             waitKey(10);
         }
 
         Mat topView = top_view(intersectionImages);
 
         if (true) {
+            cout << "Topview found" << endl;
             namedWindow("top_view",WINDOW_NORMAL);	
             imshow("top_view",topView); 
             waitKey(10);
@@ -252,32 +223,33 @@ int main(int argc, char **argv)
         // img_to_ls(topView);
 
         // curve fitting
-        lanes = getRansacModel(topView,lanes);
+        lanes = getRansacModel(intersectionImages,lanes);
+        cout << "Ransac model found" << endl;
         Mat fitLanes = drawLanes(topView, lanes);
 
         if (true) {
+            cout << "Ransac lanes drawn" << endl;
             namedWindow("lanes fitting", WINDOW_NORMAL);
             imshow("lanes fitting", fitLanes);
             waitKey(10);
         }
 
         //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
-        /*
-        namedWindow("lidar_plot",0);
-        imshow("lidar_plot",lidar_plot); 
-        costmap=obstaclePlot;
-        namedWindow("lidar_costmap_obs",0);
-        imshow("lidar_costmap_obs",obstaclePlot); 
-        */
+        sensor_msgs::LaserScan laneScan;
+        laneScan = laneLaser(topView);
+        lanes2Costmap_publisher.publish(laneScan);
 
+        cout << "Lanes drawn on costmap" << endl;
         costmap = fitLanes.clone();
 
 
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
+        cout << "Waypoint found" << endl;
         costmap = plotWaypoint(costmap, waypoint_image);
 
         if (true) {
+            cout << "Waypoint plotted" << endl;
             namedWindow("waypoint", WINDOW_NORMAL);
             imshow("waypoint", costmap);
             waitKey(10);
@@ -298,6 +270,7 @@ int main(int argc, char **argv)
         waypoint_bot.pose.orientation.w = frame_qt.w();
 
         waypoint_publisher.publish(waypoint_bot);
+        cout << "Waypoint published\n----------------------------" << endl;
 
         waitKey(30);
         spinOnce();
