@@ -28,7 +28,7 @@
 
 #include <matrixTransformation.hpp>
 
-#define PPM 50
+#define PPM 93.889 
 
 using namespace std;
 using namespace cv;
@@ -133,7 +133,6 @@ int main(int argc, char **argv)
 
         //processing done for various channels
 
-        Mat homo = (Mat_<float>(3,3) << 0,0,0,0,0,0,0,0,0);
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, homo, frame_orig.rows, frame_orig.cols);
         roi = remove_obstacles(roi, obs_by_lidar);
 

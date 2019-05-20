@@ -13,7 +13,7 @@ using namespace cv;
 
 #define yshift 0.33   /// distance from first view point to lidar in metres
 #define angleshift 0.0524    /// angle between camera and lidar axis in radians
-#define pixelsPerMetre 137.457    
+#define pixelsPerMetre 93.889
 #define bins 1080  /// no of bins
 
 sensor_msgs::LaserScan laneLaser(Mat img)    /// Input binary image for conversion to laserscan

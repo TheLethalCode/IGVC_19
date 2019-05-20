@@ -211,7 +211,6 @@ Point centroid(float a,float b,float c,Mat img)
 //removes both the lanes if they intersect within the image frame
 Parabola removeIntersectingLanes(Mat img, Parabola param) {
 
-    cout << "
     float A = param.a1 - param.a2;
     float B = param.b1 - param.b2;
     float C = param.c1 - param.c2;
