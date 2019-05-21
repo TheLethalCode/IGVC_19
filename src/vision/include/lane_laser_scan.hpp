@@ -42,7 +42,7 @@ sensor_msgs::LaserScan laneLaser(Mat img)    /// Input binary image for conversi
     {
         for(int j = 0; j < col; ++j)
         {
-            if(img.at<uchar>(i, j) > 0)
+            if(img.at<Vec3b>(i, j)[0] > 0 || img.at<Vec3b>(i, j)[1] > 0 || img.at<Vec3b>(i, j)[2] > 0)
             {
                 float a = (j - col/2)/pixelsPerMetre;
                 float b = (row - i)/pixelsPerMetre + yshift;

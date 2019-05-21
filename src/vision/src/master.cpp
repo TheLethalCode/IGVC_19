@@ -19,7 +19,7 @@
 #include <lane_segmentation.hpp>
 #include <waypoint_generator.hpp>
 #include <lane_laser_scan.hpp>
-#include <lidar_plot.hpp>
+// #include <lidar_plot.hpp>
 
 
 #include <lidar_new.hpp>
@@ -141,14 +141,14 @@ int main(int argc, char **argv)
 
         //processing done for various channels
 
-        vector<Point> obs_by_lidar = lidar_plot(lidar_scan, homo, frame_orig.rows, frame_orig.cols);
-        roi = remove_obstacles(roi, obs_by_lidar);
+        // vector<Point> obs_by_lidar = lidar_plot(lidar_scan, homo, frame_orig.rows, frame_orig.cols);
+        // roi = remove_obstacles(roi, obs_by_lidar);
 
         if (false) {
             // //cout << "Obstacles removed" << endl;
             namedWindow("obstacles removed", WINDOW_NORMAL);
             imshow("obstacles removed", roi);
-            waitKey(10);
+            // waitKey(10);
         }
 
         ////cout<<"a"<<endl;
@@ -157,30 +157,30 @@ int main(int argc, char **argv)
 
         // //cout<<"b"<<endl;
 
-        if (true) {
+        if (false) {
             // //cout << "2b-r done" << endl;
             namedWindow("2b-r", WINDOW_NORMAL);
             imshow("2b-r", twob_r);
-            waitKey(10);
+            // waitKey(10);
         }
 
         Mat twob_g = twob_gChannelProcessing(roi);
 
-        if (true) {
+        if (false) {
             //cout << "2b-g done" << endl;
             namedWindow("2b-g", WINDOW_NORMAL);
             imshow("2b-g", twob_g);
-            waitKey(10);
+            // waitKey(10);
         }
 
         //processing for blue channel
         Mat b = blueChannelProcessing(roi);
 
-        if (true) {
+        if (false) {
             //cout << "b done" << endl;
             namedWindow("b", WINDOW_NORMAL);
             imshow("b", b);
-            waitKey(10);
+            // waitKey(10);
         }
 
         //intersection of all lane filters
@@ -188,15 +188,15 @@ int main(int argc, char **argv)
         bitwise_and(twob_r, twob_g, intersectionImages);
         bitwise_and(intersectionImages, b, intersectionImages);
 
-        intersectionImages = b.clone();
+        // intersectionImages = b.clone();
 
         //cout << "intersection done" << endl;
 
-        if (true) {
+        if (false) {
             //cout << "intersection image" << endl;
             namedWindow("intersectionImages_before", WINDOW_NORMAL);
             imshow("intersectionImages_before", intersectionImages);
-            waitKey(10);
+            // waitKey(10);
         }
 
         resize(intersectionImages, intersectionImages, Size(intersectionImages.cols/3, intersectionImages.rows/3));
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
         Mat element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
         erode(intersectionImages, intersectionImages, element);
 
-        erosion_size = 2;
+        erosion_size = 3;
         element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
         dilate(intersectionImages, intersectionImages, element);
 
@@ -219,10 +219,10 @@ int main(int argc, char **argv)
             // waitKey(10);
         }
 
-        Mat topView = top_view(intersectionImages);
+        Mat topView = intersectionImages.clone(); //top_view(intersectionImages);
         
 
-        if (true) {
+        if (false) {
             //cout << "Topview found" << endl;
             namedWindow("top_view",WINDOW_NORMAL);	
             imshow("top_view",topView); 
@@ -234,10 +234,10 @@ int main(int argc, char **argv)
 
 
         //float fraction = 1/4;
-        Rect topview_rect = Rect(0, 3*frame_orig.rows/4, frame_orig.cols/4, frame_orig.rows/4); //params in order: x, y, width, height (of ROI)
-        topView = topView(topview_rect);
+        // Rect topview_rect = Rect(0, 1*frame_orig.rows/3, frame_orig.cols, 2*frame_orig.rows/3); //params in order: x, y, width, height (of ROI)
+        // topView = topView(topview_rect);
 
-        resize(topView, topView, Size(frame_orig.cols, frame_orig.rows));
+        // resize(topView, topView, Size(frame_orig.cols, frame_orig.rows));
 
 
         if (true) {
@@ -261,9 +261,13 @@ int main(int argc, char **argv)
             // waitKey(10);
         }
 
+
+        Mat fitLanes_topview = fitLanes.clone();
+        fitLanes_topview = top_view(fitLanes_topview);
+
         //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
         sensor_msgs::LaserScan laneScan;
-        laneScan = laneLaser(topView);
+        laneScan = laneLaser(fitLanes_topview);
         lanes2Costmap_publisher.publish(laneScan);
 
         //cout << "Lanes drawn on costmap" << endl;
