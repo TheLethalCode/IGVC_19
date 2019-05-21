@@ -30,12 +30,14 @@ typedef struct Parabola
 //set threshold for white color
 #define wTh 50
 //define no of iteration, max dist squre of pt from our estimated Parabola
-#define iteration 50
-#define maxDist 5
+#define iteration 500
+
+#define maxDist 30
+
 //define threshold distance to remove white pixel near lane1
-#define removeDist 100
+#define removeDist 30
 //define minimum number of points to be lie on a lane
-#define minLaneInlier 500
+#define minLaneInlier 1500 // 2000 for night
 
 #define minPointsForRANSAC 500
 
@@ -146,7 +148,8 @@ Parabola ransac(vector<Point> ptArray, Parabola param)
 
 
     if(maxInlier > minLaneInlier)
-    {
+    {   
+        // cout << "maxInlier: " << maxInlier << endl;
         if(param.numModel == 0)
         {
             param.a1 = tempParam.a1;
@@ -209,7 +212,7 @@ Point centroid(float a,float b,float c,Mat img)
 
 
 //removes both the lanes if they intersect within the image frame
-Parabola removeIntersectingLanes(Mat img, Parabola param) {
+/*Parabola removeIntersectingLanes(Mat img, Parabola param) {
 
     float A = param.a1 - param.a2;
     float B = param.b1 - param.b2;
@@ -259,7 +262,7 @@ Parabola removeIntersectingLanes(Mat img, Parabola param) {
         }
     }
     return param;
-}
+}*/
 
 Parabola getRansacModel(Mat img,Parabola previous)
 {
@@ -311,7 +314,7 @@ Parabola getRansacModel(Mat img,Parabola previous)
         }
     }
 
-    param = removeIntersectingLanes(img, param);
+    // param = removeIntersectingLanes(img, param);
 
     float temp1,temp2,temp3;
     //get parameters of second Parabola form ransac function
@@ -322,6 +325,20 @@ Parabola getRansacModel(Mat img,Parabola previous)
 
 
     //Lane classification based on previous frames
+    
+    //resolved intersection issue
+    if(param.numModel==2)
+    {
+        for(int i=0;i<img.rows;i++)
+        {
+            int j1=param.a1*i*i+param.b1*i+param.c1;
+            int j2=param.a2*i*i+param.b2*i+param.c2;
+            if(j1>0&&j2>0&&j1<img.cols&&j2<img.cols&&fabs(j1-j2)<3)
+            {
+                return previous;
+            }
+        }   
+    }
 
     //if two lanes
     if(param.numModel==2) {

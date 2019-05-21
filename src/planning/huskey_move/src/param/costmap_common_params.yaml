@@ -17,10 +17,9 @@ obstacle_layer:
   track_unknown_space: true
   combination_method: 1
 
-  observation_sources: point_cloud
-    # laser: {data_type: LaserScan, clearing: true, marking: true, topic: scan, inf_is_valid: true}
-  point_cloud: {sensor_frame: laser, data_type: LaserScan, clearing: true, marking: true, topic: /scan, inf_is_valid: true}
-
+  observation_sources: point_cloud lanes_
+  point_cloud: {sensor_frame: laser, data_type: LaserScan, clearing: true, marking: true, topic: scan, inf_is_valid: true}
+  lanes_: {sensor_frame: laser, data_type: LaserScan, clearing: true, marking: true, topic: lanes, inf_is_valid: true}
 
 inflation_layer:
   enabled:              true
