@@ -30,7 +30,7 @@
     <remap from="odometry/filtered" to="odometry/filtered_map"/>
     <remap from="/imu/data" to="/imu" />
     <remap from="/gps/fix" to="/fix_c" />
-    <!-- <rosparam param="datum">[22.318275, 87.310299, 1.57 , map, base_link]</rosparam> -->
+    <!--<rosparam param="datum">[22.321009, 87.311178, 0.209, map, base_link]</rosparam>-->
   </node>
 
 </launch>
