@@ -30,12 +30,14 @@ typedef struct Parabola
 //set threshold for white color
 #define wTh 50
 //define no of iteration, max dist squre of pt from our estimated Parabola
-#define iteration 50
-#define maxDist 5
+#define iteration 500
+
+#define maxDist 30
+
 //define threshold distance to remove white pixel near lane1
-#define removeDist 100
+#define removeDist 30
 //define minimum number of points to be lie on a lane
-#define minLaneInlier 500
+#define minLaneInlier 1500 // 2000 for night
 
 #define minPointsForRANSAC 500
 
@@ -146,7 +148,8 @@ Parabola ransac(vector<Point> ptArray, Parabola param)
 
 
     if(maxInlier > minLaneInlier)
-    {
+    {   
+        // cout << "maxInlier: " << maxInlier << endl;
         if(param.numModel == 0)
         {
             param.a1 = tempParam.a1;

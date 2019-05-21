@@ -28,7 +28,7 @@
 
 #include <matrixTransformation.hpp>
 
-#define PPM 93.889 
+#define PPM 112.412 
 
 using namespace std;
 using namespace cv;
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 
         // //cout<<"b"<<endl;
 
-        if (false) {
+        if (true) {
             // //cout << "2b-r done" << endl;
             namedWindow("2b-r", WINDOW_NORMAL);
             imshow("2b-r", twob_r);
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 
         Mat twob_g = twob_gChannelProcessing(roi);
 
-        if (false) {
+        if (true) {
             //cout << "2b-g done" << endl;
             namedWindow("2b-g", WINDOW_NORMAL);
             imshow("2b-g", twob_g);
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
         //processing for blue channel
         Mat b = blueChannelProcessing(roi);
 
-        if (false) {
+        if (true) {
             //cout << "b done" << endl;
             namedWindow("b", WINDOW_NORMAL);
             imshow("b", b);
@@ -188,9 +188,11 @@ int main(int argc, char **argv)
         bitwise_and(twob_r, twob_g, intersectionImages);
         bitwise_and(intersectionImages, b, intersectionImages);
 
+        intersectionImages = b.clone();
+
         //cout << "intersection done" << endl;
 
-        if (false) {
+        if (true) {
             //cout << "intersection image" << endl;
             namedWindow("intersectionImages_before", WINDOW_NORMAL);
             imshow("intersectionImages_before", intersectionImages);
@@ -210,7 +212,7 @@ int main(int argc, char **argv)
 
         resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows));
 
-        if (false) {
+        if (true) {
             //cout << "intersection image cleaned" << endl;
             namedWindow("intersectionImages_after", WINDOW_NORMAL);
             imshow("intersectionImages_after", intersectionImages);
@@ -231,11 +233,11 @@ int main(int argc, char **argv)
         // img_to_ls(topView);
 
         // curve fitting
-        lanes = getRansacModel(intersectionImages,lanes);
+        lanes = getRansacModel(topView,lanes);
         //cout << "Ransac model found" << endl;
         Mat fitLanes = drawLanes(topView, lanes);
 
-        if (false) {
+        if (true) {
             //cout << "Ransac lanes drawn" << endl;
             namedWindow("lanes fitting", WINDOW_NORMAL);
             imshow("lanes fitting", fitLanes);
@@ -248,9 +250,23 @@ int main(int argc, char **argv)
         lanes2Costmap_publisher.publish(laneScan);
 
         //cout << "Lanes drawn on costmap" << endl;
+        /*
+        Mat inflated;
+        resize(obstaclePlot,inflated,fitLanes.size(),0,0);
+        costmap=inflated;
+        if (false) {
+            namedWindow("inflated_obs", WINDOW_NORMAL);
+            imshow("inflated_obs",costmap);
+            waitKey(10);
+        } 
+        
+        //plotting lanes on costmap
+        for(int i=0;i<fitLanes.rows;i++)
+            for(int j=0;j<fitLanes.cols;j++)
+                if(fitLanes.at<uchar>(i,j)==255)
+                    costmap.at<uchar>(i,j)=255;
+        */
         costmap = fitLanes.clone();
-
-
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
         //cout << "Waypoint found" << endl;
@@ -267,7 +283,7 @@ int main(int argc, char **argv)
         geometry_msgs::PoseStamped waypoint_bot;
 
         waypoint_bot.header.frame_id = "odom";
-        waypoint_bot.pose.position.x = waypoint_image.y/PPM;
+        waypoint_bot.pose.position.x = (costmap.rows - waypoint_image.y)/PPM;
         waypoint_bot.pose.position.y = (costmap.cols/2 - waypoint_image.x)/PPM;
         waypoint_bot.pose.position.z = 0;
         float theta = (waypoint_image.angle - CV_PI/2);
