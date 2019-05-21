@@ -6,6 +6,10 @@
 	<node pkg="tf" type="static_transform_publisher" name="bl_front_link" args="0 0 0 0 0 0 base_link front_axel_link 10" />
 	<node pkg="tf" type="static_transform_publisher" name="bl_rear_link" args="-0.7 0 0 0 0 0 base_link axle 10" />
 	<node pkg="tf" type="static_transform_publisher" name="bl_imu" args="0.085 -0.200 0.33 0 0 0 base_link imu 10" />
+  	<node pkg="sensor_status" type="error" name="sensor_status"/>
+
+    <arg name="rvizconfig" default="$(find tf_eklavya)/igvc.rviz" />
+  	<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
 
 </launch>
 
