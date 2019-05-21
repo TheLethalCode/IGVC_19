@@ -120,9 +120,9 @@ int main(int argc, char **argv)
         Mat topView2 = top_view(frame_orig);
 
         if(true){ 
-	        // namedWindow("top_view_orig",0);
-	        // imshow("top_view_orig",topView2);
-	    }
+	         namedWindow("top_view_orig", WINDOW_NORMAL);
+	         imshow("top_view_orig",topView2);
+        }
 
 
         /*
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
         Mat element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
         erode(intersectionImages, intersectionImages, element);
 
-        erosion_size = 3;
+        erosion_size = 2;
         element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
         dilate(intersectionImages, intersectionImages, element);
 
@@ -232,9 +232,26 @@ int main(int argc, char **argv)
         // Add top view preprocessed image to costmap
         // img_to_ls(topView);
 
+
+        //float fraction = 1/4;
+        Rect topview_rect = Rect(0, 3*frame_orig.rows/4, frame_orig.cols/4, frame_orig.rows/4); //params in order: x, y, width, height (of ROI)
+        topView = topView(topview_rect);
+
+        resize(topView, topView, Size(frame_orig.cols, frame_orig.rows));
+
+
+        if (true) {
+            //cout << "Roi of top view" << endl;
+            namedWindow("roi topview", WINDOW_NORMAL);
+            imshow("roi topview", topView);
+            // waitKey(10);
+        }
+
+
         // curve fitting
         lanes = getRansacModel(topView,lanes);
         //cout << "Ransac model found" << endl;
+
         Mat fitLanes = drawLanes(topView, lanes);
 
         if (true) {
@@ -266,6 +283,7 @@ int main(int argc, char **argv)
                 if(fitLanes.at<uchar>(i,j)==255)
                     costmap.at<uchar>(i,j)=255;
         */
+
         costmap = fitLanes.clone();
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
