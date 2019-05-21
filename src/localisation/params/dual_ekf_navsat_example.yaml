@@ -2,7 +2,7 @@
 
 ekf_se_odom:
   frequency: 30
-  sensor_timeout: 1000
+  sensor_timeout: 10
   two_d_mode: true
   transform_time_offset: 0.0
   transform_timeout: 0.0
@@ -75,7 +75,7 @@ ekf_se_odom:
 
 ekf_se_map:
   frequency: 30
-  sensor_timeout: 1000
+  sensor_timeout: 10
   two_d_mode: true
   transform_time_offset: 0.0
   transform_timeout: 0.0
@@ -162,7 +162,7 @@ navsat_transform:
   delay: 3.0
   magnetic_declination_radians: -0.1333333333 # For TSC center
   yaw_offset: 0.0  # IMU reads 0 facing magnetic north, not east
-  zero_altitude: false
+  zero_altitude: true
   broadcast_utm_transform: true
   publish_filtered_gps: true
   use_odometry_yaw: false

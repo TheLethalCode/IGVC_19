@@ -4,10 +4,10 @@ global_costmap:
   update_frequency: 1.0
   publish_frequency: 0.5
   static_map: true
-  width: 50
-  height: 50
-  origin_x: -25
-  origin_y: -25
+  width: 500
+  height: 500
+  origin_x: -50
+  origin_y: -50
 
 
   transform_tolerance: 10

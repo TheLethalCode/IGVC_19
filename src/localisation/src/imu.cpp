@@ -5,9 +5,11 @@
 #include <boost/assign.hpp>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <std_msgs/Float64.h>
 #define PI 3.14159265359
-ros::Publisher imu_pub;
+ros::Publisher imu_pub, imu_pub2;
 sensor_msgs::Imu imu;
+using namespace std_msgs;
 
 void imuCallback(const sensor_msgs::Imu msg)
 {
@@ -32,14 +34,17 @@ void imuCallback(const sensor_msgs::Imu msg)
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
     //convert to ENU
-    pitch = pitch+PI;
-    yaw=yaw+PI/2;
+    yaw=yaw+(PI/2.0);
     pitch=0.0;
     roll=0.0;
 
     tf::Quaternion q;
     q.setRPY(tfScalar(roll), tfScalar(pitch), tfScalar(yaw));
-
+    Float64 yawf;
+    yawf.data=yaw*(180.0/3.1415926);
+    
+    
+    imu_pub2.publish(yawf);
     geometry_msgs::Quaternion odom_quat;
     tf::quaternionTFToMsg(q, odom_quat);
     imu.orientation = odom_quat;
@@ -54,7 +59,9 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "imu_node");
 
     ros::NodeHandle n;
+    imu_pub2=n.advertise<Float64>("/imu/orientation",1);
     ros::Subscriber imu_sub=n.subscribe<sensor_msgs::Imu>("/vn_ins/imu",50,imuCallback);
+
     imu_pub = n.advertise<sensor_msgs::Imu>("/imu", 50);
     ros::spin();
     return 0;
