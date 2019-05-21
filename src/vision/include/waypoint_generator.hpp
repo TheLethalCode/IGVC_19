@@ -12,7 +12,7 @@
 using namespace std;
 using namespace cv;
 
-#define stepsize 200
+#define stepsize 500
 #define botlength 90
 #define botwidth 30
 
@@ -77,8 +77,45 @@ float GetAngle(Mat img,int min,int max,Parabola lanes)
     float a1 = lanes.a1, a2 = lanes.a2, b1 = lanes.b1, b2 = lanes.b2, c1 = lanes.c1, c2 = lanes.c2;
     float delYmin = stepsize*sin(min_rad);
     float delYmax = stepsize*sin(max_rad);
-    float angle1 = atan(1/(2*a1*delYmin + b1));
-    float angle2 = atan(1/(2*a2*delYmax + b2));
+    
+    //edited
+    float angle1=0;
+    float angle2=0;
+    //numModel contains the number of lanes
+    //if number of lanes is 2 then update both angles
+    if(lanes.numModel==2)
+    {   
+        for(int slope_up=stepsize;slope_up<img.rows;slope_up++)
+        {
+            angle1+=atan(1/(2*a1*(img.rows-slope_up)+b1));
+            angle2+=atan(1/(2*a2*(slope_up-slope_up)+b2));
+        }
+    }
+    // if number of lanes is 1 then update only one angle   
+    else if(lanes.numModel==1)
+    {
+        if(a1==0&&b1==0&&c1==0)
+            for(int slope_up=stepsize;slope_up<img.rows;slope_up++)
+            {
+                // angle1+=atan(1/(2*a1*(img.rows-slope_up)+b1));
+                angle2+=atan(1/(2*a2*(slope_up-slope_up)+b2));
+            }
+        if(a2==0&&b2==0&&c2==0)
+            for(int slope_up=stepsize;slope_up<img.rows;slope_up++)
+            {
+                 angle1+=atan(1/(2*a1*(img.rows-slope_up)+b1));
+                // angle2+=atan(1/(2*a2*(slope_up-slope_up)+b2));
+            }
+    }
+    angle1/=(img.rows-stepsize);
+    angle2/=(img.rows-stepsize);
+
+    //editing end
+
+    //removed_prev
+
+    // float angle1 = atan(1/(2*a1*delYmin + b1));
+    // float angle2 = atan(1/(2*a2*delYmax + b2));
 
     if (angle1 < 0) {
         angle1 += CV_PI;
@@ -91,21 +128,23 @@ float GetAngle(Mat img,int min,int max,Parabola lanes)
     //cout << "Left lane: " << angle1*180/CV_PI << endl;
     //cout << "Right lane: " << angle2*180/CV_PI << endl;
 
-    if(min!=0&&max!=180)
+    if(lanes.numModel==2)
     {
         float d = (angle1 + angle2)/2;
         return d;
     }
-    else if(min==0&&max!=180)
+    else if(lanes.numModel==1)
     {
-        float d = angle2;
+        float d;
+        if(angle1==0) d = angle2;
+        else d=angle1;
         return d;
     } 
-    else if(min!=0&&max==180)
-    {
-        float d = angle1;
-        return d;
-    }
+    // else if(min!=0&&max==180)
+    // {
+    //     float d = angle1;
+    //     return d;
+    // }
     else return CV_PI/2; 
 }
 

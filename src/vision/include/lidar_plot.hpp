@@ -11,7 +11,7 @@ using namespace cv;
 
 #define yshift 0.33
 #define angleshift 0.0524
-#define pixelsPerMetre 93.889
+#define pixelsPerMetre 112.412
 
 vector<Point> lidar_plot(sensor_msgs::LaserScan scan, Mat h_, int rows, int cols)
 {

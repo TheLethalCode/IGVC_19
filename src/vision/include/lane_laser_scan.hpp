@@ -13,7 +13,7 @@ using namespace cv;
 
 #define yshift 0.33   /// distance from first view point to lidar in metres
 #define angleshift 0.0524    /// angle between camera and lidar axis in radians
-#define pixelsPerMetre 93.889
+#define pixelsPerMetre 112.412
 #define bins 1080  /// no of bins
 
 sensor_msgs::LaserScan laneLaser(Mat img)    /// Input binary image for conversion to laserscan
@@ -28,7 +28,10 @@ sensor_msgs::LaserScan laneLaser(Mat img)    /// Input binary image for conversi
     scan.range_max = inf; 
 
     scan.header.frame_id = "laser";
-
+    scan.header.stamp = ros::Time::now();
+    scan.scan_time = 0.025;
+    scan.time_increment = (float)(scan.scan_time)/bins;
+    
     for (int i=0;i<bins;i++)
     {
         scan.ranges.push_back(scan.range_max);
