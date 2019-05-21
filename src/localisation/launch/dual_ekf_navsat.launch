@@ -27,17 +27,9 @@
   </node>
 
   <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
-    <remap from="odometry/filtered" to="odometry/filtered_map1"/>
+    <remap from="odometry/filtered" to="odometry/filtered_map"/>
     <remap from="/imu/data" to="/imu" />
     <remap from="/gps/fix" to="/fix_c" />
-    <!-- <rosparam param="datum">[22.318275, 87.310299, 1.57 , map, base_link]</rosparam> -->
-  </node>
-
-
-  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
-    <remap from="odometry/filtered" to="odometry/filtered_map2"/>
-    <remap from="/imu/data" to="/imu" />
-    <remap from="/gps/fix" to="/android/fix" />
     <!-- <rosparam param="datum">[22.318275, 87.310299, 1.57 , map, base_link]</rosparam> -->
   </node>
 
