@@ -88,11 +88,27 @@ float get_c(Point p, float a, float b)
     return(x - (a*y*y) - (b*y));
 }
 
+float min(float a, float b)
+{
+	if(a<=b)
+		return a;
+	return b;
+}
+
 //calculation of error b/w actual and estimated y
 float get_delX(Point p, float a, float b, float c)
 {
     float predictedX = (a*(p.y*p.y) + b*p.y + c);
-    return abs(p.x - predictedX);
+    float errorx=abs(p.x - predictedX);
+    float y1,y2,errory;
+    y1 = (-b - sqrt((b*b)-(4*a*(c-p.x))))/(2*a);
+    y2 = (-b + sqrt((b*b)-(4*a*(c-p.x))))/(2*a);
+    if(y1 < 0)
+    	y1=10000000;
+    if(y2 < 0)
+    	y2=10000000;
+    errory = min(abs(y1 - p.y),abs(y2 - p.y));
+    return(min(errorx,errory));
 }
 
 //choose Parabola parameters of best fit curve basis on randomly selected 3 points
@@ -343,7 +359,7 @@ Parabola getRansacModel(Mat img,Parabola previous)
     if(param.numModel==2) {
 
         //set left and right according to x value at middle row
-        if(param.a1*img.rows/2*img.rows/2+param.b1*img.rows/2+param.c1>param.a2*img.rows/2*img.rows/2+param.b2*img.rows/2+param.c2)
+        if(param.a1*(img.rows/2)*(img.rows/2)+param.b1*(img.rows/2)+param.c1>param.a2*(img.rows/2)*(img.rows/2)+param.b2*(img.rows/2)+param.c2)
         {
             param = swap(param);
         }
