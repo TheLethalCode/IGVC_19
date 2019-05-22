@@ -348,7 +348,7 @@ int main(int argc, char **argv)
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
         geometry_msgs::PoseStamped waypoint_bot;
 
-        waypoint_bot.header.frame_id = "odom";
+        waypoint_bot.header.frame_id = "base_link";
         waypoint_bot.header.stamp = ros::Time::now();
         waypoint_bot.pose.position.x = (costmap.rows - waypoint_image.y)/PPM;
         waypoint_bot.pose.position.y = (costmap.cols/2 - waypoint_image.x)/PPM;
