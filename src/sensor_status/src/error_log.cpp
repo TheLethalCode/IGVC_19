@@ -99,8 +99,8 @@ void vis_sensor_status(ros::Publisher vis_ss, bool blid, bool bgps, bool bcam, b
 	ans.pose.orientation.w =  1.0;     
 	ans.type = visualization_msgs::Marker::POINTS;  
 	ans.id = 0;   
-	ans.scale.x = 0.1;     
-	ans.scale.y = 0.1; 
+	ans.scale.x = 0.3;     
+	ans.scale.y = 0.3; 
 	ans.color.a = 1.0; 
  	
  	bool b=blid && bgps && bcam && bimu;

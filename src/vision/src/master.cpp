@@ -33,7 +33,7 @@
 #include <matrixTransformation.hpp>
 
 
-float pixelsPerMetre;
+// float pixelsPerMetre;
 
 
 using namespace std;
