@@ -90,7 +90,7 @@ float GetAngle(Mat img,int min,int max,Parabola lanes)
         for(int slope_up=stepsize;slope_up<img.rows;slope_up++)
         {
             angle1+=atan(1/(2*a1*(img.rows-slope_up)+b1));
-            angle2+=atan(1/(2*a2*(slope_up-slope_up)+b2));
+            angle2+=atan(1/(2*a2*(img.rows-slope_up)+b2));
         }
     }
     // if number of lanes is 1 then update only one angle   
@@ -100,7 +100,7 @@ float GetAngle(Mat img,int min,int max,Parabola lanes)
             for(int slope_up=stepsize;slope_up<img.rows;slope_up++)
             {
                 // angle1+=atan(1/(2*a1*(img.rows-slope_up)+b1));
-                angle2+=atan(1/(2*a2*(slope_up-slope_up)+b2));
+                angle2+=atan(1/(2*a2*(img.rows-slope_up)+b2));
             }
         if(a2==0&&b2==0&&c2==0)
             for(int slope_up=stepsize;slope_up<img.rows;slope_up++)
@@ -188,11 +188,11 @@ int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola lanes)
 
     for(theta=0;theta<(*theta_max-*theta_min)/2;theta++)
     {
+        i=img.rows-stepsize*sin((theta_mid+theta)*CV_PI/180);
+        j=img.cols/2-stepsize*cos((theta_mid+theta)*CV_PI/180);
         if (!isValid(img, i, j)) {
             continue;
         }
-        i=img.rows-stepsize*sin((theta_mid+theta)*CV_PI/180);
-        j=img.cols/2-stepsize*cos((theta_mid+theta)*CV_PI/180);
         if(img.at<Vec3b>(i,j)[0]==0&&img.at<Vec3b>(i,j)[1]==0&&img.at<Vec3b>(i,j)[2]==0)
         {
             if(isValid_point(img,i,j))
