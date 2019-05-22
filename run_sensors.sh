@@ -1,14 +1,3 @@
-# sudo chmod 777 /dev/tty*
-# printf "sudo chmod done"
-# off = $0
-
-# # cam=$(rosparam get cam)
-# # imu=$(rosparam get imu)
-# # lid=$(rosparam get lid)
-# # done
-# terminator --command bash\ imu.sh\ &  
-# # PID = $!
-# # printf "%d" PID
 trap cleanup 2
 port=0
 off=0
@@ -53,10 +42,6 @@ sleep 1
 roslaunch hokuyo_node hokuyo_test.launch &
 sleep 1
 
-# cam=$(rosparam get cam)
-# imu=$(rosparam get imu)
-# lid=$(rosparam get lid)
-
 while [ 1 ]
 do
     if [ $imu == "0" ]
@@ -92,8 +77,8 @@ do
     #   sleep 2
     # fi
         
-    imu=$(rosparam get imu)
     # cam=$(rosparam get cam)
+    imu=$(rosparam get imu)
     lid=$(rosparam get lid)
     if [ $lid == "1" ] && [ $imu == "1" ] 
     then
