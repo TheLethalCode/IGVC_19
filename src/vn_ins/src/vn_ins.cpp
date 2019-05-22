@@ -33,7 +33,7 @@ bool vectorNav::disconnect() {
     vn200_disconnect(&vn200);
     return true;
 }
-
+int a;
 bool vectorNav::fetch() {
     node_handle->getParam("imu_only", imu_only);
 
@@ -52,7 +52,12 @@ bool vectorNav::fetch() {
         VnVector3 magnetic, acceleration, angularRate, ypr, latitudeLognitudeAltitude, nedVelocity, positionAccuracy;
 
         vn200_getGpsSolution(&vn200, &gpsTime, &gpsWeek, &gpsFix, &numberOfSatellites, &latitudeLognitudeAltitude, &nedVelocity, &positionAccuracy, &speedAccuracy, &timeAccuracy);
-        ROS_INFO("Triangulating from %d satellites", numberOfSatellites);
+        a++;
+        if(a>40)
+        {
+            ROS_INFO("Triangulating from %d satellites", numberOfSatellites);
+            a=0;
+        }
         /*vn200_getInsState(&vn200, &vn200_attitude, &latitudeLognitudeAltitude, &nedVelocity, &vn200_acceleration, &vn200_angular_rate);
 
         yaw = vn200_attitude.yaw;
