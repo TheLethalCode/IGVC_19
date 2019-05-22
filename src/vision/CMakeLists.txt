@@ -13,9 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   cv_bridge
   image_transport
+  dynamic_reconfigure
 )
 
-
+generate_dynamic_reconfigure_options(
+  cfg/Tutorials.cfg
+  #...
+)
 catkin_package(
   #INCLUDE_DIRS include
   #LIBRARIES vision
@@ -38,7 +42,7 @@ target_link_libraries(master
 )
 
 add_dependencies(master ${catkin_EXPORTED_TARGETS})
-
+add_dependencies(master ${PROJECT_NAME}_gencfg)
 #add_executable(test_vision src/test.cpp)
 #
 #target_link_libraries(test_vision

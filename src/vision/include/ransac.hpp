@@ -27,18 +27,18 @@ typedef struct Parabola
 }Parabola;
 
 
-//set threshold for white color
-#define wTh 50
-//define no of iteration, max dist squre of pt from our estimated Parabola
-#define iteration 1000
+// //set threshold for white color
+// #define wTh 50
+// //define no of iteration, max dist squre of pt from our estimated Parabola
+// #define iteration 1000
 
-#define maxDist 300
-//define threshold distance to remove white pixel near lane1
-#define removeDist 300
-//define minimum number of points to be lie on a lane
-#define minLaneInlier 3000 // 2000 for night
+// #define maxDist 300
+// //define threshold distance to remove white pixel near lane1
+// #define removeDist 300
+// //define minimum number of points to be lie on a lane
+// #define minLaneInlier 3000 // 2000 for night
 
-#define minPointsForRANSAC 500
+// #define minPointsForRANSAC 500
 
 Parabola swap(Parabola param) {
 

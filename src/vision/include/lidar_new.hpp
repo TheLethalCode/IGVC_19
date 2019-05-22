@@ -9,7 +9,7 @@
 #include "sensor_msgs/LaserScan.h"
 #include "sensor_msgs/Image.h"
 
-#define obstacleWidth 30
+/*#define obstacleWidth 30*/
 using namespace ros;
 using namespace std;
 using namespace cv;

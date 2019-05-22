@@ -6,7 +6,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/core/core.hpp"
 
-#define obstacleWidth 30
+/*#define obstacleWidth 30*/
 
 using namespace ros;
 using namespace std;

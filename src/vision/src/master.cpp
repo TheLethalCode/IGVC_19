@@ -10,11 +10,15 @@
 #include <sensor_msgs/Image.h>
 #include "geometry_msgs/PoseStamped.h"
 #include <tf/transform_datatypes.h>
+#include <dynamic_reconfigure/server.h>
+#include <vision/TutorialsConfig.h>
 
 /*
    Custom header files
  */
 
+
+#include <params.hpp>
 #include <ransac.hpp>
 #include <lane_segmentation.hpp>
 #include <waypoint_generator.hpp>
@@ -28,11 +32,43 @@
 
 #include <matrixTransformation.hpp>
 
-#define PPM 112.412 
+
+float PPM;
+
 
 using namespace std;
 using namespace cv;
 using namespace ros;
+
+
+void callback(node::TutorialsConfig &config, uint32_t level)
+{
+    is_debug=config.is_debug;
+    is_run=config.is_run;
+    is_threshold=config.is_threshold;
+    wTh=config.wTh;
+    iteration=config.iteration;
+    maxDist=config.maxDist;
+    removeDist=config.removeDist;
+    minLaneInlier=config.minLaneInlier;
+    minPointsForRANSAC=config.minPointsForRANSAC;
+
+    pixelsPerMetre=config.pixelsPerMetre;
+    PPM=config.pixelsPerMetre;
+    stepsize=config.stepsize;
+
+    botlength=config.botlength;
+    botwidth=config.botwidth;
+
+    yshift=config.yshift;
+    angleshift=config.angleshift;
+    bins=config.bins;
+
+    obstacleWidth=config.obstacleWidth;
+    cout<<PPM<<endl;
+    
+
+}
 
 Publisher lanes2Costmap_publisher;
 Mat frame_orig;
@@ -65,9 +101,16 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
 
 }
 
+
 int main(int argc, char **argv)
 { 
+   init(argc,argv,"master");
+    dynamic_reconfigure::Server<node::TutorialsConfig> server;
+    dynamic_reconfigure::Server<node::TutorialsConfig>::CallbackType f;
 
+    f = boost::bind(&callback, _1, _2);
+    server.setCallback(f);
+   
     Mat obstacle;
     Mat costmap; 
     Parabola lanes;		//For Ransac implementation(it is a structure)
@@ -91,15 +134,16 @@ int main(int argc, char **argv)
 
     while(ros::ok())
     {
+
         //if image has not been retrieved, skip
-        if(!is_image_retrieved)
+        if(!is_image_retrieved || true)
         {
             spinOnce();
             continue;
         }
 
         //if lidar has not been retrieved, skip
-        if(!is_laserscan_retrieved && !use_video)
+        if((!is_laserscan_retrieved && !use_video) || true)
         {
             spinOnce();
             continue;
@@ -322,5 +366,7 @@ int main(int argc, char **argv)
         waitKey(1);
         spinOnce();
     }
+
     return 0;
 }
+

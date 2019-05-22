@@ -12,11 +12,11 @@
 using namespace std;
 using namespace cv;
 
-#define pixelsPerMeter 112.412
+/*#define pixelsPerMeter 112.412
 #define stepsize 3.5*pixelsPerMeter
 
 #define botlength 90
-#define botwidth 30
+#define botwidth 30*/
 
 struct NavPoint{
     int x;

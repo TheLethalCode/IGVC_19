@@ -11,10 +11,13 @@ using namespace ros;
 using namespace std;
 using namespace cv;
 
-#define yshift 0.33   /// distance from first view point to lidar in metres
-#define angleshift 0.0524    /// angle between camera and lidar axis in radians
+// #define yshift 0.33   /// distance from first view point to lidar in metres
+/*#define angleshift 0.0524    /// angle between camera and lidar axis in radians
 #define pixelsPerMetre 112.412
-#define bins 1080  /// no of bins
+#define bins 1080  /// no of bins*/
+
+
+
 
 sensor_msgs::LaserScan laneLaser(Mat img)    /// Input binary image for conversion to laserscan
 {
