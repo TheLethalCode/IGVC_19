@@ -33,7 +33,7 @@
 #include <matrixTransformation.hpp>
 
 
-float PPM;
+float pixelsPerMetre;
 
 
 using namespace std;
@@ -43,31 +43,28 @@ using namespace ros;
 
 void callback(node::TutorialsConfig &config, uint32_t level)
 {
-    is_debug=config.is_debug;
-    is_run=config.is_run;
-    is_threshold=config.is_threshold;
-    wTh=config.wTh;
-    iteration=config.iteration;
-    maxDist=config.maxDist;
-    removeDist=config.removeDist;
-    minLaneInlier=config.minLaneInlier;
-    minPointsForRANSAC=config.minPointsForRANSAC;
+    is_debug = config.is_debug;
+    is_run = config.is_run;
+    is_threshold = config.is_threshold;
 
-    pixelsPerMetre=config.pixelsPerMetre;
-    PPM=config.pixelsPerMetre;
-    stepsize=config.stepsize;
+    wTh = config.wTh;
+    iteration = config.iteration;
+    maxDist = config.maxDist;
+    removeDist = config.removeDist;
+    minLaneInlier = config.minLaneInlier;
+    minPointsForRANSAC = config.minPointsForRANSAC;
 
-    botlength=config.botlength;
-    botwidth=config.botwidth;
+    pixelsPerMetre = config.pixelsPerMetre;
+    stepsize = config.stepsize;
 
-    yshift=config.yshift;
-    angleshift=config.angleshift;
-    bins=config.bins;
+    botlength = config.botlength;
+    botwidth = config.botwidth;
 
-    obstacleWidth=config.obstacleWidth;
-    cout<<PPM<<endl;
-    
+    yshift = config.yshift;
+    angleshift = config.angleshift;
+    bins = config.bins;
 
+    obstacleWidth = config.obstacleWidth;
 }
 
 Publisher lanes2Costmap_publisher;
@@ -104,10 +101,12 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
 
 int main(int argc, char **argv)
 { 
-   init(argc,argv,"master");
+    NodeHandle n;
+
+    init(argc,argv,"master");
+
     dynamic_reconfigure::Server<node::TutorialsConfig> server;
     dynamic_reconfigure::Server<node::TutorialsConfig>::CallbackType f;
-
     f = boost::bind(&callback, _1, _2);
     server.setCallback(f);
    
@@ -116,11 +115,8 @@ int main(int argc, char **argv)
     Parabola lanes;		//For Ransac implementation(it is a structure)
     lanes.a1=0;lanes.b1=0;lanes.c1=0;lanes.a2=0;lanes.b2=0;lanes.c2=0;
 
-    init(argc,argv,"master");
-    NodeHandle n;
     image_transport::ImageTransport it(n);
-
-    Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",1000);
+    Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
 
     Subscriber lidar_subsriber;
     if (use_video == false) {
@@ -350,8 +346,8 @@ int main(int argc, char **argv)
 
         waypoint_bot.header.frame_id = "base_link";
         waypoint_bot.header.stamp = ros::Time::now();
-        waypoint_bot.pose.position.x = (costmap.rows - waypoint_image.y)/PPM;
-        waypoint_bot.pose.position.y = (costmap.cols/2 - waypoint_image.x)/PPM;
+        waypoint_bot.pose.position.x = (costmap.rows - waypoint_image.y)/pixelsPerMetre;
+        waypoint_bot.pose.position.y = (costmap.cols/2 - waypoint_image.x)/pixelsPerMetre;
         waypoint_bot.pose.position.z = 0;
         float theta = (waypoint_image.angle - CV_PI/2);
 
