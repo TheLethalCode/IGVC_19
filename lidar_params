@@ -1,0 +1,35 @@
+!!python/object/new:dynamic_reconfigure.encoding.Config
+dictitems:
+  allow_unsafe_settings: false
+  calibrate_time: false
+  cluster: 1
+  frame_id: laser
+  groups: !!python/object/new:dynamic_reconfigure.encoding.Config
+    dictitems:
+      allow_unsafe_settings: false
+      calibrate_time: false
+      cluster: 1
+      frame_id: laser
+      groups: !!python/object/new:dynamic_reconfigure.encoding.Config
+        state: []
+      id: 0
+      intensity: false
+      max_ang: 1.5
+      min_ang: -1.5
+      name: Default
+      parameters: !!python/object/new:dynamic_reconfigure.encoding.Config
+        state: []
+      parent: 0
+      port: /dev/ttyACM0
+      skip: 0
+      state: true
+      time_offset: 0.0
+      type: ''
+    state: []
+  intensity: false
+  max_ang: 1.5
+  min_ang: -1.5
+  port: /dev/ttyACM0
+  skip: 0
+  time_offset: 0.0
+state: []
