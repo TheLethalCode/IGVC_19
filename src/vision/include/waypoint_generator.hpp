@@ -7,7 +7,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <math.h>
-// #include "ransac.hpp"
+#include "ransac.hpp"
 
 using namespace std;
 using namespace cv;
@@ -18,6 +18,16 @@ using namespace cv;
 #define botlength 90
 #define botwidth 30*/
 
+typedef struct Parabola2 {
+    int numModel = 0;
+    float a1 = 0.0;
+    float c1 = 0.0;
+    float a2 = 0.0;
+    float b2 = 0.0;
+    float b1 = 0.0;
+    float c2 = 0.0;
+} Parabola2;
+
 struct NavPoint{
     int x;
     int y;
@@ -25,12 +35,12 @@ struct NavPoint{
 };
 
 //returns 1 if input point closer to left lane, 2 if close to right lane, 0 if none
-int checklane(int y,int x,Mat img,Parabola lanes)
+int checklane(int y,int x,Mat img,Parabola2 lanes)
 {
-    if(fabs(lanes.a1*y*y+lanes.b1*y+lanes.c1-x)<30) {
+    if(fabs(lanes.a1*y*y+lanes.b1*y+lanes.c1-x)< (30/4)) {
         return 1;
     }
-    if(fabs(lanes.a2*y*y+lanes.b2*y+lanes.c2-x)<30) {
+    if(fabs(lanes.a2*y*y+lanes.b2*y+lanes.c2-x)< (30/4)) {
         return 2;
     }
     return 0;
@@ -71,7 +81,7 @@ int isValid_point(Mat img, int i, int j)
 }
 
 //returns the angle assuming  0 (along -ve x axis) to PI, clockwise positive
-float GetAngle(Mat img,int min,int max,Parabola lanes)
+float GetAngle(Mat img,int min,int max,Parabola2 lanes)
 {
     float min_rad=min*CV_PI/180; //varies from 0 to PI taking -ve x axis as 0 angle, positive clockwise
     float max_rad=max*CV_PI/180;
@@ -151,7 +161,7 @@ float GetAngle(Mat img,int min,int max,Parabola lanes)
 }
 
 //calculates the angle bounds of the left and right lanes
-void GetAngleBounds (Mat img,int *min,int *max,Parabola lanes)
+void GetAngleBounds (Mat img,int *min,int *max,Parabola2 lanes)
 {
     int theta,theta_min=0,theta_max=180;
     float theta_rad;	
@@ -176,7 +186,7 @@ void GetAngleBounds (Mat img,int *min,int *max,Parabola lanes)
 }
 
 //gets the angle assuming the bottom center as origin taking clockwise angle as positive, -ve x axis as 0 degree line
-int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola lanes)
+int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
 {
     int i,j;
     int theta;
@@ -220,8 +230,22 @@ int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola lanes)
     return theta_head;
 }
 
-NavPoint find_waypoint(Parabola lanes,Mat img)
+NavPoint find_waypoint(Parabola lan,Mat img)
 {
+    Parabola2 lanes;
+    float a1 = lan.a1;
+    float a2 = lan.a2;
+    float c1 = lan.c1;
+    float c2 = lan.c2;
+
+    lanes.a1 = 1/a1;
+    lanes.b1 = (-2*img.rows)/a1;
+    lanes.c1 = (img.rows*img.rows + a1*c1)/a1;
+
+    lanes.a2 = 1/a2;
+    lanes.b2 = (-2*img.rows)/a2;
+    lanes.c2 = (img.rows*img.rows + a2*c2)/a2;
+
     NavPoint way_point;
     int theta_min,theta_max;
 

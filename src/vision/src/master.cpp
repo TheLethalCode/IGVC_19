@@ -17,12 +17,13 @@
    Custom header files
  */
 
+
 #include <params.hpp>
 #include <matrixTransformation.hpp>
 #include <lidar_new.hpp>
+#include <waypoint_generator.hpp>
 #include <ransac.hpp>
 #include <lane_segmentation.hpp>
-#include <waypoint_generator.hpp>
 #include <lane_laser_scan.hpp>
 // #include <lidar_plot.hpp>
 
@@ -47,6 +48,7 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     removeDist = config.removeDist;
     minLaneInlier = config.minLaneInlier;
     minPointsForRANSAC = config.minPointsForRANSAC;
+    common_inliers_thresh = config.common_inliers_thresh;
 
     pixelsPerMetre = config.pixelsPerMetre;
     stepsize = config.stepsize;
@@ -120,7 +122,10 @@ int main(int argc, char **argv)
     }
 
     Parabola lanes;		//For Ransac implementation(it is a structure)
-    lanes.a1=0;lanes.b1=0;lanes.c1=0;lanes.a2=0;lanes.b2=0;lanes.c2=0;
+    lanes.a1=0;
+    lanes.c1=0;
+    lanes.a2=0;
+    lanes.c2=0;
 
     while(ros::ok())
     {
@@ -175,6 +180,7 @@ int main(int argc, char **argv)
         }
          */
 
+        cout << "hello1" << endl;
         Mat twob_r = twob_rChannelProcessing(roi);
 
 
@@ -185,6 +191,8 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
+        cout << "hello2" << endl;
+
         Mat twob_g = twob_gChannelProcessing(roi);
 
         if (is_debug || is_threshold) {
@@ -193,6 +201,8 @@ int main(int argc, char **argv)
             imshow("2b-g", twob_g);
             waitKey(10);
         }
+
+        cout << "hello3" << endl;
 
         //processing for blue channel
         Mat b = blueChannelProcessing(roi);
@@ -218,18 +228,18 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-        resize(intersectionImages, intersectionImages, Size(intersectionImages.cols/3, intersectionImages.rows/3));
-        medianBlur(intersectionImages, intersectionImages, medianBlurkernel);
+        // resize(intersectionImages, intersectionImages, Size(intersectionImages.cols/3, intersectionImages.rows/3));
+        // medianBlur(intersectionImages, intersectionImages, medianBlurkernel);
 
-        int erosion_size = 2;
-        Mat element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
-        erode(intersectionImages, intersectionImages, element);
+        // int erosion_size = 2;
+        // Mat element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
+        // erode(intersectionImages, intersectionImages, element);
 
-        erosion_size = 3;
-        element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
-        dilate(intersectionImages, intersectionImages, element);
+        // erosion_size = 3;
+        // element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
+        // dilate(intersectionImages, intersectionImages, element);
 
-        resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows)); 
+        // resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows)); 
         //intersectionImages is binary front view, ready to fit lanes
 
         namedWindow("intersectionImages_after", WINDOW_NORMAL);
@@ -256,9 +266,14 @@ int main(int argc, char **argv)
         }
          */
 
+
+        cout << "hello4" << endl;
+
         // curve fitting
         lanes = getRansacModel(intersectionImages, lanes);
         //cout << "Ransac model found" << endl;
+
+        cout << "hello5" << endl;
 
         Mat fitLanes = drawLanes(intersectionImages, lanes);
 
@@ -268,6 +283,8 @@ int main(int argc, char **argv)
             imshow("lanes fitting", fitLanes);
             waitKey(10);
         }
+
+        cout << "hello6" << endl;
 
 
         Mat fitLanes_topview = fitLanes.clone();
@@ -300,6 +317,7 @@ int main(int argc, char **argv)
         costmap.at<uchar>(i,j)=255;
          */
 
+        /*
         Mat costmap = fitLanes_topview.clone();
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
@@ -330,6 +348,7 @@ int main(int argc, char **argv)
 
         waypoint_publisher.publish(waypoint_bot);
         //cout << "Waypoint published\n----------------------------" << endl;
+        */
 
         if (is_debug == false || is_threshold) {
             destroyWindow("frame_topview");
