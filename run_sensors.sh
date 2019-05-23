@@ -31,20 +31,27 @@ switch_port () {
     port=$((port+1))
 }
 
+if [ $(rosparam get imu) == "0" ]
+then
+  printf "in" 
+fi
+
 sudo chmod 777 /dev/tty*
 rosrun sensor_status error &
 
 roslaunch vn_ins module.launch &
 sleep 1
-# sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576 
-# roslaunch pointgrey_camera_driver camera.launch &
-# sleep 1
+
+sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576 
+roslaunch pointgrey_camera_driver camera.launch &
+sleep 1
+
 roslaunch hokuyo_node hokuyo_test.launch &
 sleep 1
 
 while [ 1 ]
 do
-    if [ $imu == "0" ]
+    if [ $(rosparam get imu) == "0" ]
     then
         printf "Killing IMU !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         killall -9 vn_ins
@@ -54,7 +61,8 @@ do
         roslaunch vn_ins module.launch &
         sleep 1
     fi
-    if [ $lid == "0" ]
+    
+    if [ $(rosparam get lid) == "0" ]
     then
       printf "Killing Lidar !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
       killall -9 hokuyo_node
@@ -66,21 +74,22 @@ do
       sleep 1
     fi
 
-    # if [ $cam == "0" ]
-    # then
-    #   printf "Killing camera !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-    #   killall -9 nodelet
-    #   sleep 1
-    #   sudo chmod 777 /dev/tty*
-    #   printf "Relaunching camera -----------------------------------------------------------------------"
-    #   roslaunch pointgrey_camera_driver camera.launch &
-    #   sleep 2
-    # fi
+    if [ $(rosparam get cam) == "0" ]
+    then
+      printf "Killing camera !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+      killall -9 nodelet
+      sleep 1
+      sudo chmod 777 /dev/tty*
+      printf "Relaunching camera -----------------------------------------------------------------------"
+      sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576
+      roslaunch pointgrey_camera_driver camera.launch &
+      sleep 2
+    fi
         
     # cam=$(rosparam get cam)
-    imu=$(rosparam get imu)
-    lid=$(rosparam get lid)
-    if [ $lid == "1" ] && [ $imu == "1" ] 
+    # imu=$(rosparam get imu)
+    # lid=$(rosparam get lid)
+    if [ $(rosparam get imu) == "1" ] && [ $(rosparam get cam) == "1" ] && [ $(rosparam get lid) == "1" ] 
     then
         printf "ALL connected\n"
     fi

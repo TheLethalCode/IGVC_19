@@ -12,7 +12,7 @@
 #include <tf/transform_listener.h>
 using namespace std;
 
-#define sensor_timeout 0.11 //second
+#define sensor_timeout 1 //second
 
 bool flid, fimu, fcam, fgps;
 bool blid=0, bimu=0, bcam=0, bgps=0;
@@ -30,7 +30,7 @@ void lidarcb(sensor_msgs::LaserScan scan)
 void imucb(sensor_msgs::Imu mimu)
 {
     gettimeofday(&timu2, 0);
-	if(mimu.linear_acceleration.z < -1) fimu=1;
+	if(mimu.linear_acceleration.z < -5) fimu=1;
 	else fimu=0;
 }
 
@@ -54,39 +54,6 @@ double diff_s(timeval t1, timeval t2)
     return a/1000.0;
 }
 
-visualization_msgs::Marker create_vis_m(string frame, bool b)
-{
-	visualization_msgs::Marker ans;
-	ans.header.frame_id = frame;     
-	ans.header.stamp = ros::Time::now();  
-	ans.ns = "points_and_lines";     
-	ans.action =visualization_msgs::Marker::ADD;     
-	ans.pose.orientation.w =  1.0;     
-	ans.type = visualization_msgs::Marker::POINTS;  
-	ans.id = 0;   
-	ans.scale.x = 0.2;     
-	ans.scale.y = 0.2; 
-	ans.color.a = 1.0; 
- 
-	if(b==1)
-	{
-		ans.color.r = 0.0;       
-	  	ans.color.g = 1.0;   
-	}  
-	else
-	{
-		ans.color.r = 1.0;       
-	  	ans.color.g = 0.0;   
-	}
-
-	geometry_msgs::Point circ;
-	circ.x=  0;
-	circ.y=  0;
-	circ.z=0;
-	ans.points.push_back(circ);
-	return ans;
-}
-
 
 void vis_sensor_status(ros::Publisher vis_ss, bool blid, bool bgps, bool bcam, bool bimu)
 {
@@ -99,8 +66,8 @@ void vis_sensor_status(ros::Publisher vis_ss, bool blid, bool bgps, bool bcam, b
 	ans.pose.orientation.w =  1.0;     
 	ans.type = visualization_msgs::Marker::POINTS;  
 	ans.id = 0;   
-	ans.scale.x = 0.3;     
-	ans.scale.y = 0.3; 
+	ans.scale.x = 0.4;     
+	ans.scale.y = 0.4; 
 	ans.color.a = 1.0; 
  	
  	bool b=blid && bgps && bcam && bimu;
@@ -124,52 +91,61 @@ void vis_sensor_status(ros::Publisher vis_ss, bool blid, bool bgps, bool bcam, b
 	sleep(0.01);
 
 
-	cout<< "Marker Out" << endl;
 	return;
 }
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "error_log");
-	ros::NodeHandle n;
-	ros::Subscriber lidar = n.subscribe<sensor_msgs::LaserScan>("scan", 1, &lidarcb);
-	ros::Subscriber imu = n.subscribe<sensor_msgs::Imu>("/vn_ins/imu", 1, &imucb);
-	ros::Subscriber gps = n.subscribe<sensor_msgs::NavSatFix>("/vn_ins/fix", 1, &gpscb);
-	ros::Subscriber camera = n.subscribe<sensor_msgs::Image>("/camera/image_color", 1, &cameracb);
+	ros::NodeHandle nh;
+	ros::Subscriber lidar = nh.subscribe<sensor_msgs::LaserScan>("scan", 1, &lidarcb);
+	ros::Subscriber imu = nh.subscribe<sensor_msgs::Imu>("/vn_ins/imu", 1, &imucb);
+	ros::Subscriber gps = nh.subscribe<sensor_msgs::NavSatFix>("/vn_ins/fix", 1, &gpscb);
+	ros::Subscriber camera = nh.subscribe<sensor_msgs::Image>("/camera/image_color", 1, &cameracb);
 
-	ros::Publisher ss = n.advertise<sensor_status::sensor_status>("/sensor_status", 1);
-    ros::Publisher vis_ss= n.advertise<visualization_msgs::Marker>("/sensors", 10); 
+	ros::Publisher ss = nh.advertise<sensor_status::sensor_status>("/sensor_status", 1);
+    ros::Publisher vis_ss= nh.advertise<visualization_msgs::Marker>("/sensors", 10); 
 	
-	timeval t1, t0;
+	timeval t1, t0; 
 	gettimeofday(&t1, 0);
-
+	ros::Rate loop_rate(20);
 	while(ros::ok())
 	{
 		gettimeofday(&t0, 0);
-		if(diff_s(t0,tlid2)< sensor_timeout && flid==1) blid = true;
-		else blid=false;
 
-		if(diff_s(t0,timu2)< sensor_timeout && fimu==1) bimu =true;
-		else bimu=false;
+			if(diff_s(t0,tlid2)< sensor_timeout && flid==1) blid =true;
+			else blid=false;
+			
+			if(diff_s(t0,timu2)< sensor_timeout && fimu==1) bimu =true;
+			else bimu=false;
+			
+			if(diff_s(t0,tcam2)< sensor_timeout && fcam==1) bcam =true;
+			else bcam=false;
 
-		if(diff_s(t0,tcam2)< sensor_timeout && fcam==1) bcam =true;
-		else bcam=false;
+			if(diff_s(t0,tgps2)< sensor_timeout && fgps==1) bgps =true;
+			else bgps=false;
+			
+			if(blid==1) nh.setParam("lid", 1);
+			else nh.setParam("lid", 0);
 
-		if(diff_s(t0,tgps2)< sensor_timeout&& fgps==1) bgps =true;
-		else bgps=false;
+			if(bcam==1) nh.setParam("cam", 1);
+			else nh.setParam("cam", 0);
 
-		sensor_status::sensor_status ans;
-		ans.Lidar= blid;
-		ans.GPS= bgps;
-		ans.Camera= bcam;
-		ans.Imu= bimu;
-
+			if(bimu==1) nh.setParam("imu", 1);
+			else nh.setParam("imu", 0);
 		if(diff_s(t0,t1)>1)
 		{
+
+			sensor_status::sensor_status ans;
+			ans.Lidar= blid;
+			ans.GPS= bgps;
+			ans.Camera= bcam;
+			ans.Imu= bimu;
 			vis_sensor_status(vis_ss, blid, bgps, bcam, bimu);
 			ss.publish(ans);
 			gettimeofday(&t1, 0);
 		} 
 		ros::spinOnce();
+		loop_rate.sleep();
 	}
 	return 0;
 }
