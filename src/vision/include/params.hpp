@@ -32,5 +32,11 @@ float bins; // no of bins
 
 int obstacleWidth;
 
+int medianBlur; //kernel size of medianBlur for cleaning intersectionImages
+
+int neighbourhoodSize; //neighbourhood size or block size for adaptive thresholding
+
+int constantSubtracted; //constant subtracted during adaptive thresholding
+
 #endif
 

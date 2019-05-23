@@ -17,7 +17,6 @@
    Custom header files
  */
 
-
 #include <params.hpp>
 #include <ransac.hpp>
 #include <lane_segmentation.hpp>
@@ -31,10 +30,6 @@
 //#include <obstacles_prev.hpp>
 
 #include <matrixTransformation.hpp>
-
-
-float pixelsPerMetre;
-
 
 using namespace std;
 using namespace cv;
@@ -65,6 +60,9 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     bins = config.bins;
 
     obstacleWidth = config.obstacleWidth;
+
+    medianBlur = config.medianBlur;
+    neighbourhoodSize = config.neighbourhoodSize;
 }
 
 Publisher lanes2Costmap_publisher;
@@ -95,38 +93,33 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
         ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
     }
     frame_orig = (cv_ptr->image);
+    resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4);
 
 }
 
 
 int main(int argc, char **argv)
 { 
-    NodeHandle n;
-
     init(argc,argv,"master");
+    NodeHandle n;
+    image_transport::ImageTransport it(n);
 
     dynamic_reconfigure::Server<node::TutorialsConfig> server;
     dynamic_reconfigure::Server<node::TutorialsConfig>::CallbackType f;
     f = boost::bind(&callback, _1, _2);
     server.setCallback(f);
    
-    Mat obstacle;
-    Mat costmap; 
-    Parabola lanes;		//For Ransac implementation(it is a structure)
-    lanes.a1=0;lanes.b1=0;lanes.c1=0;lanes.a2=0;lanes.b2=0;lanes.c2=0;
-
-    image_transport::ImageTransport it(n);
-    Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
-
     Subscriber lidar_subsriber;
+    image_transport::Subscriber sub = it.subscribe("/camera/image_color", 2, imageCb);
+    Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
+    lanes2Costmap_publisher = n.advertise<sensor_msgs::LaserScan>("/lanes", 2);       //declared globally
+
     if (use_video == false) {
         lidar_subsriber = n.subscribe("/scan", 1, &laserscan);
     }
 
-    image_transport::Subscriber sub = it.subscribe("/camera/image_color", 1, imageCb);
-
-    lanes2Costmap_publisher = n.advertise<sensor_msgs::LaserScan>("/lanes", 1000);       //declared globally
-
+    Parabola lanes;		//For Ransac implementation(it is a structure)
+    lanes.a1=0;lanes.b1=0;lanes.c1=0;lanes.a2=0;lanes.b2=0;lanes.c2=0;
 
     while(ros::ok())
     {
@@ -145,11 +138,6 @@ int main(int argc, char **argv)
             continue;
         }
 
-        Mat roi;
-        Mat img1,img2,img3;     //temporary images for using filters
-        Mat b_processed;
-        Mat bg_processed;
-        Mat br_processed;
 
         if (true) {
             // //cout << "Original" << endl;
@@ -157,23 +145,18 @@ int main(int argc, char **argv)
             imshow("original", frame_orig);
         }
 
-        Mat topView2 = top_view(frame_orig);
+        Mat frame_topview = top_view(frame_orig);
 
-        if(true){ 
-	         namedWindow("top_view_orig", WINDOW_NORMAL);
-	         imshow("top_view_orig",topView2);
+        if(is_debug || is_threshold){ 
+	         namedWindow("frame_topview", WINDOW_NORMAL);
+	         imshow("frame_topview",frame_topview);
         }
-
-
-        /*
-           ROI
-         */
 
         //extraction of region of interest
         Rect roi_rect = Rect(0, 0, frame_orig.cols, frame_orig.rows); //params in order: x, y, height, width (of ROI)
-        roi = frame_orig(roi_rect);
+        Mat roi = frame_orig(roi_rect);
 
-        if (false) {
+        if (is_debug || is_threshold) {
             // //cout << "ROI" << endl;
             namedWindow("roi",WINDOW_NORMAL);
             imshow("roi",roi); 
@@ -184,12 +167,14 @@ int main(int argc, char **argv)
         // vector<Point> obs_by_lidar = lidar_plot(lidar_scan, homo, frame_orig.rows, frame_orig.cols);
         // roi = remove_obstacles(roi, obs_by_lidar);
 
+        /*
         if (false) {
             // //cout << "Obstacles removed" << endl;
             namedWindow("obstacles removed", WINDOW_NORMAL);
             imshow("obstacles removed", roi);
             // waitKey(10);
         }
+        */
 
         ////cout<<"a"<<endl;
 
@@ -197,7 +182,7 @@ int main(int argc, char **argv)
 
         // //cout<<"b"<<endl;
 
-        if (false) {
+        if (is_debug || is_threshold) {
             // //cout << "2b-r done" << endl;
             namedWindow("2b-r", WINDOW_NORMAL);
             imshow("2b-r", twob_r);
@@ -206,7 +191,7 @@ int main(int argc, char **argv)
 
         Mat twob_g = twob_gChannelProcessing(roi);
 
-        if (false) {
+        if (is_debug || is_threshold) {
             //cout << "2b-g done" << endl;
             namedWindow("2b-g", WINDOW_NORMAL);
             imshow("2b-g", twob_g);
@@ -216,7 +201,7 @@ int main(int argc, char **argv)
         //processing for blue channel
         Mat b = blueChannelProcessing(roi);
 
-        if (false) {
+        if (is_debug || is_threshold) {
             //cout << "b done" << endl;
             namedWindow("b", WINDOW_NORMAL);
             imshow("b", b);
@@ -228,11 +213,9 @@ int main(int argc, char **argv)
         bitwise_and(twob_r, twob_g, intersectionImages);
         bitwise_and(intersectionImages, b, intersectionImages);
 
-        // intersectionImages = b.clone();
-
         //cout << "intersection done" << endl;
 
-        if (false) {
+        if (is_debug || is_threshold) {
             //cout << "intersection image" << endl;
             namedWindow("intersectionImages_before", WINDOW_NORMAL);
             imshow("intersectionImages_before", intersectionImages);
@@ -250,22 +233,13 @@ int main(int argc, char **argv)
         element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
         dilate(intersectionImages, intersectionImages, element);
 
-        resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows));
+        resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows)); 
+        //intersectionImages is binary front view, ready to fit lanes
 
-        if (true) {
+        if (is_debug || is_threshold || is_run) {
             //cout << "intersection image cleaned" << endl;
             namedWindow("intersectionImages_after", WINDOW_NORMAL);
             imshow("intersectionImages_after", intersectionImages);
-            // waitKey(10);
-        }
-
-        Mat topView = intersectionImages.clone(); //top_view(intersectionImages);
-        
-
-        if (false) {
-            //cout << "Topview found" << endl;
-            namedWindow("top_view",WINDOW_NORMAL);	
-            imshow("top_view",topView); 
             // waitKey(10);
         }
 
@@ -280,21 +254,22 @@ int main(int argc, char **argv)
         // resize(topView, topView, Size(frame_orig.cols, frame_orig.rows));
 
 
+        /*
         if (true) {
             //cout << "Roi of top view" << endl;
             namedWindow("roi topview", WINDOW_NORMAL);
             imshow("roi topview", topView);
             // waitKey(10);
         }
-
+        */
 
         // curve fitting
-        lanes = getRansacModel(topView,lanes);
+        lanes = getRansacModel(intersectionImages, lanes);
         //cout << "Ransac model found" << endl;
 
-        Mat fitLanes = drawLanes(topView, lanes);
+        Mat fitLanes = drawLanes(intersectionImages, lanes);
 
-        if (true) {
+        if (is_debug || is_run) {
             //cout << "Ransac lanes drawn" << endl;
             namedWindow("lanes fitting", WINDOW_NORMAL);
             imshow("lanes fitting", fitLanes);
@@ -304,6 +279,12 @@ int main(int argc, char **argv)
 
         Mat fitLanes_topview = fitLanes.clone();
         fitLanes_topview = top_view(fitLanes_topview);
+
+        if (is_debug || is_threshold || is_run) {
+            namedWindow("lanes topview costmap", WINDOW_NORMAL);
+            imshow("lanes topview costmap", fitLanes_topview);
+            //waitKey(10);
+        }
 
         //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
         sensor_msgs::LaserScan laneScan;
@@ -328,13 +309,15 @@ int main(int argc, char **argv)
                     costmap.at<uchar>(i,j)=255;
         */
 
-        costmap = fitLanes.clone();
+        Mat costmap = fitLanes_topview.clone();
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
         //cout << "Waypoint found" << endl;
         costmap = plotWaypoint(costmap, waypoint_image);
 
-        if (true) {
+        //the Mat costmap is now a top view of lanes with the waypoint drawn on it
+
+        if (is_run || is_debug || is_threshold) {
             //cout << "Waypoint plotted" << endl;
             namedWindow("waypoint", WINDOW_NORMAL);
             imshow("waypoint", costmap);
@@ -360,9 +343,13 @@ int main(int argc, char **argv)
         waypoint_publisher.publish(waypoint_bot);
         //cout << "Waypoint published\n----------------------------" << endl;
 
-        waitKey(1);
+        waitKey(300);
+        is_image_retrieved = false;
+        is_laserscan_retrieved = false;
         spinOnce();
     }
+
+    destroyAllWindow();
 
     return 0;
 }

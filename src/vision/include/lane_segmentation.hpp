@@ -18,7 +18,7 @@ Mat blueChannelProcessing(Mat img)
     Mat b = channels[0];
 
     GaussianBlur(b , b, Size( 9, 9), 0, 0);
-    adaptiveThreshold(b,b,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,51,-30);
+    adaptiveThreshold(b,b,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,neighbourhoodSize, constantSubtracted);
     medianBlur(b,b,17);
 
     return b;
@@ -31,7 +31,7 @@ Mat twob_gChannelProcessing(Mat img)
     split(img, channels);
     Mat fin = 2*channels[0] - channels[1];
 
-    adaptiveThreshold(fin, fin,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,51,-30);
+    adaptiveThreshold(fin, fin,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, neighbourhoodSize, constantSubtracted);
     medianBlur(fin, fin,13);
 
     return fin;
@@ -62,7 +62,7 @@ Mat twob_rChannelProcessing(Mat img)
 
     bitwise_and(fin, mask, result);
 
-    adaptiveThreshold(result,result,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,71,-50);
+    adaptiveThreshold(result,result,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,neighbourhoodSize, constantSubtracted);
     medianBlur(result, result, 11);
     return result;
 

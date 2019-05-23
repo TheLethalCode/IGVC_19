@@ -420,9 +420,9 @@ Parabola getRansacModel(Mat img,Parabola previous)
     return param;
 }
 
-Mat drawLanes(Mat topView, Parabola lanes) {
+Mat drawLanes(Mat img, Parabola lanes) {
 
-    Mat fitLanes(topView.rows, topView.cols, CV_8UC3, Scalar(0,0,0));
+    Mat fitLanes(img.rows, img.cols, CV_8UC3, Scalar(0,0,0));
 
     vector<Point2f> left_lane, right_lane;
     float a1 = lanes.a1, a2 = lanes.a2, b1 = lanes.b1, b2 = lanes.b2, c1 = lanes.c1, c2 = lanes.c2;
