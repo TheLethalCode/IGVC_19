@@ -30,7 +30,6 @@
 #include <White_obstacle_updated.hpp>
 //#include <obstacles_prev.hpp>
 
-
 using namespace std;
 using namespace cv;
 using namespace ros;
@@ -94,13 +93,14 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
     }
     frame_orig = (cv_ptr->image);
 
-    resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4));
 
-    }
+    resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4));
+}	
 
 
 int main(int argc, char **argv)
 { 
+
     init(argc,argv,"master");
     NodeHandle n;
     image_transport::ImageTransport it(n);
@@ -175,11 +175,8 @@ int main(int argc, char **argv)
         }
          */
 
-        ////cout<<"a"<<endl;
-
         Mat twob_r = twob_rChannelProcessing(roi);
 
-        // //cout<<"b"<<endl;
 
         if (is_debug || is_threshold) {
             // //cout << "2b-r done" << endl;

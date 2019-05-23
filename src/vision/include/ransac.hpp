@@ -285,6 +285,7 @@ Parabola getRansacModel(Mat img,Parabola previous)
     vector<Point> ptArray1;
     Point A,B,C;
 
+/*
     for(int i = 0; i < img.rows; ++i)
     {
         for(int j = 0; j < img.cols; ++j)
@@ -299,6 +300,33 @@ Parabola getRansacModel(Mat img,Parabola previous)
             }
         }
     }
+*/
+
+    
+    if (grid_white_thresh >= grid_size*grid_size) {
+        grid_white_thresh = grid_size*grid_size -1;
+    }
+
+    // cout << "grid_size: " << grid_size << endl;
+    // cout << "grid_white_thresh: " << grid_white_thresh << endl;
+    for(int i=((grid_size-1)/2);i<img.rows-(grid_size-1)/2;i+=grid_size)
+    {
+        for(int j=((grid_size-1)/2);j<img.cols-(grid_size-1)/2;j+=grid_size)
+        {
+            int count=0;
+            for(int x=(j-(grid_size-1)/2);x<=(j+(grid_size-1)/2);x++)
+            {
+                for(int y=(i-(grid_size-1)/2);y<=(i+(grid_size-1)/2);y++)
+                {
+                    if(img.at<uchar>(y,x)>wTh)
+                        count++;
+                }
+            }
+            if(count>grid_white_thresh)
+                ptArray1.push_back(Point(j,i));
+        }
+    }
+    // cout << "ptArray1: " << ptArray1.size() << endl;
 
     //declare a Parabola vaiable to store the Parabola
     Parabola param;
