@@ -39,6 +39,7 @@ Mat twob_gChannelProcessing(Mat img)
 
 Mat twob_rChannelProcessing(Mat img)
 {
+    // cout << "1" << endl;
     Mat channels[3];
     split(img, channels);
     Mat fin = 2*channels[0] - channels[2];
@@ -62,8 +63,13 @@ Mat twob_rChannelProcessing(Mat img)
 
     bitwise_and(fin, mask, result);
 
+    // cout << "2" << endl;
     adaptiveThreshold(result,result,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,neighbourhoodSize, constantSubtracted);
+    // cout << "3" << endl;
+    // medianBlurkernel = 3;
+    // cout << "mbk: " << medianBlurkernel << endl;
     medianBlur(result, result, medianBlurkernel);
+    // cout << "4" << endl;
     return result;
 
 }
