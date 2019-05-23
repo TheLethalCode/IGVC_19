@@ -61,7 +61,7 @@ void callback(node::TutorialsConfig &config, uint32_t level)
 
     obstacleWidth = config.obstacleWidth;
 
-    medianBlur = config.medianBlur;
+    medianBlurkernel = config.medianBlurkernel;
     neighbourhoodSize = config.neighbourhoodSize;
 }
 
@@ -93,7 +93,7 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
         ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
     }
     frame_orig = (cv_ptr->image);
-    resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4);
+    resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4));
 
 }
 
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
         }
 
         resize(intersectionImages, intersectionImages, Size(intersectionImages.cols/3, intersectionImages.rows/3));
-        medianBlur(intersectionImages, intersectionImages, 7);
+        medianBlur(intersectionImages, intersectionImages, medianBlurkernel);
 
         int erosion_size = 2;
         Mat element = getStructuringElement(MORPH_CROSS,Size(2 * erosion_size + 1, 2 * erosion_size + 1),Point(-1, -1));
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
         spinOnce();
     }
 
-    destroyAllWindow();
+    destroyAllWindows();
 
     return 0;
 }

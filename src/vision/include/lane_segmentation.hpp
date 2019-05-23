@@ -19,7 +19,7 @@ Mat blueChannelProcessing(Mat img)
 
     GaussianBlur(b , b, Size( 9, 9), 0, 0);
     adaptiveThreshold(b,b,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,neighbourhoodSize, constantSubtracted);
-    medianBlur(b,b,17);
+    medianBlur(b,b,medianBlurkernel);
 
     return b;
 
@@ -32,7 +32,7 @@ Mat twob_gChannelProcessing(Mat img)
     Mat fin = 2*channels[0] - channels[1];
 
     adaptiveThreshold(fin, fin,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY, neighbourhoodSize, constantSubtracted);
-    medianBlur(fin, fin,13);
+    medianBlur(fin, fin,medianBlurkernel);
 
     return fin;
 }
@@ -63,7 +63,7 @@ Mat twob_rChannelProcessing(Mat img)
     bitwise_and(fin, mask, result);
 
     adaptiveThreshold(result,result,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,neighbourhoodSize, constantSubtracted);
-    medianBlur(result, result, 11);
+    medianBlur(result, result, medianBlurkernel);
     return result;
 
 }
