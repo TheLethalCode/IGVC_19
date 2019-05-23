@@ -18,6 +18,8 @@
  */
 
 #include <params.hpp>
+#include <matrixTransformation.hpp>
+#include <lidar_new.hpp>
 #include <ransac.hpp>
 #include <lane_segmentation.hpp>
 #include <waypoint_generator.hpp>
@@ -25,11 +27,9 @@
 // #include <lidar_plot.hpp>
 
 
-#include <lidar_new.hpp>
 #include <White_obstacle_updated.hpp>
 //#include <obstacles_prev.hpp>
 
-#include <matrixTransformation.hpp>
 
 using namespace std;
 using namespace cv;
@@ -93,9 +93,10 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
         ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
     }
     frame_orig = (cv_ptr->image);
+
     resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4));
 
-}
+    }
 
 
 int main(int argc, char **argv)
@@ -108,7 +109,7 @@ int main(int argc, char **argv)
     dynamic_reconfigure::Server<node::TutorialsConfig>::CallbackType f;
     f = boost::bind(&callback, _1, _2);
     server.setCallback(f);
-   
+
     Subscriber lidar_subsriber;
     image_transport::Subscriber sub = it.subscribe("/camera/image_color", 2, imageCb);
     Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
@@ -124,32 +125,30 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
 
+
         //if image has not been retrieved, skip
-        if(!is_image_retrieved || true)
+        if(!is_image_retrieved)
         {
             spinOnce();
             continue;
         }
 
         //if lidar has not been retrieved, skip
-        if((!is_laserscan_retrieved && !use_video) || true)
+        if(!is_laserscan_retrieved && !use_video)
         {
             spinOnce();
             continue;
         }
 
-
-        if (true) {
-            // //cout << "Original" << endl;
-            namedWindow("original",WINDOW_NORMAL);
-            imshow("original", frame_orig);
-        }
+        namedWindow("original",WINDOW_NORMAL);
+        imshow("original", frame_orig);
 
         Mat frame_topview = top_view(frame_orig);
 
-        if(is_debug || is_threshold){ 
-	         namedWindow("frame_topview", WINDOW_NORMAL);
-	         imshow("frame_topview",frame_topview);
+        if(is_debug == true || is_threshold == true){ 
+            namedWindow("frame_topview", WINDOW_NORMAL);
+            imshow("frame_topview",frame_topview);
+            waitKey(10);
         }
 
         //extraction of region of interest
@@ -157,9 +156,9 @@ int main(int argc, char **argv)
         Mat roi = frame_orig(roi_rect);
 
         if (is_debug || is_threshold) {
-            // //cout << "ROI" << endl;
             namedWindow("roi",WINDOW_NORMAL);
             imshow("roi",roi); 
+            waitKey(10);
         }
 
         //processing done for various channels
@@ -168,13 +167,13 @@ int main(int argc, char **argv)
         // roi = remove_obstacles(roi, obs_by_lidar);
 
         /*
-        if (false) {
-            // //cout << "Obstacles removed" << endl;
-            namedWindow("obstacles removed", WINDOW_NORMAL);
-            imshow("obstacles removed", roi);
-            // waitKey(10);
+           if (false) {
+        // //cout << "Obstacles removed" << endl;
+        namedWindow("obstacles removed", WINDOW_NORMAL);
+        imshow("obstacles removed", roi);
+        // waitKey(10);
         }
-        */
+         */
 
         ////cout<<"a"<<endl;
 
@@ -186,7 +185,7 @@ int main(int argc, char **argv)
             // //cout << "2b-r done" << endl;
             namedWindow("2b-r", WINDOW_NORMAL);
             imshow("2b-r", twob_r);
-            // waitKey(10);
+            waitKey(10);
         }
 
         Mat twob_g = twob_gChannelProcessing(roi);
@@ -195,7 +194,7 @@ int main(int argc, char **argv)
             //cout << "2b-g done" << endl;
             namedWindow("2b-g", WINDOW_NORMAL);
             imshow("2b-g", twob_g);
-            // waitKey(10);
+            waitKey(10);
         }
 
         //processing for blue channel
@@ -205,7 +204,7 @@ int main(int argc, char **argv)
             //cout << "b done" << endl;
             namedWindow("b", WINDOW_NORMAL);
             imshow("b", b);
-            // waitKey(10);
+            waitKey(10);
         }
 
         //intersection of all lane filters
@@ -219,7 +218,7 @@ int main(int argc, char **argv)
             //cout << "intersection image" << endl;
             namedWindow("intersectionImages_before", WINDOW_NORMAL);
             imshow("intersectionImages_before", intersectionImages);
-            // waitKey(10);
+            waitKey(10);
         }
 
         resize(intersectionImages, intersectionImages, Size(intersectionImages.cols/3, intersectionImages.rows/3));
@@ -236,12 +235,9 @@ int main(int argc, char **argv)
         resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows)); 
         //intersectionImages is binary front view, ready to fit lanes
 
-        if (is_debug || is_threshold || is_run) {
-            //cout << "intersection image cleaned" << endl;
-            namedWindow("intersectionImages_after", WINDOW_NORMAL);
-            imshow("intersectionImages_after", intersectionImages);
-            // waitKey(10);
-        }
+        namedWindow("intersectionImages_after", WINDOW_NORMAL);
+        imshow("intersectionImages_after", intersectionImages);
+        waitKey(10);
 
         // Add top view preprocessed image to costmap
         // img_to_ls(topView);
@@ -255,13 +251,13 @@ int main(int argc, char **argv)
 
 
         /*
-        if (true) {
-            //cout << "Roi of top view" << endl;
-            namedWindow("roi topview", WINDOW_NORMAL);
-            imshow("roi topview", topView);
-            // waitKey(10);
+           if (true) {
+        //cout << "Roi of top view" << endl;
+        namedWindow("roi topview", WINDOW_NORMAL);
+        imshow("roi topview", topView);
+        // waitKey(10);
         }
-        */
+         */
 
         // curve fitting
         lanes = getRansacModel(intersectionImages, lanes);
@@ -273,18 +269,16 @@ int main(int argc, char **argv)
             //cout << "Ransac lanes drawn" << endl;
             namedWindow("lanes fitting", WINDOW_NORMAL);
             imshow("lanes fitting", fitLanes);
-            // waitKey(10);
+            waitKey(10);
         }
 
 
         Mat fitLanes_topview = fitLanes.clone();
         fitLanes_topview = top_view(fitLanes_topview);
 
-        if (is_debug || is_threshold || is_run) {
-            namedWindow("lanes topview costmap", WINDOW_NORMAL);
-            imshow("lanes topview costmap", fitLanes_topview);
-            //waitKey(10);
-        }
+        namedWindow("lanes topview costmap", WINDOW_NORMAL);
+        imshow("lanes topview costmap", fitLanes_topview);
+        waitKey(10);
 
         //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
         sensor_msgs::LaserScan laneScan;
@@ -293,21 +287,21 @@ int main(int argc, char **argv)
 
         //cout << "Lanes drawn on costmap" << endl;
         /*
-        Mat inflated;
-        resize(obstaclePlot,inflated,fitLanes.size(),0,0);
-        costmap=inflated;
-        if (false) {
-            namedWindow("inflated_obs", WINDOW_NORMAL);
-            imshow("inflated_obs",costmap);
-            waitKey(10);
-        } 
-        
+           Mat inflated;
+           resize(obstaclePlot,inflated,fitLanes.size(),0,0);
+           costmap=inflated;
+           if (false) {
+           namedWindow("inflated_obs", WINDOW_NORMAL);
+           imshow("inflated_obs",costmap);
+           waitKey(10);
+           } 
+
         //plotting lanes on costmap
         for(int i=0;i<fitLanes.rows;i++)
-            for(int j=0;j<fitLanes.cols;j++)
-                if(fitLanes.at<uchar>(i,j)==255)
-                    costmap.at<uchar>(i,j)=255;
-        */
+        for(int j=0;j<fitLanes.cols;j++)
+        if(fitLanes.at<uchar>(i,j)==255)
+        costmap.at<uchar>(i,j)=255;
+         */
 
         Mat costmap = fitLanes_topview.clone();
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
@@ -317,12 +311,9 @@ int main(int argc, char **argv)
 
         //the Mat costmap is now a top view of lanes with the waypoint drawn on it
 
-        if (is_run || is_debug || is_threshold) {
-            //cout << "Waypoint plotted" << endl;
-            namedWindow("waypoint", WINDOW_NORMAL);
-            imshow("waypoint", costmap);
-            // waitKey(10);
-        }
+        namedWindow("waypoint", WINDOW_NORMAL);
+        imshow("waypoint", costmap);
+        waitKey(10);
 
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
         geometry_msgs::PoseStamped waypoint_bot;
@@ -343,7 +334,16 @@ int main(int argc, char **argv)
         waypoint_publisher.publish(waypoint_bot);
         //cout << "Waypoint published\n----------------------------" << endl;
 
-        waitKey(300);
+        if (is_debug == false || is_threshold) {
+            destroyWindow("frame_topview");
+            destroyWindow("roi");
+            destroyWindow("2b-r");
+            destroyWindow("2b-g");
+            destroyWindow("b");
+            destroyWindow("intersectionImages_before");
+        }
+
+        waitKey(100);
         is_image_retrieved = false;
         is_laserscan_retrieved = false;
         spinOnce();
