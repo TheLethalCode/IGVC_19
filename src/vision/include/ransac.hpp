@@ -122,7 +122,7 @@ bool isIntersectingLanes(Mat img, Parabola param) {
 
     float y_2 = a1*(x-c1);
 
-    if (y_2 > 0 &&  sqrt(y_2) < img.rows && x > 0 && x < img.cols) return true;
+    if (y_2 > 0 &&  sqrt(y_2) < ((img.rows*5)/8.0) && x > 0 && x < img.cols) return true;
     return false;
 
 }
@@ -158,7 +158,8 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img)
         if(p2 == p1) p2 = random()%ptArray.size();
         
         if(p3 == p1 || p3 == p2) p3 = random()%ptArray.size();
-
+        // TODO : p4 condition
+        
         Point ran_points[4];
         ran_points[0] = ptArray[p1];
         ran_points[1] = ptArray[p2];
@@ -181,21 +182,25 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img)
             }   
         }
 
-       Parabola tempParam; 
-       tempParam.a1 = get_a(ran_points[0], ran_points[1]);
+        Parabola tempParam; 
+        tempParam.a1 = get_a(ran_points[0], ran_points[1]);
         tempParam.c1 = get_c(ran_points[0], ran_points[1]);
 
-       tempParam.a2 = get_a(ran_points[2], ran_points[3]); 
-       tempParam.c2 = get_c(ran_points[2], ran_points[3]);
+        tempParam.a2 = get_a(ran_points[2], ran_points[3]); 
+        tempParam.c2 = get_c(ran_points[2], ran_points[3]);
 
+        // intersection only in top 3/8 part of the image taken
         if( isIntersectingLanes(img, tempParam)) {
             continue;
         }
 
-        //similar concavity of lanes
-        if (tempParam.a1 * tempParam.a2 < 0) {
-            continue;
-        }
+        
+        // # rejected because many cases exist in which a better curve will get fit in opposite concavity
+        // # and this will lead to bad lane fitting 
+        // //similar concavity of lanes
+        // if (tempParam.a1 * tempParam.a2 < 0) {
+        //     continue;
+        // }
 
         int score_common = 0;/*, comm_count = 0;*/
         int score_l_loc = 0, score_r_loc = 0;
