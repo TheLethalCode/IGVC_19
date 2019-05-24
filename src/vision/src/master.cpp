@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 
         //cout << "hello4" << endl;
 
-        //applying ransac on top view
+        //applying ransac on top
         intersectionImages=top_view(intersectionImages);
 
         if(true){

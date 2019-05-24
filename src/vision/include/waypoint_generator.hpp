@@ -85,7 +85,7 @@ int isValid_point(Mat img, int i, int j)
 //returns the angle assuming  0 (along -ve x axis) to PI, clockwise positive
 float GetAngle(Mat img,int min,int max,Parabola2 lanes)
 {
-    cout<<"min: "<<min<<" max: "<<max<<endl;
+    cout<<"min_rad : "<<min<<" max_rad : "<<max<<endl;
 
     float min_rad=min*CV_PI/180; //varies from 0 to PI taking -ve x axis as 0 angle, positive clockwise
     float max_rad=max*CV_PI/180;

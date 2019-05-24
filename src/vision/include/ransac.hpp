@@ -14,6 +14,13 @@
 using namespace std;
 using namespace cv;
 
+Point centroid(float a,float c,Mat img);
+
+float dist(Point A,Point B)
+{
+    return (sqrt(pow(A.x-B.x,2)+pow(A.y-B.y,2)));
+}
+
 //structure to define the Parabola parameters
 typedef struct Parabola
 {
@@ -55,8 +62,15 @@ float get_a(Point p1, Point p2)
 
     float del = (y1 - y2)*(y1 + y2);
     float del_a = (x1 - x2);
-    return del/(del_a);
+    float a;
+    a = del/(del_a);
+
+    if(fabs(a)>500)
+        return FLT_MAX;
+    else
+        return a;
 }
+
 // float get_b(Point p1, Point p2, Point p3)
 // {
 //     int x1 = p1.x;
@@ -121,7 +135,7 @@ bool isIntersectingLanes(Mat img, Parabola param) {
 
     float y_2 = a1*(x-c1);
 
-    if (y_2 > 0 &&  sqrt(y_2) < ((img.rows*5)/8.0) && x > 0 && x < img.cols) return true;
+    if (y_2 > 0 &&  sqrt(y_2) < (img.rows) && x > 0 && x < img.cols) return true;
     return false;
 
 }
@@ -148,7 +162,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img)
 
     //check for no lane case here
 
-
+    cout<<"1"<<endl;
     // loop of iterations
     for(int i = 0; i < iteration; i++)
     {
@@ -159,7 +173,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img)
             i--;
             continue;
         }
-
+        cout<<"2"<<endl;
         //#TODO points with same x or y should not be passed in (p[0],p[1])&(p[2]&p[3]) 
 
 
@@ -196,6 +210,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img)
             i--;
             continue;
         }
+        cout<<"3"<<endl;
 
         Parabola tempParam; 
         tempParam.a1 = get_a(ran_points[0], ran_points[1]);
@@ -205,12 +220,24 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img)
         tempParam.a2 = get_a(ran_points[2], ran_points[3]); 
         tempParam.c2 = get_c(ran_points[2], ran_points[3]);
 
+        cout<<"a1:"<<tempParam.a1<<" c1:"<<tempParam.c1<<endl;
+
+        // cout << "Centroid Dif : " << dist(centroid(tempParam.a1,tempParam.c1,img),centroid(tempParam.a2,tempParam.c2,img)) << endl;
+
+        if (dist(centroid(tempParam.a1,tempParam.c1,img),centroid(tempParam.a2,tempParam.c2,img)) < 80.0)
+            continue;
+        cout<<"4"<<endl;
+
+        if(fabs(tempParam.c1 - tempParam.c2) < 40.0)
+            continue;
+        cout<<"5"<<endl;
+
         // intersection only in top 3/8 part of the image taken
         if( isIntersectingLanes(img, tempParam)) {
             i--;
             continue;
         }
-
+        cout<<"6"<<endl;
 
         //similar concavity of lanes
 
@@ -264,10 +291,14 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img)
         // float lane_length_r = 1;
         // float metric_l = score_l_loc/lane_length_l;
         // float metric_r = score_r_loc/lane_length_r;
+        cout << "score_l_loc: " << score_l_loc << endl;
+        cout << "score_r_loc: " << score_r_loc << endl;
 
         if(score_r_loc==0 || score_l_loc==0)
             continue;
-        if ((score_common/(score_l_loc + score_r_loc))*100 > common_inliers_thresh) {
+        cout << "Common : " << score_common << endl;
+
+        if ((score_common/(score_common + score_l_loc + score_r_loc))*100 > common_inliers_thresh) {
             i--;
             continue;
         }
@@ -325,13 +356,8 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img)
     }
     cout << "score_l_gl: " << score_l_gl << endl;
     cout << "score_r_gl: " << score_r_gl << endl;
+    cout << "bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
     return bestTempParam;
-}
-
-
-float dist(Point A,Point B)
-{
-    return (sqrt(pow(A.x-B.x,2)+pow(A.y-B.y,2)));
 }
 
 Point centroid(float a,float c,Mat img)
@@ -370,6 +396,7 @@ Parabola getRansacModel(Mat img,Parabola previous)
         grid_white_thresh = grid_size*grid_size -1;
     }
 
+    Mat plot_grid(img.rows,img.cols,CV_8UC1,Scalar(0));
     // cout << "grid_size: " << grid_size << endl;
     // cout << "grid_white_thresh: " << grid_white_thresh << endl;
     for(int i=((grid_size-1)/2);i<img.rows-(grid_size-1)/2;i+=grid_size)
@@ -381,8 +408,10 @@ Parabola getRansacModel(Mat img,Parabola previous)
             {
                 for(int y=(i-(grid_size-1)/2);y<=(i+(grid_size-1)/2);y++)
                 {
-                    if(img.at<uchar>(y,x)>wTh)
+                    if(img.at<uchar>(y,x)>wTh){
                         count++;
+                        plot_grid.at<uchar>(i,j)=255;
+                    }
                 }
             }
             if(count>grid_white_thresh)
@@ -391,12 +420,16 @@ Parabola getRansacModel(Mat img,Parabola previous)
     }
     cout << "ptArray1: " << ptArray1.size() << endl;
 
+    namedWindow("grid",0);
+    imshow("grid",plot_grid);
+
     //declare a Parabola vaiable to store the Parabola
     Parabola param;
-
+    cout<<"ransac th"<<minPointsForRANSAC<<endl;
     //get parameters of first Parabola form ransac function
     if(ptArray1.size() > minPointsForRANSAC)
     {
+        cout<<"No of pts "<<ptArray1.size()<<endl;
         param = ransac(ptArray1, param, img);
     }
 
@@ -475,7 +508,7 @@ Parabola getRansacModel(Mat img,Parabola previous)
 
 Mat drawLanes(Mat img, Parabola lanes) {
 
-    Mat fitLanes(img.rows, img.cols, CV_8UC3, Scalar(0,0,0));
+    Mat fitLanes(img.rows,img.cols,CV_8UC3,Scalar(0,0,0));
 
     vector<Point2f> left_lane, right_lane;
     float a1 = lanes.a1, a2 = lanes.a2, c1 = lanes.c1, c2 = lanes.c2;
