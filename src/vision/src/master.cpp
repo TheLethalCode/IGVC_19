@@ -45,9 +45,10 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     wTh = config.wTh;
     iteration = config.iteration;
     maxDist = config.maxDist;
-    removeDist = config.removeDist;
+    // removeDist = config.removeDist;
     minLaneInlier = config.minLaneInlier;
     minPointsForRANSAC = config.minPointsForRANSAC;
+    grid_size = config.grid_size;
     common_inliers_thresh = config.common_inliers_thresh;
 
     pixelsPerMetre = config.pixelsPerMetre;
@@ -157,7 +158,7 @@ int main(int argc, char **argv)
         }
 
         //extraction of region of interest
-        Rect roi_rect = Rect(0, 0, frame_orig.cols, frame_orig.rows); //params in order: x, y, height, width (of ROI)
+        Rect roi_rect = Rect(0, frame_orig.rows/3, frame_orig.cols, frame_orig.rows*2/3); //params in order: x, y, height, width (of ROI)
         Mat roi = frame_orig(roi_rect);
 
         if (is_debug || is_threshold) {
@@ -180,7 +181,7 @@ int main(int argc, char **argv)
         }
          */
 
-        cout << "hello1" << endl;
+        //cout << "hello1" << endl;
         Mat twob_r = twob_rChannelProcessing(roi);
 
 
@@ -191,7 +192,7 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-        cout << "hello2" << endl;
+        //cout << "hello2" << endl;
 
         Mat twob_g = twob_gChannelProcessing(roi);
 
@@ -202,7 +203,7 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-        cout << "hello3" << endl;
+        //cout << "hello3" << endl;
 
         //processing for blue channel
         Mat b = blueChannelProcessing(roi);
@@ -242,9 +243,11 @@ int main(int argc, char **argv)
         // resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows)); 
         //intersectionImages is binary front view, ready to fit lanes
 
-        namedWindow("intersectionImages_after", WINDOW_NORMAL);
-        imshow("intersectionImages_after", intersectionImages);
-        waitKey(10);
+        if(false){
+            namedWindow("intersectionImages_after", WINDOW_NORMAL);
+            imshow("intersectionImages_after", intersectionImages);
+            waitKey(10);
+        }
 
         // Add top view preprocessed image to costmap
         // img_to_ls(topView);
@@ -267,13 +270,21 @@ int main(int argc, char **argv)
          */
 
 
-        cout << "hello4" << endl;
+        //cout << "hello4" << endl;
+
+        //applying ransac on top view
+        intersectionImages=top_view(intersectionImages);
+
+        if(true){
+            namedWindow("top_intersection",0);
+            imshow("top_intersection",intersectionImages);
+        }
 
         // curve fitting
         lanes = getRansacModel(intersectionImages, lanes);
         //cout << "Ransac model found" << endl;
 
-        cout << "hello5" << endl;
+        //cout << "hello5" << endl;
 
         Mat fitLanes = drawLanes(intersectionImages, lanes);
 
@@ -284,11 +295,12 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-        cout << "hello6" << endl;
+        //cout << "hello6" << endl;
 
 
         Mat fitLanes_topview = fitLanes.clone();
-        fitLanes_topview = top_view(fitLanes_topview);
+
+        // fitLanes_topview = top_view(fitLanes_topview);
 
         namedWindow("lanes topview costmap", WINDOW_NORMAL);
         imshow("lanes topview costmap", fitLanes_topview);
@@ -317,18 +329,21 @@ int main(int argc, char **argv)
         costmap.at<uchar>(i,j)=255;
          */
 
-        /*
+        
         Mat costmap = fitLanes_topview.clone();
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
+        cout << "waypoint image x: " << waypoint_image.x << "y" << waypoint_image.y << "angle: " << waypoint_image.angle << endl;
         //cout << "Waypoint found" << endl;
         costmap = plotWaypoint(costmap, waypoint_image);
+
 
         //the Mat costmap is now a top view of lanes with the waypoint drawn on it
 
         namedWindow("waypoint", WINDOW_NORMAL);
         imshow("waypoint", costmap);
         waitKey(10);
+        /*
 
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
         geometry_msgs::PoseStamped waypoint_bot;

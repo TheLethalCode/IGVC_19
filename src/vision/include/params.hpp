@@ -11,8 +11,6 @@ int iteration = 100;  //define no of iteration, max dist squre of pt from our es
 
 int maxDist = 300; //define threshold distance to remove white pixel near lane1
 
-int removeDist = 3000; //define minimum number of points to be lie on a lane
-
 int minLaneInlier = 1500; // 2000 for night
 
 int common_inliers_thresh = 10;

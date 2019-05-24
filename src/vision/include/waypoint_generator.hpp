@@ -38,9 +38,11 @@ struct NavPoint{
 int checklane(int y,int x,Mat img,Parabola2 lanes)
 {
     if(fabs(lanes.a1*y*y+lanes.b1*y+lanes.c1-x)< (30/4)) {
+        cout<<"1 :";
         return 1;
     }
     if(fabs(lanes.a2*y*y+lanes.b2*y+lanes.c2-x)< (30/4)) {
+        cout<<"2 :";
         return 2;
     }
     return 0;
@@ -83,6 +85,8 @@ int isValid_point(Mat img, int i, int j)
 //returns the angle assuming  0 (along -ve x axis) to PI, clockwise positive
 float GetAngle(Mat img,int min,int max,Parabola2 lanes)
 {
+    cout<<"min: "<<min<<" max: "<<max<<endl;
+
     float min_rad=min*CV_PI/180; //varies from 0 to PI taking -ve x axis as 0 angle, positive clockwise
     float max_rad=max*CV_PI/180;
 
@@ -137,8 +141,8 @@ float GetAngle(Mat img,int min,int max,Parabola2 lanes)
         angle2 += CV_PI;
     }
 
-    //cout << "Left lane: " << angle1*180/CV_PI << endl;
-    //cout << "Right lane: " << angle2*180/CV_PI << endl;
+    cout << "Left lane: " << angle1*180/CV_PI << endl;
+    cout << "Right lane: " << angle2*180/CV_PI << endl;
 
     if(lanes.numModel==2)
     {
@@ -172,14 +176,18 @@ void GetAngleBounds (Mat img,int *min,int *max,Parabola2 lanes)
         if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,lanes)==1)
         {
             theta_min=theta;
+            cout<<"theta_min : "<<theta_min<<endl;
         }		
 
         if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,lanes)==2)
         {
             theta_max=theta;
+            cout<<"THETA_MAX PRINT: "<<theta_max<<endl;
             break;
         }
     }
+
+
 
     *min=theta_min;
     *max=theta_max;
@@ -230,6 +238,40 @@ int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
     return theta_head;
 }
 
+//To plot transformed image in waypoint from ransac
+ Mat drawLanes1(Mat topView, Parabola2 lanes) {
+
+    Mat fitLanes(topView.rows, topView.cols, CV_8UC3, Scalar(0,0,0));
+
+    vector<Point2f> left_lane, right_lane;
+    float a1 = lanes.a1, a2 = lanes.a2, b1 = lanes.b1, b2 = lanes.b2, c1 = lanes.c1, c2 = lanes.c2;
+
+    for (float y = 0; y < fitLanes.rows; y++){
+
+        float x;
+        if (a1 != 0 && b1 != 0 && c1 != 0) {
+            x = a1*y*y + b1*y + c1;
+            left_lane.push_back(Point2f(x, y));
+        }
+
+        if (a2 != 0 && b2 != 0 && c2 != 0) {
+            x = a2*y*y + b2*y + c2;
+            right_lane.push_back(Point2f(x, y));
+        }
+
+    }
+
+    Mat left_curve(left_lane, true);
+    left_curve.convertTo(left_curve, CV_32S); //adapt type for polylines
+    polylines(fitLanes, left_curve, false, Scalar(255, 0, 0), 3, CV_AA);
+
+    Mat right_curve(right_lane, true);
+    right_curve.convertTo(right_curve, CV_32S); //adapt type for polylines
+    polylines(fitLanes, right_curve, false, Scalar(0, 0, 255), 3, CV_AA);
+
+    return fitLanes;
+}
+
 NavPoint find_waypoint(Parabola lan,Mat img)
 {
     Parabola2 lanes;
@@ -245,6 +287,23 @@ NavPoint find_waypoint(Parabola lan,Mat img)
     lanes.a2 = 1/a2;
     lanes.b2 = (-2*img.rows)/a2;
     lanes.c2 = (img.rows*img.rows + a2*c2)/a2;
+
+
+    //Plotting transformed image to check
+    if(false){
+    Mat fitLanes1 = drawLanes1(img, lanes);
+    namedWindow("Waypoint RANSAC plot",0);
+    imshow("Waypoint RANSAC plot",fitLanes1);
+    }
+
+    // Mat img_plot(img.rows,img.cols,CV_8UC3,Scalar(0,0,0));
+    // img_plot=drawLanes(img_plot,lanes);
+
+    // if(true)
+    // {
+    //     namedWindow("Parabola2 in waypoint",0);
+    //     imshow("Parabola2 in waypoint",img_plot);
+    // }
 
     NavPoint way_point;
     int theta_min,theta_max;
