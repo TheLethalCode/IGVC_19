@@ -95,17 +95,23 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
             }
         }
 
-        if(c1!=0 && c1>(img.cols/2))
+        if((c1!=0 && c1>(2*img.cols/5) && c1<(3*img.cols/5))|| (c2!=0 && c2>(2*img.cols/5) && c2<(3*img.cols/5)))
+        {
+            return previous;
+        }
+
+        if(c1!=0 && c1>(3*img.cols/5))
         {
             present=swap(present);
             return present;
         }
 
-        else if(c2!=0 && c2<(img.cols/2))
+        else if(c2!=0 && c2<(2*img.cols/5))
         {
             present=swap(present);
             return present;
         }
+
 
     }
 

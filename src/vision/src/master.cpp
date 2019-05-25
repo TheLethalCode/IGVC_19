@@ -175,7 +175,10 @@ int main(int argc, char **argv)
         //processing done for various channels
 
         // vector<Point> obs_by_lidar = lidar_plot(lidar_scan, homo, frame_orig.rows, frame_orig.cols);
-        // roi = remove_obstacles(roi, obs_by_lidar);
+        roi = remove_obstacles(roi);//, obs_by_lidar);
+        namedWindow("Obs_removed", 0);
+        imshow("Obs_removed", roi);
+        waitKey(10);
 
         /*
            if (false) {
@@ -348,7 +351,7 @@ int main(int argc, char **argv)
         namedWindow("waypoint", WINDOW_NORMAL);
         imshow("waypoint", costmap);
         waitKey(10);
-        /*
+        
 
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
         geometry_msgs::PoseStamped waypoint_bot;
@@ -358,7 +361,7 @@ int main(int argc, char **argv)
         waypoint_bot.pose.position.x = (costmap.rows - waypoint_image.y)/pixelsPerMetre;
         waypoint_bot.pose.position.y = (costmap.cols/2 - waypoint_image.x)/pixelsPerMetre;
         waypoint_bot.pose.position.z = 0;
-        float theta = (waypoint_image.angle - CV_PI/2);
+        float theta = (waypoint_image.angle );
 
         tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
         waypoint_bot.pose.orientation.x = frame_qt.x();
@@ -368,7 +371,7 @@ int main(int argc, char **argv)
 
         waypoint_publisher.publish(waypoint_bot);
         //cout << "Waypoint published\n----------------------------" << endl;
-        */
+        
 
         if (is_debug == false || is_threshold) {
             destroyWindow("frame_topview");
@@ -379,7 +382,7 @@ int main(int argc, char **argv)
             destroyWindow("intersectionImages_before");
         }
 
-        waitKey(1000);
+        waitKey(100);
         is_image_retrieved = false;
         is_laserscan_retrieved = false;
 
