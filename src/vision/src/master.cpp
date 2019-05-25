@@ -12,6 +12,7 @@
 #include <tf/transform_datatypes.h>
 #include <dynamic_reconfigure/server.h>
 #include <vision/TutorialsConfig.h>
+#include <time.h>
 
 /*
    Custom header files
@@ -21,8 +22,8 @@
 #include <params.hpp>
 #include <matrixTransformation.hpp>
 #include <lidar_new.hpp>
-#include <waypoint_generator.hpp>
-#include <ransac.hpp>
+#include <waypoint_generator_new.hpp>
+#include <ransac_new.hpp>
 #include <lane_segmentation.hpp>
 #include <lane_laser_scan.hpp>
 // #include <lidar_plot.hpp>
@@ -145,6 +146,10 @@ int main(int argc, char **argv)
             spinOnce();
             continue;
         }
+
+        clock_t tic,toc;
+
+        tic=clock();
 
         namedWindow("original",WINDOW_NORMAL);
         imshow("original", frame_orig);
@@ -333,7 +338,7 @@ int main(int argc, char **argv)
         Mat costmap = fitLanes_topview.clone();
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
-        cout << "waypoint image x: " << waypoint_image.x << "y" << waypoint_image.y << "angle: " << waypoint_image.angle << endl;
+        cout << "waypoint image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
         //cout << "Waypoint found" << endl;
         costmap = plotWaypoint(costmap, waypoint_image);
 
@@ -374,9 +379,13 @@ int main(int argc, char **argv)
             destroyWindow("intersectionImages_before");
         }
 
-        waitKey(100);
+        waitKey(1000);
         is_image_retrieved = false;
         is_laserscan_retrieved = false;
+
+        toc=clock();
+
+        cout<<"FPS:"<<CLOCKS_PER_SEC/(toc-tic)<<endl;
         spinOnce();
     }
 
