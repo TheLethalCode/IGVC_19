@@ -73,9 +73,7 @@ int isValid_point(Mat img, int i, int j)
                 return 0;
             }
 
-            if((img.at<Vec3b>(y1,x1)[0]==255 && img.at<Vec3b>(y1,x1)[1]==255 && img.at<Vec3b>(y1,x1)[2]==255) ||
-                (img.at<Vec3b>(y1,x1)[0]==255 && img.at<Vec3b>(y1,x1)[1]==0 && img.at<Vec3b>(y1,x1)[2]==0) ||
-                (img.at<Vec3b>(y1,x1)[0]==0 && img.at<Vec3b>(y1,x1)[1]==0 && img.at<Vec3b>(y1,x1)[2]==255))
+            if((img.at<uchar>(y1,x1)==255))
                 return 0;
         }
     }
@@ -372,8 +370,8 @@ Mat plotWaypoint(Mat costmap, NavPoint waypoint_image) {
     float x = origin.x - 25*cos(CV_PI/2 - waypoint_image.angle);
     float y = origin.y - 25*sin(CV_PI/2 - waypoint_image.angle);
     Point dest = Point(x,y);
-    circle(costmap, origin, 5, Scalar(0,255,0), -1, 8, 0);
-    arrowedLine(costmap, origin, dest, Scalar(0,255,0), 3, 8, 0, 0.1);
+    circle(costmap, origin, 5, Scalar(120), -1, 8, 0);
+    arrowedLine(costmap, origin, dest, Scalar(120), 3, 8, 0, 0.1);
 
     return costmap;
 }

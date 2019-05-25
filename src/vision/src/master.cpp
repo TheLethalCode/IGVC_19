@@ -22,15 +22,18 @@
 #include <params.hpp>
 #include <matrixTransformation.hpp>
 #include <lidar_new.hpp>
+#include <lidar_plot.hpp>
 #include <waypoint_generator_new.hpp>
 #include <ransac_new.hpp>
 #include <lane_segmentation.hpp>
 #include <lane_laser_scan.hpp>
+#include <find_pothole.hpp>
 // #include <lidar_plot.hpp>
 
 
-#include <White_obstacle_updated.hpp>
-//#include <obstacles_prev.hpp>
+#include <obstacle_det_vision_lidar.hpp>
+// #include <White_obstacle_updated.hpp>
+// #include <obstacles_prev.hpp>
 
 using namespace std;
 using namespace cv;
@@ -50,6 +53,8 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     minLaneInlier = config.minLaneInlier;
     minPointsForRANSAC = config.minPointsForRANSAC;
     grid_size = config.grid_size;
+    constantSubtracted=config.constantSubtracted;
+    grid_white_thresh=config.grid_white_thresh;
     common_inliers_thresh = config.common_inliers_thresh;
 
     pixelsPerMetre = config.pixelsPerMetre;
@@ -66,6 +71,10 @@ void callback(node::TutorialsConfig &config, uint32_t level)
 
     medianBlurkernel = config.medianBlurkernel;
     neighbourhoodSize = config.neighbourhoodSize;
+
+    lidar_stretch_ratio = config.lidar_stretch_ratio;
+    lidar_stretch = config.lidar_stretch;
+    inflation_r_waypt=config.inflation_r_waypt;
 }
 
 Publisher lanes2Costmap_publisher;
@@ -140,6 +149,7 @@ int main(int argc, char **argv)
             continue;
         }
 
+
         //if lidar has not been retrieved, skip
         if(!is_laserscan_retrieved && !use_video)
         {
@@ -156,29 +166,22 @@ int main(int argc, char **argv)
 
         Mat frame_topview = top_view(frame_orig);
 
-        if(is_debug == true || is_threshold == true){ 
-            namedWindow("frame_topview", WINDOW_NORMAL);
-            imshow("frame_topview",frame_topview);
-            waitKey(10);
-        }
+        // if(is_debug == true || is_threshold == true){ 
+        //     namedWindow("frame_topview", WINDOW_NORMAL);
+        //     imshow("frame_topview",frame_topview);
+        //     waitKey(10);
+        // }
 
         //extraction of region of interest
-        Rect roi_rect = Rect(0, frame_orig.rows/3, frame_orig.cols, frame_orig.rows*2/3); //params in order: x, y, height, width (of ROI)
+        // Rect roi_rect = Rect(0, frame_orig.rows/3, frame_orig.cols, frame_orig.rows*2/3); //params in order: x, y, height, width (of ROI)
+        Rect roi_rect = Rect(0, 0, frame_orig.cols, frame_orig.rows);
         Mat roi = frame_orig(roi_rect);
 
-        if (is_debug || is_threshold) {
-            namedWindow("roi",WINDOW_NORMAL);
-            imshow("roi",roi); 
-            waitKey(10);
-        }
-
-        //processing done for various channels
-
-        // vector<Point> obs_by_lidar = lidar_plot(lidar_scan, homo, frame_orig.rows, frame_orig.cols);
-        roi = remove_obstacles(roi);//, obs_by_lidar);
-        namedWindow("Obs_removed", 0);
-        imshow("Obs_removed", roi);
-        waitKey(10);
+        // if (is_debug || is_threshold) {
+        //     namedWindow("roi",WINDOW_NORMAL);
+        //     imshow("roi",roi); 
+        //     waitKey(10);
+        // }
 
         /*
            if (false) {
@@ -230,12 +233,12 @@ int main(int argc, char **argv)
 
         //cout << "intersection done" << endl;
 
-        if (is_debug || is_threshold) {
-            //cout << "intersection image" << endl;
-            namedWindow("intersectionImages_before", WINDOW_NORMAL);
-            imshow("intersectionImages_before", intersectionImages);
-            waitKey(10);
-        }
+        // if (is_debug || is_threshold) {
+        //     //cout << "intersection image" << endl;
+        //     namedWindow("intersectionImages_before", WINDOW_NORMAL);
+        //     imshow("intersectionImages_before", intersectionImages);
+        //     waitKey(10);
+        // }
 
         // resize(intersectionImages, intersectionImages, Size(intersectionImages.cols/3, intersectionImages.rows/3));
         // medianBlur(intersectionImages, intersectionImages, medianBlurkernel);
@@ -251,12 +254,37 @@ int main(int argc, char **argv)
         // resize(intersectionImages, intersectionImages, Size(frame_orig.cols, frame_orig.rows)); 
         //intersectionImages is binary front view, ready to fit lanes
 
-        if(false){
+        if(true){
             namedWindow("intersectionImages_after", WINDOW_NORMAL);
             imshow("intersectionImages_after", intersectionImages);
             waitKey(10);
+       
         }
 
+
+        Mat intersectionImages_copy=top_view(intersectionImages);//copy of intersection images for pothole detection
+        
+        Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
+        costmap=find_pothole(intersectionImages_copy);
+
+        if(true){
+            namedWindow("pot_hole", WINDOW_NORMAL);
+            imshow("pot_hole", costmap);
+            waitKey(10);
+       
+        }
+
+
+        vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
+        cout << "lidar points " << obs_by_lidar.size() << endl;
+        intersectionImages = remove_obstacles(roi, intersectionImages,obs_by_lidar);
+
+
+        if(true){
+        	namedWindow("Obs_removed", 0);
+        	imshow("Obs_removed", intersectionImages);
+            waitKey(10);
+        }
         // Add top view preprocessed image to costmap
         // img_to_ls(topView);
 
@@ -282,11 +310,24 @@ int main(int argc, char **argv)
 
         //applying ransac on top
         intersectionImages=top_view(intersectionImages);
+        
+        // Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
+        // costmap=find_pothole(intersectionImages);
+        // sensor_msgs::LaserScan pothole_scan;
+        // pot_holescan = laneLaser(costmap);
+        // lanes2Costmap_publisher.publish(pothole_scan);
 
-        if(true){
+        if(true)
+        {
             namedWindow("top_intersection",0);
             imshow("top_intersection",intersectionImages);
         }
+
+        // if(true)
+        // {
+        //     namedWindow("pot_hole",0);
+        //     imshow("pot_hole",costmap);
+        // }
 
         // curve fitting
         lanes = getRansacModel(intersectionImages, lanes);
@@ -294,51 +335,47 @@ int main(int argc, char **argv)
 
         //cout << "hello5" << endl;
 
+        //To show left and right lanes
         Mat fitLanes = drawLanes(intersectionImages, lanes);
 
-        if (is_debug || is_run) {
+        costmap = drawLanes_white(costmap,lanes);
+
+        if (true) {
             //cout << "Ransac lanes drawn" << endl;
             namedWindow("lanes fitting", WINDOW_NORMAL);
             imshow("lanes fitting", fitLanes);
             waitKey(10);
         }
 
-        //cout << "hello6" << endl;
+        if(true)
+        {
+        	namedWindow("costmap_with_lanes",0);
+        	imshow("costmap_with_lanes",costmap);
+        }
 
-
-        Mat fitLanes_topview = fitLanes.clone();
-
-        // fitLanes_topview = top_view(fitLanes_topview);
-
-        namedWindow("lanes topview costmap", WINDOW_NORMAL);
-        imshow("lanes topview costmap", fitLanes_topview);
-        waitKey(10);
 
         //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
-        sensor_msgs::LaserScan laneScan;
-        laneScan = laneLaser(fitLanes_topview);
-        lanes2Costmap_publisher.publish(laneScan);
-
-        //cout << "Lanes drawn on costmap" << endl;
-        /*
-           Mat inflated;
-           resize(obstaclePlot,inflated,fitLanes.size(),0,0);
-           costmap=inflated;
-           if (false) {
-           namedWindow("inflated_obs", WINDOW_NORMAL);
-           imshow("inflated_obs",costmap);
-           waitKey(10);
-           } 
-
-        //plotting lanes on costmap
-        for(int i=0;i<fitLanes.rows;i++)
-        for(int j=0;j<fitLanes.cols;j++)
-        if(fitLanes.at<uchar>(i,j)==255)
-        costmap.at<uchar>(i,j)=255;
-         */
-
+        sensor_msgs::LaserScan lane_pot;
+        lane_pot = laneLaser(fitLanes);
+        lanes2Costmap_publisher.publish(lane_pot);
         
-        Mat costmap = fitLanes_topview.clone();
+        resize(obstaclePlot,obstaclePlot,fitLanes.size(),0,0);
+        for(int i=0;i<costmap.rows;i++)
+        	for(int j=0;j<costmap.cols;j++)
+        	{
+        		if(obstaclePlot.at<uchar>(i,j)==255)
+        			costmap.at<uchar>(i,j)=255;
+        	}
+
+        if (true) 
+        {
+        	namedWindow("costmap for waypoint", WINDOW_NORMAL);
+        	imshow("costmap for waypoint",costmap);
+        	waitKey(10);
+        } 
+         
+
+       
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
         cout << "waypoint image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
@@ -361,7 +398,7 @@ int main(int argc, char **argv)
         waypoint_bot.pose.position.x = (costmap.rows - waypoint_image.y)/pixelsPerMetre;
         waypoint_bot.pose.position.y = (costmap.cols/2 - waypoint_image.x)/pixelsPerMetre;
         waypoint_bot.pose.position.z = 0;
-        float theta = (waypoint_image.angle );
+        float theta = (waypoint_image.angle);
 
         tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
         waypoint_bot.pose.orientation.x = frame_qt.x();

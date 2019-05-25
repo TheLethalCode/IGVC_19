@@ -9,9 +9,6 @@ using namespace ros;
 using namespace std;
 using namespace cv;
 
-#define yshift 0.33
-#define angleshift 0.0524
-#define pixelsPerMetre 112.412
 Mat obstaclePlot;
 vector<Point> lidar_plot(sensor_msgs::LaserScan scan, Mat h_, int rows, int cols)
 {
@@ -41,7 +38,7 @@ vector<Point> lidar_plot(sensor_msgs::LaserScan scan, Mat h_, int rows, int cols
 				img.at<Vec3b>(y,x)[1] = 255;
 				img.at<Vec3b>(y,x)[2] = 0;
 				temp.at<uchar>(y,x)=255;
-				circle(img, Point(x,y), 4, Scalar(0,255,0)), 2;
+				//circle(img, Point(x,y), 4, Scalar(0,255,0)), 2;
 			}
 		}
 	}
@@ -51,10 +48,9 @@ vector<Point> lidar_plot(sensor_msgs::LaserScan scan, Mat h_, int rows, int cols
 			if(temp.at<uchar>(i,j)==255)
 			{
 				Point2f center(j,i);
-				circle(obstaclePlot, center, 10, Scalar(255,255,255), -1);
+				circle(obstaclePlot, center, inflation_r_waypt, Scalar(255), -1);
 			}
 	warpPerspective(img, img, h_, img.size(), WARP_INVERSE_MAP);
-
 	for (int i=0;i<rows;i++)
 	{
 		for (int j=0;j<cols;j++)
