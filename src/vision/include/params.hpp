@@ -42,5 +42,7 @@ int grid_size = 3;
 
 int grid_white_thresh = 3;
 
+int brightestPixelThreshold = 100;
+
 #endif
 

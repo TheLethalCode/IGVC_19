@@ -77,7 +77,7 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
             float y1=sqrt(-1.0*a1*c1);
             float y2=sqrt(a1*(img.cols-c1));
 
-            if(y1>0 && y1<img.cols && y2>0 && y2<img.cols)
+            if(y1>0 && y1<img.rows && y2>0 && y2<img.rows)
             {
                 return previous;
             }
@@ -89,7 +89,7 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
             float y1=sqrt(-1.0*a2*c2);
             float y2=sqrt(a2*(img.cols-c2));
 
-            if(y1>0 && y1<img.cols && y2>0 && y2<img.cols)
+            if(y1>0 && y1<img.rows && y2>0 && y2<img.rows)
             {
                 return previous;
             }
