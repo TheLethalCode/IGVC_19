@@ -7,7 +7,9 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <math.h>
-#include "ransac_new_2.hpp"
+#include "ransac_new.hpp"
+#define ll 60
+#define bb 60
 
 using namespace std;
 using namespace cv;
@@ -27,7 +29,7 @@ typedef struct Parabola2 {
     float b1 = 0.0;
     float c2 = 0.0;
 } Parabola2;
-
+float xc,yc;
 struct NavPoint{
     int x;
     int y;
@@ -38,11 +40,11 @@ struct NavPoint{
 int checklane(int y,int x,Mat img,Parabola2 lanes)
 {
     if(fabs(lanes.a1*y*y+lanes.b1*y+lanes.c1-x)< (30/4)) {
-        //cout<<"1 :"<<endl;
+        cout<<"1 :"<<endl;
         return 1;
     }
     if(fabs(lanes.a2*y*y+lanes.b2*y+lanes.c2-x)< (30/4)) {
-        //cout<<"2 :"<<endl;
+        cout<<"2 :"<<endl;
         return 2;
     }
     return 0;
@@ -73,7 +75,9 @@ int isValid_point(Mat img, int i, int j)
                 return 0;
             }
 
-            if((img.at<uchar>(y1,x1)==255))
+            if((img.at<Vec3b>(y1,x1)[0]==255 && img.at<Vec3b>(y1,x1)[1]==255 && img.at<Vec3b>(y1,x1)[2]==255) ||
+                (img.at<Vec3b>(y1,x1)[0]==255 && img.at<Vec3b>(y1,x1)[1]==0 && img.at<Vec3b>(y1,x1)[2]==0) ||
+                (img.at<Vec3b>(y1,x1)[0]==0 && img.at<Vec3b>(y1,x1)[1]==0 && img.at<Vec3b>(y1,x1)[2]==255))
                 return 0;
         }
     }
@@ -81,27 +85,31 @@ int isValid_point(Mat img, int i, int j)
 }
 
 //returns the angle assuming angle along -ve y axis as 0 and cloclwise to it as -ve and anticlockwise as +ve
-float GetAngle(Mat img,int min,int max,Parabola2 lanes,float coordinateAngle)
+float GetAngle(Mat img,int min,int max,Parabola2 lanes,float xc, float yc)
 {
- //cout<<"min: "<<min<<" max: "<<max<<endl;
+ cout<<"min: "<<min<<" max: "<<max<<endl;
  float th1=0,th2=0;
     if(lanes.numModel==2)
     {
-        th1=atan(2*lanes.a1*(img.rows-stepsize*sin(coordinateAngle))+lanes.b1);
-        th2=atan(2*lanes.a2*(img.rows-stepsize*sin(coordinateAngle))+lanes.b2);
+        th1=atan(2*lanes.a1*yc+lanes.b1);
+        th2=atan(2*lanes.a2*yc+lanes.b2);
         return ((th1+th2)/2);
 
     }
     else if(lanes.numModel==1)
     {
+        if(max<20)
+            return 0;
+        else if(min>160)
+            return 180;
          if(lanes.a2==0)
          {
-            th1=atan(2*lanes.a1*(img.rows-stepsize*sin(coordinateAngle))+lanes.b1);
+            th1=atan(2*lanes.a1*yc+lanes.b1);
             return th1;
          }
          else
          {
-            th2=atan(2*lanes.a2*(img.rows-stepsize*sin(coordinateAngle))+lanes.b2);
+            th2=atan(2*lanes.a2*yc+lanes.b2);
             return th2;
          }
 
@@ -111,83 +119,12 @@ float GetAngle(Mat img,int min,int max,Parabola2 lanes,float coordinateAngle)
     {
         return 0;
     }
+}
 
-   /* float min_rad=min*CV_PI/180; //varies from 0 to PI taking -ve x axis as 0 angle, positive clockwise
-    float max_rad=max*CV_PI/180;
-
-    float a1 = lanes.a1, a2 = lanes.a2, b1 = lanes.b1, b2 = lanes.b2, c1 = lanes.c1, c2 = lanes.c2;
-   
-    //edited
-    float angle1=0;
-    float angle2=0;
-
-    // here the average of the slope of lanes is used to approximate the heading of waypoint angle
-    // if two lanes are there then the average of both the lanes is used finally
-
-    // ##################### changes done
-    // earlier the value is updated considering slope_up started from the stepsize to top of the image
-    // changing that to zero the average considering whole lane
-
-    //numModel contains the number of lanes
-    //if number of lanes is 2 then update both angles
-    if(lanes.numModel==2)
-    {  
-        for(int slope_up=0; slope_up<img.rows; slope_up++)
-        {
-            angle1+=atan((2*a1*(img.rows-slope_up)+b1));
-            angle2+=atan((2*a2*(img.rows-slope_up)+b2));
-        }
-    }
-    // if number of lanes is 1 then update only one angle  
-    else if(lanes.numModel==1)
-    {
-        if(a1 == 0 && b1 == 0 && c1 == 0)
-            for(int slope_up=0; slope_up<img.rows; slope_up++)
-            {
-                // angle1+=atan(1/(2*a1*(img.rows-slope_up)+b1));
-                angle2+=atan((2*a2*(img.rows-slope_up)+b2));
-            }
-        if(a2 == 0 && b2 == 0 && c2 == 0)
-            for(int slope_up = 0; slope_up<img.rows; slope_up++)
-            {
-                 angle1+=atan((2*a1*(img.rows-slope_up)+b1));
-                // angle2+=atan(1/(2*a2*(slope_up-slope_up)+b2));
-            }
-    }
-    angle1/=(img.rows);
-    angle2/=(img.rows);
-
-    //editing end
-
-    //removed_prev
-
-    // float angle1 = atan(1/(2*a1*delYmin + b1));
-    // float angle2 = atan(1/(2*a2*delYmax + b2));
-
-    cout << "Left lane: " << angle1*180/CV_PI << endl;
-    cout << "Right lane: " << angle2*180/CV_PI << endl;
-
-    if(lanes.numModel==2)
-    {
-        float d = (angle1 + angle2)/2;
-        return d;
-    }
-    else if(lanes.numModel==1)
-    {
-        float d;
-        if(angle1==0)
-            d = angle2;
-        else
-            d=angle1;
-        return d;
-    }
-    // else if(min!=0&&max==180)
-    // {
-    //     float d = angle1;
-    //     return d;
-    // }
-    else return 0;*/
-
+int sgn(float x){
+    if(x>0) return 1;
+    else if(x<0) return -1;
+    else return 0;
 }
 
 //calculates the angle bounds of the left and right lanes
@@ -215,57 +152,146 @@ void GetAngleBounds (Mat img,int *min,int *max,Parabola2 lanes)
 
 
 
+
     *min=theta_min;
     *max=theta_max;
 }
 
 //gets the angle assuming the bottom center as origin taking clockwise angle as positive, -ve x axis as 0 degree line
-int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
+NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
 {
-    int i,j;
+    int i,j,check1=0;
     int theta;
     int theta_head=90;
+    NavPoint pt;
+    float ptx,pty;
+    pt.x=img.cols/2;
+    pt.y=img.rows/2;
 
     //img contains both obs and lanes
     GetAngleBounds(img,theta_min,theta_max,lanes);
     int theta_mid=((*theta_min)+(*theta_max))/2;
-    //cout<<"theta min : "<<*theta_min<<" theta max : "<<*theta_max<<endl;
-
-    for(theta=0;theta<((*theta_max)-(*theta_min))/2;theta++)
+    cout<<"theta min : "<<*theta_min<<" theta max : "<<*theta_max<<endl;
+    /*if(*theta_max<35||*theta_min>145)
+        stepsize=stepsize/5;*/
+    if(lanes.numModel==2)
     {
-        i=img.rows-stepsize*sin((theta_mid+theta)*CV_PI/180);
-        j=img.cols/2-stepsize*cos((theta_mid+theta)*CV_PI/180);
-        if (!isValid(img, i, j)) {
-            continue;
-        }
-        if(img.at<Vec3b>(i,j)[0]==0&&img.at<Vec3b>(i,j)[1]==0&&img.at<Vec3b>(i,j)[2]==0)
+        for(theta=0;theta<((*theta_max)-(*theta_min))/2;theta++)
         {
-            if(isValid_point(img,i,j))
-            {
-                theta_head=theta_mid+theta;
-                break;
+            i=img.rows-stepsize*sin((theta_mid+theta)*CV_PI/180);
+            j=img.cols/2-stepsize*cos((theta_mid+theta)*CV_PI/180);
+            
+            if (!isValid(img, i, j)) {
+                continue;
             }
-        }
-
-        i=img.rows-stepsize*sin((theta_mid-theta)*CV_PI/180);
-        j=img.cols/2-stepsize*cos((theta_mid-theta)*CV_PI/180);
-        if (!isValid(img, i, j)) {
-            continue;
-        }
-        if(img.at<Vec3b>(i,j)[0]==0&&img.at<Vec3b>(i,j)[1]==0&&img.at<Vec3b>(i,j)[2]==0)
-        {
-            if(isValid_point(img,i,j))
+            if(img.at<Vec3b>(i,j)[0]==0&&img.at<Vec3b>(i,j)[1]==0&&img.at<Vec3b>(i,j)[2]==0)
             {
-                theta_head=theta_mid-theta;
-                break;
+                cout  << isValid(img, i, j) <<endl;
+                if(isValid_point(img,i,j))
+                {
+                    pt.y=i;
+                    ptx=j;
+                    pty=i;
+                    pt.x=j;
+                    check1=1;
+                    break;
+                }
+            }
+
+            i=img.rows-stepsize*sin((theta_mid-theta)*CV_PI/180);
+            j=img.cols/2-stepsize*cos((theta_mid-theta)*CV_PI/180);
+            if (!isValid(img, i, j)) {
+                continue;
+            }
+            if(img.at<Vec3b>(i,j)[0]==0&&img.at<Vec3b>(i,j)[1]==0&&img.at<Vec3b>(i,j)[2]==0)
+            {
+                if(isValid_point(img,i,j))
+                {
+                    pt.y=i;
+                    ptx=j;
+                    ptx=i;
+                    pt.x=j;
+                    check1=1;
+                    break;
+                }
             }
         }
     }
+    else if(lanes.numModel==1)
+    {
+        Parabola2 temp;
+        float theta,theta_m,m;
+       // float bottom = lanes.a1*(img.rows*img.rows) + lanes.b1 * img.rows + lanes.c1,top = lanes.c1,right = (-lanes.b1-math.sqrt(lanes.b1*lanes.b1 ))
+       // if(lanes.c1>0&&lanes.c1<img.cols){
+         //   if(lanes)
+        
+        if(lanes.a1!=0||lanes.b1!=0||lanes.c1!=0)
+        {
+            temp.a1 = lanes.a1;
+            temp.b1=lanes.b1-2*lanes.a1*bb*sgn(lanes.a1);
+            temp.c1 = lanes.c1+ll+lanes.a1*bb*bb-sgn(lanes.a1)*bb*lanes.b1;
+            float theta_rad;
+            for(theta=0;theta<180;theta++)
+            {
+                theta_rad=theta*CV_PI/180;
 
-   
+                if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,temp)==1)
+                {
+                    theta_m=theta;
+                    //cout<<"theta_min : "<<theta_min<<endl;
+                }
 
-    return theta_head;
+            }
+            theta_rad=theta_m*CV_PI/180;
+            pt.x = img.cols/2-stepsize*cos(theta_rad);
+            pt.y = img.rows-stepsize*sin(theta_rad);
+
+        }
+        else if(lanes.a2!=0||lanes.b2!=0||lanes.c2!=0)
+        {
+            temp.a2 = lanes.a2;
+            temp.b2=lanes.b2 +2*lanes.a2*50*sgn(lanes.a2);
+            temp.c2 = lanes.c2-50+lanes.a2*50*50+sgn(lanes.a2)*50*lanes.b2;
+            float theta_rad;
+            for(theta=0;theta<180;theta++)
+            {
+                theta_rad=theta*CV_PI/180;
+
+                if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,temp)==2)
+                {
+                    theta_m=theta;
+                    //cout<<"theta_min : "<<theta_min<<endl;
+                }
+
+            }
+            theta_rad=theta_m*CV_PI/180;
+            pt.x = img.cols/2-stepsize*cos(theta_rad);
+            pt.y = img.rows-stepsize*sin(theta_rad);
+        }
+    }
+    //if(*theta_max==180&&*theta_min!=0)
+    //{
+
+        
+
+    //}
+    if(lanes.numModel==1)
+    {
+        if(*theta_max<25)
+           {
+                pt.x=img.cols/2+stepsize/2;
+                pt.y=img.rows;
+           } 
+        if(*theta_min>155)
+        {
+            pt.x=img.cols/2-stepsize/2;
+            pt.y=img.rows;
+        }
+    }
+    cout<<"point is "<<pt.x<<" pt.y:"<<pt.y<<endl;
+      return pt;
 }
+
 
 //To plot transformed image in waypoint from ransac
  Mat drawLanes1(Mat topView, Parabola2 lanes) {
@@ -302,13 +328,15 @@ int getCoordinateAngle(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
 }
 
 NavPoint find_waypoint(Parabola lan,Mat img)
-{
+{   
+
     Parabola2 lanes;
+    int count_check;
     float a1 = lan.a1;
     float a2 = lan.a2;
     float c1 = lan.c1;
     float c2 = lan.c2;
-    //cout<<"no. of lanes: "<<lan.numModel<<endl;
+    cout<<"no. of lanes: "<<lan.numModel<<endl;
     lanes.numModel=lan.numModel;
 
 
@@ -326,7 +354,7 @@ NavPoint find_waypoint(Parabola lan,Mat img)
         if(fabs(lanes.a1)<0.00001)
             lanes.c1=c1;
     }
-    //cout<<"a1: "<<lanes.a1<<" b1: "<<lanes.b1<<" c1: "<<lanes.c1<<endl;
+    cout<<"a1: "<<lanes.a1<<" b1: "<<lanes.b1<<" c1: "<<lanes.c1<<endl;
 
     if(a2==0)
     {
@@ -356,13 +384,23 @@ NavPoint find_waypoint(Parabola lan,Mat img)
     NavPoint way_point;
     int theta_min,theta_max;
 
-    float coordinateAngle = getCoordinateAngle(img,&theta_min,&theta_max,lanes) * CV_PI/180;
-    float slope = GetAngle(img,theta_min,theta_max,lanes,coordinateAngle);
+    way_point= getCoordinatesxy(img,&theta_min,&theta_max,lanes) ;
+     /*way_point.x = (img.cols/2-stepsize*cos(coordinateAngle));
+    way_point.y = (img.rows-stepsize*sin(coordinateAngle));*/
+    float slope = GetAngle(img,theta_min,theta_max,lanes,way_point.x,way_point.y);
 
-    way_point.x = (img.cols/2-stepsize*cos(coordinateAngle));
-    way_point.y = (img.rows-stepsize*sin(coordinateAngle));
-    //cout<<"coordinate angle "<<coordinateAngle<<endl;
+   
+    /*cout<<"coordinate angle "<<coordinateAngle<<endl;*/
     way_point.angle = slope;
+    
+    count_check=0;
+    while(!isValid_point(img,way_point.y,way_point.x)&&count_check<6)
+    {   
+        way_point.x-=10*sin(slope);
+        way_point.y-=10*cos(slope);
+        count_check++;
+    }
+
 
     return way_point;
 }
@@ -372,8 +410,8 @@ Mat plotWaypoint(Mat costmap, NavPoint waypoint_image) {
     float x = origin.x - 25*cos(CV_PI/2 - waypoint_image.angle);
     float y = origin.y - 25*sin(CV_PI/2 - waypoint_image.angle);
     Point dest = Point(x,y);
-    circle(costmap, origin, 5, Scalar(120), -1, 8, 0);
-    arrowedLine(costmap, origin, dest, Scalar(120), 3, 8, 0, 0.1);
+    circle(costmap, origin, 5, Scalar(255), -1, 8, 0);
+    arrowedLine(costmap, origin, dest, Scalar(255), 3, 8, 0, 0.1);
 
     return costmap;
 }

@@ -596,11 +596,11 @@ Mat drawLanes_white(Mat img, Parabola lanes) {
 
     Mat left_curve(left_lane, true);
     left_curve.convertTo(left_curve, CV_32S); //adapt type for polylines
-    polylines(img, left_curve, false, Scalar(255, 0, 0), 3, CV_AA);
+    polylines(img, left_curve, false, Scalar(255), 3, CV_AA);
 
     Mat right_curve(right_lane, true);
     right_curve.convertTo(right_curve, CV_32S); //adapt type for polylines
-    polylines(img, right_curve, false, Scalar(0, 0, 255), 3, CV_AA);
+    polylines(img, right_curve, false, Scalar(255), 3, CV_AA);
 
     return img;
 }
