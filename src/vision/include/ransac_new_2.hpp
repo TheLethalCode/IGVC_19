@@ -572,5 +572,38 @@ Mat drawLanes(Mat fitLanes, Parabola lanes) {
     return fitLanes;
 }
 
+Mat drawLanes_white(Mat img, Parabola lanes) {
+
+    vector<Point2f> left_lane, right_lane;
+    float a1 = lanes.a1, a2 = lanes.a2, c1 = lanes.c1, c2 = lanes.c2;
+
+    for (int j = 0; j < img.rows; j++){
+
+        float x, y;
+        if (a1 != 0 && c1 != 0) {
+            y = img.rows - j;
+            x = (y*y)/(a1) + c1;
+            left_lane.push_back(Point2f(x, j));
+        }
+
+        if (a2 != 0 && c2 != 0) {
+            y = img.rows - j;
+            x = (y*y)/(a2) + c2;
+            right_lane.push_back(Point2f(x, j));
+        }
+
+    }
+
+    Mat left_curve(left_lane, true);
+    left_curve.convertTo(left_curve, CV_32S); //adapt type for polylines
+    polylines(img, left_curve, false, Scalar(255, 0, 0), 3, CV_AA);
+
+    Mat right_curve(right_lane, true);
+    right_curve.convertTo(right_curve, CV_32S); //adapt type for polylines
+    polylines(img, right_curve, false, Scalar(0, 0, 255), 3, CV_AA);
+
+    return img;
+}
+
 
 #endif

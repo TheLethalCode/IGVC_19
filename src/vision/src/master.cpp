@@ -24,10 +24,11 @@
 #include <lidar_new.hpp>
 #include <lidar_plot.hpp>
 #include <waypoint_generator_new.hpp>
-#include <ransac_new.hpp>
+#include <ransac_new_2.hpp>
 #include <lane_segmentation.hpp>
 #include <lane_laser_scan.hpp>
 #include <find_pothole.hpp>
+#include <bright.hpp>
 // #include <lidar_plot.hpp>
 
 
@@ -75,6 +76,8 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     lidar_stretch_ratio = config.lidar_stretch_ratio;
     lidar_stretch = config.lidar_stretch;
     inflation_r_waypt=config.inflation_r_waypt;
+
+    brightestPixelThreshold = config.brightestPixelThreshold;
 }
 
 Publisher lanes2Costmap_publisher;
@@ -108,7 +111,7 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
 
 
     resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4));
-}   
+}	
 
 
 int main(int argc, char **argv)
@@ -132,7 +135,7 @@ int main(int argc, char **argv)
         lidar_subsriber = n.subscribe("/scan", 1, &laserscan);
     }
 
-    Parabola lanes;     //For Ransac implementation(it is a structure)
+    Parabola lanes;		//For Ransac implementation(it is a structure)
     lanes.a1=0;
     lanes.c1=0;
     lanes.a2=0;
@@ -174,8 +177,16 @@ int main(int argc, char **argv)
 
         //extraction of region of interest
         // Rect roi_rect = Rect(0, frame_orig.rows/3, frame_orig.cols, frame_orig.rows*2/3); //params in order: x, y, height, width (of ROI)
-        Rect roi_rect = Rect(0, 0, frame_orig.cols, frame_orig.rows);
-        Mat roi = frame_orig(roi_rect);
+
+        Mat roi = frame_orig.clone();
+
+        // for (int q = 0; q < frame_orig.rows/5; q++) {
+        //     for (int w = 0; w < frame_orig.cols; w++) {
+        //         roi.at<Vec3b>(q,w)[0] = 0;
+        //         roi.at<Vec3b>(q,w)[1] = 0;
+        //         roi.at<Vec3b>(q,w)[2] = 0;
+        //     }
+        // }
 
         // if (is_debug || is_threshold) {
         //     namedWindow("roi",WINDOW_NORMAL);
@@ -281,61 +292,21 @@ int main(int argc, char **argv)
 
 
         if(true){
-            namedWindow("Obs_removed", 0);
-            imshow("Obs_removed", intersectionImages);
+        	namedWindow("Obs_removed", 0);
+        	imshow("Obs_removed", intersectionImages);
             waitKey(10);
         }
-        // Add top view preprocessed image to costmap
-        // img_to_ls(topView);
-
-
-        //float fraction = 1/4;
-        // Rect topview_rect = Rect(0, 1*frame_orig.rows/3, frame_orig.cols, 2*frame_orig.rows/3); //params in order: x, y, width, height (of ROI)
-        // topView = topView(topview_rect);
-
-        // resize(topView, topView, Size(frame_orig.cols, frame_orig.rows));
-
-
-        /*
-           if (true) {
-        //cout << "Roi of top view" << endl;
-        namedWindow("roi topview", WINDOW_NORMAL);
-        imshow("roi topview", topView);
-        // waitKey(10);
-        }
-         */
-
-
-        //cout << "hello4" << endl;
-
-        //applying ransac on top
-        intersectionImages=top_view(intersectionImages);
-        
-        // Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
-        // costmap=find_pothole(intersectionImages);
-        // sensor_msgs::LaserScan pothole_scan;
-        // pot_holescan = laneLaser(costmap);
-        // lanes2Costmap_publisher.publish(pothole_scan);
+       
+       intersectionImages = brightest(intersectionImages);
 
         if(true)
         {
-            namedWindow("top_intersection",0);
-            imshow("top_intersection",intersectionImages);
+            namedWindow("brightest_pixel",0);
+            imshow("brightest_pixel",intersectionImages);
         }
 
-        // if(true)
-        // {
-        //     namedWindow("pot_hole",0);
-        //     imshow("pot_hole",costmap);
-        // }
-
-        // curve fitting
         lanes = getRansacModel(intersectionImages, lanes);
-        //cout << "Ransac model found" << endl;
-
-        //cout << "hello5" << endl;
-
-        //To show left and right lanes
+        
         Mat fitLanes = drawLanes(intersectionImages, lanes);
 
         costmap = drawLanes_white(costmap,lanes);
@@ -349,8 +320,8 @@ int main(int argc, char **argv)
 
         if(true)
         {
-            namedWindow("costmap_with_lanes",0);
-            imshow("costmap_with_lanes",costmap);
+        	namedWindow("costmap_with_lanes",0);
+        	imshow("costmap_with_lanes",costmap);
         }
 
 
@@ -361,24 +332,37 @@ int main(int argc, char **argv)
         
         resize(obstaclePlot,obstaclePlot,fitLanes.size(),0,0);
         for(int i=0;i<costmap.rows;i++)
-            for(int j=0;j<costmap.cols;j++)
-            {
-                if(obstaclePlot.at<uchar>(i,j)==255)
-                    costmap.at<uchar>(i,j)=255;
-            }
+        	for(int j=0;j<costmap.cols;j++)
+        	{
+        		if(obstaclePlot.at<uchar>(i,j)==255)
+        			costmap.at<uchar>(i,j)=255;
+        	}
 
         if (true) 
         {
-            namedWindow("costmap for waypoint", WINDOW_NORMAL);
-            imshow("costmap for waypoint",costmap);
-            waitKey(10);
+        	namedWindow("costmap for waypoint", WINDOW_NORMAL);
+        	imshow("costmap for waypoint",costmap);
+        	waitKey(10);
         } 
          
 
        
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
-        cout << "waypoint image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
+
+        Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
+        Mat waypt_top = h*waypt;
+
+        double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+        double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+
+        cout <<"z:"<<waypt_top.at<double>(0,0)<<endl;
+
+        cout << "waypt_top " << waypt_top << endl;
+
+        cout << "x= " << x_top << " y=" << y_top << endl;
+
+        cout << "waypoint3,1 image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
         //cout << "Waypoint found" << endl;
         costmap = plotWaypoint(costmap, waypoint_image);
 

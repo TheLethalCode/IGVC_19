@@ -17,16 +17,16 @@ int common_inliers_thresh = 10;
 
 int minPointsForRANSAC = 500;
 
-float pixelsPerMetre = 41.9287;
+float pixelsPerMetre = 37.7834;
 
-float stepsize = 393.442; //3.5*pixelsPerMeter
+float stepsize = 10; //3.5*pixelsPerMeter
 
-int botlength = 90;
-int botwidth = 30;
+int botlength = 1;
+int botwidth = 1;
 
-float yshift; // distance from first view point to lidar in metres
+float yshift = 0.33; // distance from first view point to lidar in metres
 
-float angleshift; // angle between camera and lidar axis in radians
+float angleshift = 0.0524; // angle between camera and lidar axis in radians
 
 float bins = 1080; // no of bins
 
@@ -43,6 +43,11 @@ int grid_size = 3;
 int grid_white_thresh = 3;
 
 int brightestPixelThreshold = 100;
+
+int lidar_stretch_ratio = 5;
+int lidar_stretch = 5;
+
+int inflation_r_waypt = 5;
 
 #endif
 
