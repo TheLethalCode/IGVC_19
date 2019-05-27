@@ -419,7 +419,7 @@ NavPoint find_waypoint(Parabola lan,Mat img)
 
 
     //Plotting transformed image to check
-    if(true) {
+    if(false) {
     Mat fitLanes1 = drawLanes1(img, lanes);
     namedWindow("Waypoint RANSAC plot",0);
     imshow("Waypoint RANSAC plot",fitLanes1);

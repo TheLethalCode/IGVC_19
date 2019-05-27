@@ -28,7 +28,7 @@ Mat draw_pothole_from_cannied_img(Mat cannied_img,Mat img)
      	area=contourArea(contours[i]);
      	perimeter=arcLength(contours[i],true);
 
-     	if(area>140){
+     	if(area>30){
      		// cout<<(perimeter/sqrt(area))<<endl;
      		if((perimeter/sqrt(area))<4 && (perimeter/sqrt(area))>3){
      			mark.push_back(i);
@@ -48,7 +48,7 @@ Mat draw_pothole_from_cannied_img(Mat cannied_img,Mat img)
        Scalar color = Scalar(255);
        //drawContours( drawing, contours, mark, color, 2, 8, hierarchy, 0, Point() );
        // drawContours(drawing,contours,mark[i],Scalar(255),CV_FILLED);
-       drawContours(img,contours,mark[i],Scalar(0),CV_FILLED);
+       drawContours(img,contours,mark[i],Scalar(255),CV_FILLED);
        cout<<"pothole found"<<endl;
      }
 

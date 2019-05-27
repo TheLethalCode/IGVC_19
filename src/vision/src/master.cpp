@@ -83,6 +83,7 @@ void callback(node::TutorialsConfig &config, uint32_t level)
 }
 
 Publisher lanes2Costmap_publisher;
+Publisher pot2staticCostmap_publisher;
 Mat frame_orig;
 
 bool is_image_retrieved = false;
@@ -132,6 +133,7 @@ int main(int argc, char **argv)
     image_transport::Subscriber sub = it.subscribe("/camera/image_color", 2, imageCb);
     Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
     lanes2Costmap_publisher = n.advertise<sensor_msgs::LaserScan>("/lanes", 2);       //declared globally
+    pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
 
     if (use_video == false) {
         lidar_subsriber = n.subscribe("/scan", 1, &laserscan);
@@ -167,8 +169,8 @@ int main(int argc, char **argv)
 
         tic=clock();
 
-        namedWindow("original",WINDOW_NORMAL);
-        imshow("original", frame_orig);
+        // namedWindow("original",WINDOW_NORMAL);
+        // imshow("original", frame_orig);
 
         Mat frame_topview = top_view(frame_orig);
 
@@ -277,6 +279,19 @@ int main(int argc, char **argv)
 
 
         Mat intersectionImages_copy=top_view(intersectionImages);//copy of intersection images for pothole detection
+
+        Mat pothole(roi.rows,roi.cols,CV_8UC1,Scalar(0));
+        pothole = find_pothole(intersectionImages_copy,pothole);
+
+        sensor_msgs::LaserScan pot;
+        pot = laneLaser(pothole);
+        pot2staticCostmap_publisher.publish(pot);
+
+        if(true)
+        {
+        	namedWindow("Top_view_intersection",0);
+        	imshow("Top_view_intersection",intersectionImages_copy);
+        }
      
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
         //cout << "lidar points " << obs_by_lidar.size() << endl;
@@ -288,68 +303,71 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-        /*
 
-        if(lanes.numModel == 1)
-        {
-	        char side;
-	        if(lanes.a1 == 0 && lanes.c1 == 0)
-	        	side = 'r';
-	        else if(lanes.a2 == 0 && lanes.c2 == 0)
-	       		side = 'l';
-	        if(check_whether_hough(intersectionImages))
-	        {
+ 		// Mat hough_image(intersectionImages.rows,intersectionImages.cols, CV_8UC1, Scalar(0));
 
-	        	Mat hough_lane = top_view(intersectionImages);
+   //     namedWindow("hough", 0);
 
-	        	sensor_msgs::LaserScan hough;
-		        hough = laneLaser(hough_lane);
-		        lanes2Costmap_publisher.publish(hough);
+   //      if(lanes.numModel == 1)
+   //      {
+   //          char side;
+   //      // cout << "----------------------\none lane\n--------------------...." <<endl;
 
-		        // for(int i=0;i<100;i++)
-			       //  cout << "fit hough" << endl;
-		        NavPoint waypoint_image = waypoint_for_hough(intersectionImages, side, theta);
+   //          if(lanes.a1 == 0 && lanes.c1 == 0)
+   //              side = 'r';
+   //          else if(lanes.a2 == 0 && lanes.c2 == 0)
+   //              side = 'l';
+   //          if(check_whether_hough(hough_image,intersectionImages))
+   //          {
 
-		        intersectionImages = plotWaypoint(intersectionImages, waypoint_image);
+   //              Mat hough_lane = top_view(hough_image);
+   //      // cout << "----------------------\nhough line true\n--------------------...." <<endl;
 
-		        if(true)
-		        {
-			        namedWindow("waypoint", 0);
-			        imshow("waypoint", intersectionImages);
-			    }
+   //              sensor_msgs::LaserScan hough;
+   //              hough = laneLaser(hough_lane);
+   //              lanes2Costmap_publisher.publish(hough);
+
+   //              // for(int i=0;i<100;i++)
+   //                 //  cout << "fit hough" << endl;
+   //              NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta);
+
+   //              intersectionImages = plotWaypoint(hough_image, waypoint_image);
+               
+   //              Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
+   //              Mat waypt_top = h*waypt;
+
+   //              double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+   //              double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+
+   //              //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
+   //              geometry_msgs::PoseStamped waypoint_bot;
+
+   //              waypoint_bot.header.frame_id = "base_link";
+   //              waypoint_bot.header.stamp = ros::Time::now();
+   //              waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
+   //              waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
+   //              waypoint_bot.pose.position.z = 0;
+   //              float theta = (waypoint_image.angle);
+ 		//        imshow("hough", hough_image);
 
 
-			    Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
-        		Mat waypt_top = h*waypt;
+   //              tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
+   //              waypoint_bot.pose.orientation.x = frame_qt.x();
+   //              waypoint_bot.pose.orientation.y = frame_qt.y();
+   //              waypoint_bot.pose.orientation.z = frame_qt.z();
+   //              waypoint_bot.pose.orientation.w = frame_qt.w();
 
-        		double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
-        		double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+   //              waypoint_publisher.publish(waypoint_bot);
 
-			    //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
-		        geometry_msgs::PoseStamped waypoint_bot;
+   //              waitKey(100);
+   //              spinOnce();
+   //              continue;
+               
+   //          }
+   //      }
+   //      imshow("hough", hough_image);
 
-		        waypoint_bot.header.frame_id = "base_link";
-		        waypoint_bot.header.stamp = ros::Time::now();
-		        waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
-		        waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
-		        waypoint_bot.pose.position.z = 0;
-		        float theta = (waypoint_image.angle);
-
-		        tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
-		        waypoint_bot.pose.orientation.x = frame_qt.x();
-		        waypoint_bot.pose.orientation.y = frame_qt.y();
-		        waypoint_bot.pose.orientation.z = frame_qt.z();
-		        waypoint_bot.pose.orientation.w = frame_qt.w();
-
-		        waypoint_publisher.publish(waypoint_bot);
-
-		        waitKey(100);
-		        spinOnce();
-		        continue;
-        	}
-        }
-
-        */
+        // cout << "----------------------\nhough skipped\n--------------------...." <<endl;
 
        
        // intersectionImages = brightest(intersectionImages);
@@ -381,22 +399,22 @@ int main(int argc, char **argv)
 
         costmap=top_view(costmap);
 
-        if(true)
+        if(false)
         {
         	namedWindow("lanes_top_view",0);
         	imshow("lanes_top_view",costmap);
         }
 
-        costmap=find_pothole(intersectionImages_copy,costmap);
+        // costmap=find_pothole(intersectionImages_copy,costmap);
 
-        if(true)
+        if(false)
         {
         	namedWindow("final_costmap_to_publish",0);
         	imshow("final_costmap_to_publish",costmap);
         }
 
 
-        if (true) {
+        if (false) {
             //cout << "Ransac lanes drawn" << endl;
             namedWindow("lanes fitting", WINDOW_NORMAL);
             imshow("lanes fitting", fitLanes);
@@ -407,9 +425,9 @@ int main(int argc, char **argv)
 
 
         //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
-        sensor_msgs::LaserScan lane_pot;
-        lane_pot = laneLaser(costmap);
-        lanes2Costmap_publisher.publish(lane_pot);
+        sensor_msgs::LaserScan lane;
+        lane = laneLaser(costmap);
+        lanes2Costmap_publisher.publish(lane);
         
         //lidar plot for waypoint obstacle
         /*
@@ -438,7 +456,10 @@ int main(int argc, char **argv)
         cout << "waypoint3,1 image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
         //cout << "Waypoint found" << endl;
        
-        
+        waypoint_image.x=x_top;
+        waypoint_image.y=y_top;
+
+
 
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
         geometry_msgs::PoseStamped waypoint_bot;

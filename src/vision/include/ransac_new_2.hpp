@@ -511,9 +511,9 @@ Parabola getRansacModel(Mat img,Parabola previous)
     }
 
 
-    namedWindow("grid",WINDOW_NORMAL);
+    // namedWindow("grid",WINDOW_NORMAL);
     
-    imshow("grid",plot_grid);
+    // imshow("grid",plot_grid);
 
 
 
