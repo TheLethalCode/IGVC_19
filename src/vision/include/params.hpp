@@ -26,6 +26,7 @@ int botlength = 1;
 int botwidth = 1;
 
 // float yshift = 0.33; // distance from first view point to lidar in metres
+float xshift = 4;
 float yshift = 0.25;
 
 // float angleshift = 0.0524; // angle between camera and lidar axis in radians

@@ -65,6 +65,7 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     botlength = config.botlength;
     botwidth = config.botwidth;
 
+    xshift = config.xshift;
     yshift = config.yshift;
     angleshift = config.angleshift;
     bins = config.bins;
