@@ -29,11 +29,12 @@
 #include <lane_laser_scan.hpp>
 #include <find_pothole.hpp>
 #include <bright.hpp>
+#include <hough.hpp>
 // #include <lidar_plot.hpp>
 
 
-#include <obstacle_det_vision_lidar.hpp>
-// #include <White_obstacle_updated.hpp>
+// #include <obstacle_det_vision_lidar.hpp>
+#include <White_obstacle_updated.hpp>
 // #include <obstacles_prev.hpp>
 
 using namespace std;
@@ -140,6 +141,7 @@ int main(int argc, char **argv)
     lanes.c1=0;
     lanes.a2=0;
     lanes.c2=0;
+    lanes.numModel=0;
 
     while(ros::ok())
     {
@@ -288,7 +290,9 @@ int main(int argc, char **argv)
 
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
         cout << "lidar points " << obs_by_lidar.size() << endl;
-        intersectionImages = remove_obstacles(roi, intersectionImages,obs_by_lidar);
+        intersectionImages = remove_obstacles(roi, intersectionImages);
+
+
 
 
         if(true){
@@ -296,10 +300,69 @@ int main(int argc, char **argv)
         	imshow("Obs_removed", intersectionImages);
             waitKey(10);
         }
-       
-       intersectionImages = brightest(intersectionImages);
 
-        if(true)
+        if(lanes.numModel == 1)
+        {
+	        char side;
+	        if(lanes.a1 == 0 && lanes.c1 == 0)
+	        	side = 'r';
+	        else if(lanes.a2 == 0 && lanes.c2 == 0)
+	       		side = 'l';
+	        if(check_whether_hough(intersectionImages))
+	        {
+
+	        	Mat hough_lane = top_view(intersectionImages);
+
+	        	sensor_msgs::LaserScan hough;
+		        hough = laneLaser(hough_lane);
+		        lanes2Costmap_publisher.publish(hough);
+
+		        // for(int i=0;i<100;i++)
+			       //  cout << "fit hough" << endl;
+		        NavPoint waypoint_image = waypoint_for_hough(intersectionImages, side, theta);
+
+		        intersectionImages = plotWaypoint(intersectionImages, waypoint_image);
+
+		        if(true)
+		        {
+			        namedWindow("waypoint", 0);
+			        imshow("waypoint", intersectionImages);
+			    }
+
+
+			    Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
+        		Mat waypt_top = h*waypt;
+
+        		double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+        		double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+
+			    //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
+		        geometry_msgs::PoseStamped waypoint_bot;
+
+		        waypoint_bot.header.frame_id = "base_link";
+		        waypoint_bot.header.stamp = ros::Time::now();
+		        waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
+		        waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
+		        waypoint_bot.pose.position.z = 0;
+		        float theta = (waypoint_image.angle);
+
+		        tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
+		        waypoint_bot.pose.orientation.x = frame_qt.x();
+		        waypoint_bot.pose.orientation.y = frame_qt.y();
+		        waypoint_bot.pose.orientation.z = frame_qt.z();
+		        waypoint_bot.pose.orientation.w = frame_qt.w();
+
+		        waypoint_publisher.publish(waypoint_bot);
+
+		        waitKey(100);
+		        spinOnce();
+		        continue;
+        	}
+        }
+       
+       // intersectionImages = brightest(intersectionImages);
+
+        if(false)
         {
             namedWindow("brightest_pixel",0);
             imshow("brightest_pixel",intersectionImages);
@@ -407,8 +470,8 @@ int main(int argc, char **argv)
         is_image_retrieved = false;
         is_laserscan_retrieved = false;
 
+        
         toc=clock();
-
         cout<<"FPS:"<<CLOCKS_PER_SEC/(toc-tic)<<endl;
         spinOnce();
     }
