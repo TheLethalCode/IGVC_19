@@ -40,22 +40,22 @@ Mat draw_pothole_from_cannied_img(Mat cannied_img,Mat img)
      // cout<<mark<<endl;
 
      //initialize image for output
-     Mat drawing = Mat::zeros( cannied_img.size(), CV_8UC1 );
+     // Mat drawing = Mat::zeros( cannied_img.size(), CV_8UC1 );
 
      //if pothole is detected then only draw pothole
      for(i=0;i<mark.size();i++){
 
        Scalar color = Scalar(255);
        //drawContours( drawing, contours, mark, color, 2, 8, hierarchy, 0, Point() );
-       drawContours(drawing,contours,mark[i],Scalar(255),CV_FILLED);
+       // drawContours(drawing,contours,mark[i],Scalar(255),CV_FILLED);
        drawContours(img,contours,mark[i],Scalar(0),CV_FILLED);
        cout<<"pothole found"<<endl;
      }
 
-       return drawing;
+       return img;
 }
 
-Mat find_pothole(Mat img)
+Mat find_pothole(Mat img,Mat costmap)
 {
 	int i,j;
 	Mat gray = img.clone();
@@ -68,9 +68,9 @@ Mat find_pothole(Mat img)
 	// gray=grass_rm(top_view);
 	Canny(gray,gray,200,400,3);
 
-	drawing=draw_pothole_from_cannied_img(gray,img);
+	costmap=draw_pothole_from_cannied_img(gray,costmap);
 
-	return drawing;
+	return costmap;
 }
 
 /*int main()

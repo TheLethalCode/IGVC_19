@@ -276,18 +276,7 @@ int main(int argc, char **argv)
 
 
         Mat intersectionImages_copy=top_view(intersectionImages);//copy of intersection images for pothole detection
-        
-        Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
-        costmap=find_pothole(intersectionImages_copy);
-
-        if(true){
-            namedWindow("pot_hole", WINDOW_NORMAL);
-            imshow("pot_hole", costmap);
-            waitKey(10);
-       
-        }
-
-
+     
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
         //cout << "lidar points " << obs_by_lidar.size() << endl;
         intersectionImages = remove_obstacles(roi, intersectionImages);
@@ -370,11 +359,41 @@ int main(int argc, char **argv)
             imshow("brightest_pixel",intersectionImages);
         }
 
+        Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
+
         lanes = getRansacModel(intersectionImages, lanes);
         
         Mat fitLanes = drawLanes(intersectionImages, lanes);
-
         costmap = drawLanes_white(costmap,lanes);
+
+        //return waypoint assuming origin at bottom left of image (in pixel coordinates)
+        NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
+
+        Mat waypts = costmap.clone();
+        waypts = plotWaypoint(waypts, waypoint_image);
+
+
+        //the Mat costmap is now a top view of lanes with the waypoint drawn on it
+
+        namedWindow("waypoint", WINDOW_NORMAL);
+        imshow("waypoint", waypts);
+
+        costmap=top_view(costmap);
+
+        if(true)
+        {
+        	namedWindow("lanes_top_view",0);
+        	imshow("lanes_top_view",costmap);
+        }
+
+        costmap=find_pothole(intersectionImages_copy,costmap);
+
+        if(true)
+        {
+        	namedWindow("final_costmap_to_publish",0);
+        	imshow("final_costmap_to_publish",costmap);
+        }
+
 
         if (true) {
             //cout << "Ransac lanes drawn" << endl;
@@ -383,16 +402,12 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-        if(true)
-        {
-        	namedWindow("costmap_with_lanes",0);
-        	imshow("costmap_with_lanes",costmap);
-        }
+
 
 
         //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
         sensor_msgs::LaserScan lane_pot;
-        lane_pot = laneLaser(fitLanes);
+        lane_pot = laneLaser(costmap);
         lanes2Costmap_publisher.publish(lane_pot);
         
         //lidar plot for waypoint obstacle
@@ -406,18 +421,6 @@ int main(int argc, char **argv)
         	}
 		*/
 
-	
-        if (true) 
-        {
-        	namedWindow("costmap for waypoint", WINDOW_NORMAL);
-        	imshow("costmap for waypoint",costmap);
-        	waitKey(10);
-        } 
-         
-
-       
-        //return waypoint assuming origin at bottom left of image (in pixel coordinates)
-        NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
 
         Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
         Mat waypt_top = h*waypt;
@@ -433,14 +436,7 @@ int main(int argc, char **argv)
 
         cout << "waypoint3,1 image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
         //cout << "Waypoint found" << endl;
-        costmap = plotWaypoint(costmap, waypoint_image);
-
-
-        //the Mat costmap is now a top view of lanes with the waypoint drawn on it
-
-        namedWindow("waypoint", WINDOW_NORMAL);
-        imshow("waypoint", costmap);
-        waitKey(10);
+       
         
 
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)

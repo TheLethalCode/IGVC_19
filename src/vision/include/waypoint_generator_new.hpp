@@ -8,8 +8,8 @@
 #include <iostream>
 #include <math.h>
 #include "ransac_new_2.hpp"
-#define ll 60
-#define bb 60
+#define ll 70
+#define bb 70
 
 using namespace std;
 using namespace cv;
@@ -75,7 +75,8 @@ int isValid_point(Mat img, int i, int j)
                 return 0;
             }
 
-            if(img.at<uchar>(y1,x1)>0)
+            if((img.at<uchar>(i,j)==255))
+                
                 return 0;
         }
     }
@@ -248,8 +249,8 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
         else if(lanes.a2!=0||lanes.b2!=0||lanes.c2!=0)
         {
             temp.a2 = lanes.a2;
-            temp.b2=lanes.b2 +2*lanes.a2*50*sgn(lanes.a2);
-            temp.c2 = lanes.c2-50+lanes.a2*50*50+sgn(lanes.a2)*50*lanes.b2;
+            temp.b2=lanes.b2 +2*lanes.a2*bb*sgn(lanes.a2);
+            temp.c2 = lanes.c2-ll+lanes.a2*bb*bb+sgn(lanes.a2)*bb*lanes.b2;
             float theta_rad;
             for(theta=0;theta<180;theta++)
             {
@@ -258,6 +259,7 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
                 if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,temp)==2)
                 {
                     theta_m=theta;
+                    break;
                     //cout<<"theta_min : "<<theta_min<<endl;
                 }
 
@@ -373,11 +375,11 @@ NavPoint find_waypoint(Parabola lan,Mat img)
 
 
     //Plotting transformed image to check
-    // if(true) {
-    // Mat fitLanes1 = drawLanes1(img, lanes);
-    // namedWindow("Waypoint RANSAC plot",0);
-    // imshow("Waypoint RANSAC plot",fitLanes1);
-    // }
+    if(true) {
+    Mat fitLanes1 = drawLanes1(img, lanes);
+    namedWindow("Waypoint RANSAC plot",0);
+    imshow("Waypoint RANSAC plot",fitLanes1);
+    }
 
     NavPoint way_point;
     int theta_min,theta_max;
