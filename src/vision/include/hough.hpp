@@ -1,3 +1,6 @@
+#ifndef HOUGH
+#define HOUGH
+
 #include"opencv2/highgui/highgui.hpp"
 #include"opencv2/imgproc/imgproc.hpp"
 #include"opencv2/core/core.hpp"
@@ -41,6 +44,10 @@ bool check_whether_hough(Mat &img)
 	// }
 	// namedWindow("hough lines",0);
  // 	imshow("hough lines",hough);
+    if(lines.size() == 0)
+    {
+        return false;
+    }
  	Vec4i l = lines[0];
  	p1.x = l[0];
  	p1.y = l[1];
@@ -56,8 +63,7 @@ bool check_whether_hough(Mat &img)
  		img = img_hough.clone();
  		return true;
  	}
- 	else 
- 		return false;
+  		
 }
 
 NavPoint waypoint_for_hough(Mat img, char c, float theta)
@@ -96,3 +102,5 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
     way_point.angle = theta;
     return way_point;
 }
+
+#endif
