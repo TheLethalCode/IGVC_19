@@ -17,16 +17,19 @@ int common_inliers_thresh = 10;
 
 int minPointsForRANSAC = 500;
 
-float pixelsPerMetre = 37.7834;
+// float pixelsPerMetre = 37.7834;
+float pixelsPerMetre = 25.06265;
 
 float stepsize = 10; //3.5*pixelsPerMeter
 
 int botlength = 1;
 int botwidth = 1;
 
-float yshift = 0.33; // distance from first view point to lidar in metres
+// float yshift = 0.33; // distance from first view point to lidar in metres
+float yshift = 0.25;
 
-float angleshift = 0.0524; // angle between camera and lidar axis in radians
+// float angleshift = 0.0524; // angle between camera and lidar axis in radians
+float angleshift = 0.1;
 
 float bins = 1080; // no of bins
 

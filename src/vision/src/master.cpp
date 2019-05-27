@@ -33,8 +33,8 @@
 // #include <lidar_plot.hpp>
 
 
-// #include <obstacle_det_vision_lidar.hpp>
-#include <White_obstacle_updated.hpp>
+#include <obstacle_det_vision_lidar.hpp>
+// #include <White_obstacle_updated.hpp>
 // #include <obstacles_prev.hpp>
 
 using namespace std;
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
      
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
         //cout << "lidar points " << obs_by_lidar.size() << endl;
-        intersectionImages = remove_obstacles(roi, intersectionImages);
+        intersectionImages = remove_obstacles(roi, intersectionImages, obs_by_lidar);
 
         if(true){
         	namedWindow("Obs_removed", 0);
