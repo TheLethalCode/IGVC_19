@@ -20,7 +20,7 @@ cleanup()
 }
 
 switch_port () {
-    if [ $port \> 1 ]
+    if [ $port \> 2 ]
     then
         port=0
         printf "hello"
