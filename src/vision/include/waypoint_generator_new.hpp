@@ -8,8 +8,9 @@
 #include <iostream>
 #include <math.h>
 #include "ransac_new_2.hpp"
-#define ll 70
-#define bb 70
+#define ll 80
+#define bb 80
+#define dist 180
 
 using namespace std;
 using namespace cv;
@@ -230,7 +231,7 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             temp.b1=lanes.b1-2*lanes.a1*bb*sgn(lanes.a1);
             temp.c1 = lanes.c1+ll+lanes.a1*bb*bb-sgn(lanes.a1)*bb*lanes.b1;
             float theta_rad;
-            for(theta=0;theta<180;theta++)
+            for(theta=180;theta>0;theta--)
             {
                 theta_rad=theta*CV_PI/180;
 
@@ -244,6 +245,28 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             theta_rad=theta_m*CV_PI/180;
             pt.x = img.cols/2-stepsize*cos(theta_rad);
             pt.y = img.rows-stepsize*sin(theta_rad);
+            if(theta_m<45)
+            {
+                float xd,yd;
+                cout << "noooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo" << endl;
+                xd = (img.cols/2)-stepsize*cos(theta_rad);
+                yd = img.rows - stepsize*sin(theta_rad);
+                for(theta=0;theta<180;theta++)
+                {
+                    theta_rad=theta*CV_PI/180;
+
+                    if(checklane(yd-dist*sin(theta_rad),xd-dist*cos(theta_rad),img,temp)==1)
+                    {
+                        theta_m=theta;
+                        //cout<<"theta_min : "<<theta_min<<endl;
+                    }
+
+                }
+                theta_rad = theta_m*CV_PI/180;
+                pt.x = xd-dist*cos(theta_rad);
+                pt.y = yd-dist*sin(theta_rad);
+            }
+
 
         }
         else if(lanes.a2!=0||lanes.b2!=0||lanes.c2!=0)
@@ -255,8 +278,8 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             for(theta=0;theta<180;theta++)
             {
                 theta_rad=theta*CV_PI/180;
-
-                if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,temp)==2)
+                
+                if(checklane(img.rows-dist*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,temp)==2)
                 {
                     theta_m=theta;
                     break;
@@ -267,6 +290,27 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             theta_rad=theta_m*CV_PI/180;
             pt.x = img.cols/2-stepsize*cos(theta_rad);
             pt.y = img.rows-stepsize*sin(theta_rad);
+            if(theta>135)
+            {
+                cout << "yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeees" <<endl;
+                float xd,yd;
+                xd = (img.cols/2)-stepsize*cos(theta_rad);
+                yd = img.rows - stepsize*sin(theta_rad);
+                for(theta=0;theta<180;theta++)
+                {
+                    theta_rad=theta*CV_PI/180;
+
+                    if(checklane(yd-dist*sin(theta_rad),xd-dist*cos(theta_rad),img,temp)==1)
+                    {
+                        theta_m=theta;
+                        //cout<<"theta_min : "<<theta_min<<endl;
+                    }
+
+                }
+                theta_rad = theta_m*CV_PI/180;
+                pt.x = xd-dist*cos(theta_rad);
+                pt.y = yd-dist*sin(theta_rad);
+            }
         }
     }
     //if(*theta_max==180&&*theta_min!=0)
