@@ -540,6 +540,7 @@ Parabola getRansacModel(Mat img,Parabola previous)
 
 Mat drawLanes(Mat fitLanes, Parabola lanes) {
 
+    Mat output(fitLanes.rows,fitLanes.cols,CV_8UC3,Scalar(0,0,0));
 
     vector<Point2f> left_lane, right_lane;
     float a1 = lanes.a1, a2 = lanes.a2, c1 = lanes.c1, c2 = lanes.c2;
@@ -563,13 +564,13 @@ Mat drawLanes(Mat fitLanes, Parabola lanes) {
 
     Mat left_curve(left_lane, true);
     left_curve.convertTo(left_curve, CV_32S); //adapt type for polylines
-    polylines(fitLanes, left_curve, false, Scalar(255, 0, 0), 3, CV_AA);
+    polylines(output, left_curve, false, Scalar(255, 0, 0), 3, CV_AA);
 
     Mat right_curve(right_lane, true);
     right_curve.convertTo(right_curve, CV_32S); //adapt type for polylines
-    polylines(fitLanes, right_curve, false, Scalar(0, 0, 255), 3, CV_AA);
+    polylines(output, right_curve, false, Scalar(0, 0, 255), 3, CV_AA);
 
-    return fitLanes;
+    return output;
 }
 
 Mat drawLanes_white(Mat img, Parabola lanes) {

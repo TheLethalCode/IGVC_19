@@ -75,9 +75,7 @@ int isValid_point(Mat img, int i, int j)
                 return 0;
             }
 
-            if((img.at<Vec3b>(y1,x1)[0]==255 && img.at<Vec3b>(y1,x1)[1]==255 && img.at<Vec3b>(y1,x1)[2]==255) ||
-                (img.at<Vec3b>(y1,x1)[0]==255 && img.at<Vec3b>(y1,x1)[1]==0 && img.at<Vec3b>(y1,x1)[2]==0) ||
-                (img.at<Vec3b>(y1,x1)[0]==0 && img.at<Vec3b>(y1,x1)[1]==0 && img.at<Vec3b>(y1,x1)[2]==255))
+            if(img.at<uchar>(y1,x1)>0)
                 return 0;
         }
     }
@@ -375,11 +373,11 @@ NavPoint find_waypoint(Parabola lan,Mat img)
 
 
     //Plotting transformed image to check
-    if(true) {
-    Mat fitLanes1 = drawLanes1(img, lanes);
-    namedWindow("Waypoint RANSAC plot",0);
-    imshow("Waypoint RANSAC plot",fitLanes1);
-    }
+    // if(true) {
+    // Mat fitLanes1 = drawLanes1(img, lanes);
+    // namedWindow("Waypoint RANSAC plot",0);
+    // imshow("Waypoint RANSAC plot",fitLanes1);
+    // }
 
     NavPoint way_point;
     int theta_min,theta_max;

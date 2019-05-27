@@ -79,7 +79,7 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
         }
     }
     int waypoint_i,waypoint_j;
-    cout<<c<<endl;
+    // cout<<c<<endl;
     if(c == 'l')
     {
         waypoint_i = (ver_i + 2*img.rows -1)/3;
@@ -93,9 +93,7 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
        
         theta = theta*CV_PI/180 + CV_PI/2;
     }
-    else
-        for(int i=0;i<500;i++)
-            cout<<"loaded ransac"<<endl;
+    
     NavPoint way_point;
     way_point.x = waypoint_j;
     way_point.y = waypoint_i;

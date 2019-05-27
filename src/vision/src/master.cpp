@@ -29,7 +29,7 @@
 #include <lane_laser_scan.hpp>
 #include <find_pothole.hpp>
 #include <bright.hpp>
-#include <hough.hpp>
+// #include <hough.hpp>
 // #include <lidar_plot.hpp>
 
 
@@ -289,17 +289,16 @@ int main(int argc, char **argv)
 
 
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
-        cout << "lidar points " << obs_by_lidar.size() << endl;
+        //cout << "lidar points " << obs_by_lidar.size() << endl;
         intersectionImages = remove_obstacles(roi, intersectionImages);
-
-
-
 
         if(true){
         	namedWindow("Obs_removed", 0);
         	imshow("Obs_removed", intersectionImages);
             waitKey(10);
         }
+
+        /*
 
         if(lanes.numModel == 1)
         {
@@ -360,6 +359,8 @@ int main(int argc, char **argv)
         	}
         }
 
+        */
+
        
        // intersectionImages = brightest(intersectionImages);
 
@@ -394,6 +395,8 @@ int main(int argc, char **argv)
         lane_pot = laneLaser(fitLanes);
         lanes2Costmap_publisher.publish(lane_pot);
         
+        //lidar plot for waypoint obstacle
+        /*
         resize(obstaclePlot,obstaclePlot,fitLanes.size(),0,0);
         for(int i=0;i<costmap.rows;i++)
         	for(int j=0;j<costmap.cols;j++)
@@ -401,7 +404,9 @@ int main(int argc, char **argv)
         		if(obstaclePlot.at<uchar>(i,j)==255)
         			costmap.at<uchar>(i,j)=255;
         	}
+		*/
 
+	
         if (true) 
         {
         	namedWindow("costmap for waypoint", WINDOW_NORMAL);
