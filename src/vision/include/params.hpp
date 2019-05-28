@@ -13,27 +13,27 @@ bool used_hough = false;
 
 double wTh = 50; //set threshold for white color
 
-int iteration = 100;  //define no of iteration, max dist squre of pt from our estimated Parabola2
+int iteration = 300;  //define no of iteration, max dist squre of pt from our estimated Parabola2
 
-int maxDist = 300; //define threshold distance to remove white pixel near lane1
+int maxDist = 10; //define threshold distance to remove white pixel near lane1
 
-int minLaneInlier = 1500; // 2000 for night
+int minLaneInlier = 65; // 2000 for night
 
 int common_inliers_thresh = 10;
 
-int minPointsForRANSAC = 500;
+int minPointsForRANSAC = 700;
 
 // float pixelsPerMetre = 37.7834;
 float pixelsPerMetre = 25.06265;
 
-float stepsize = 10; //3.5*pixelsPerMeter
+float stepsize = 225; //3.5*pixelsPerMeter
 
-int botlength = 1;
-int botwidth = 1;
+int botlength = 30;
+int botwidth = 30;
 
 // float yshift = 0.33; // distance from first view point to lidar in metres
-float xshift = 4;
-float yshift = 0.25;
+float xshift = 1;
+float yshift = 0.33;
 
 // float angleshift = 0.0524; // angle between camera and lidar axis in radians
 float angleshift = 0.1;
@@ -42,11 +42,11 @@ float bins = 1080; // no of bins
 
 int obstacleWidth = 30;
 
-int medianBlurkernel = 3; //kernel size of medianBlur for cleaning intersectionImages
+int medianBlurkernel = 7; //kernel size of medianBlur for cleaning intersectionImages
 
 int neighbourhoodSize = 25; //neighbourhood size or block size for adaptive thresholding
 
-int constantSubtracted = -30; //constant subtracted during adaptive thresholding
+int constantSubtracted = -45; //constant subtracted during adaptive thresholding
 
 int grid_size = 3;
 
