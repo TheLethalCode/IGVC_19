@@ -169,6 +169,12 @@ int main(int argc, char **argv)
 
         tic=clock();
 
+        Mat bw;
+        cvtColor(frame_orig,bw,cv::COLOR_RGB2GRAY);
+
+        namedWindow("wb",0);
+        imshow("wb",bw);
+
         // namedWindow("original",WINDOW_NORMAL);
         // imshow("original", frame_orig);
 
@@ -295,7 +301,7 @@ int main(int argc, char **argv)
         	namedWindow("Top_view_intersection",0);
         	imshow("Top_view_intersection",intersectionImages_copy);
         }
-     
+    
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
         //cout << "lidar points " << obs_by_lidar.size() << endl;
         intersectionImages = remove_obstacles(roi, intersectionImages, obs_by_lidar);

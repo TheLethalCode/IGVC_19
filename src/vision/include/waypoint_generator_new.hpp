@@ -176,7 +176,7 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
         stepsize=stepsize/5;*/
     if(lanes.numModel==2)
     {
-        for(theta=0;theta<((*theta_max)-(*theta_min))/2;theta++)
+        /*for(theta=0;theta<((*theta_max)-(*theta_min))/2;theta++)
         {
             i=img.rows-stepsize*sin((theta_mid+theta)*CV_PI/180);
             j=img.cols/2-stepsize*cos((theta_mid+theta)*CV_PI/180);
@@ -215,6 +215,14 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
                     break;
                 }
             }
+        }*/
+        j=img.rows*2/5;
+        j=img.rows*2/5;
+        if((lanes.a1*j*j+lanes.b1*j+lanes.c1)>0&&(lanes.a2*j*j+lanes.b2*j+lanes.c2)<img.cols)
+        {
+            pt.y=j;
+            pt.x= ((lanes.a1*j*j+lanes.b1*j+lanes.c1)+(lanes.a2*j*j+lanes.b2*j+lanes.c2))/2;
+
         }
     }
     else if(lanes.numModel==1)
