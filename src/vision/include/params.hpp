@@ -5,6 +5,12 @@ bool is_debug = false;
 bool is_run = true;
 bool is_threshold = false;
 
+
+bool is_image_retrieved = false;
+bool use_video = false;
+char side;
+bool used_hough = false;
+
 double wTh = 50; //set threshold for white color
 
 int iteration = 100;  //define no of iteration, max dist squre of pt from our estimated Parabola2

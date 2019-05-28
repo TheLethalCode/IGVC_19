@@ -58,6 +58,21 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
     float c2=present.c2;
     int number_of_lanes=present.numModel;
 
+    if (used_hough == true && present.numModel == 1) {
+        if (side == 'l') {
+            if(present.a2 != 0 && present.c2 != 0) {
+                present = swap(present);                
+            }
+            return present; 
+        } 
+        else if (side == 'r') {
+            if(present.a1 != 0 && present.c1 != 0) {
+                present = swap(present);                
+            }
+            return present;
+        }
+    }
+
     if(number_of_lanes==2)
     {
         if(c2<c1)
@@ -511,9 +526,8 @@ Parabola getRansacModel(Mat img,Parabola previous)
     }
 
 
-    // namedWindow("grid",WINDOW_NORMAL);
-    
-    // imshow("grid",plot_grid);
+    namedWindow("grid",WINDOW_NORMAL);    
+    imshow("grid",plot_grid);
 
 
 

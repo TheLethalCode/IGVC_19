@@ -22,20 +22,28 @@ Mat draw_pothole_from_cannied_img(Mat cannied_img,Mat img)
      float area,perimeter;
      vector <int > mark;
 
-     //finding pothole among contours
+     //finding pothole among contoursi
+     int index = -1, area_max;
      for(i=0;i<contours.size();i++)
      {
      	area=contourArea(contours[i]);
      	perimeter=arcLength(contours[i],true);
 
-     	if(area>30){
+
+
+     	if(area>40){
      		// cout<<(perimeter/sqrt(area))<<endl;
      		if((perimeter/sqrt(area))<4 && (perimeter/sqrt(area))>3){
-     			mark.push_back(i);
-     			cout<<mark[i]<<endl;
+                if (area > area_max) {
+                    area_max = area;
+                    index = i;
+                }
+
+     			
      		}
      	}
      }
+    // cout<<mark[i]<<endl;
 
      // cout<<mark<<endl;
 
@@ -43,14 +51,16 @@ Mat draw_pothole_from_cannied_img(Mat cannied_img,Mat img)
      // Mat drawing = Mat::zeros( cannied_img.size(), CV_8UC1 );
 
      //if pothole is detected then only draw pothole
-     for(i=0;i<mark.size();i++){
+     // for(i=0;i<mark.size();i++){
 
-       Scalar color = Scalar(255);
+     //   Scalar color = Scalar(255);
        //drawContours( drawing, contours, mark, color, 2, 8, hierarchy, 0, Point() );
        // drawContours(drawing,contours,mark[i],Scalar(255),CV_FILLED);
-       drawContours(img,contours,mark[i],Scalar(255),CV_FILLED);
-       cout<<"pothole found"<<endl;
+     if (index != -1) {
+        drawContours(img,contours,index,Scalar(255),CV_FILLED);
+        cout<<"pothole found"<<endl;     
      }
+     // }
 
        return img;
 }

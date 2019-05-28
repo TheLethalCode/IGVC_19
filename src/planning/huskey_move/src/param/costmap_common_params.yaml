@@ -28,5 +28,7 @@ inflation_layer:
 
 static_layer:
   enabled:              false
-  map_topic:            "map"
+  map_topic:            "odom"
+  # observation_sources: pot 
+  # pot: {sensor_frame: laser, data_type: LaserScan, clearing: true, marking: true, topic: pot_hole_topic, inf_is_valid: true}
 
