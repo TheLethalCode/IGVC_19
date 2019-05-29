@@ -80,6 +80,8 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     inflation_r_waypt=config.inflation_r_waypt;
 
     brightestPixelThreshold = config.brightestPixelThreshold;
+
+    rscale = config.rscale;
 }
 
 Publisher lanes2Costmap_publisher;

@@ -56,8 +56,25 @@ Mat draw_pothole_from_cannied_img(Mat cannied_img,Mat img)
      //   Scalar color = Scalar(255);
        //drawContours( drawing, contours, mark, color, 2, 8, hierarchy, 0, Point() );
        // drawContours(drawing,contours,mark[i],Scalar(255),CV_FILLED);
+
      if (index != -1) {
-        drawContours(img,contours,index,Scalar(255),CV_FILLED);
+        Rect box_pothole;
+        box_pothole =  boundingRect(contours[index]);
+        Point centre;
+        centre.x = (box_pothole.tl().x + box_pothole.br().x)/2;
+        centre.y = (box_pothole.tl().y + box_pothole.br().y)/2;
+        float radius = sqrt(contourArea(contours[index])/CV_PI);
+                radius = radius*rscale;
+
+        if((centre.x-radius-5)  >= 0 && (radius+centre.x+5) < img.cols && (centre.y-radius-5) >= 0 && (radius+centre.y+5) < img.rows)
+        {
+            circle(img, centre, radius, Scalar(255), -1, 8, 0);
+        }
+        else
+        {
+            radius /= rscale;
+            circle(img, centre, radius, Scalar(255), -1, 8, 0);
+        }
         // cout<<"pothole found"<<endl;     
      }
      // }

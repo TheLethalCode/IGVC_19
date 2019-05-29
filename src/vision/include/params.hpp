@@ -59,5 +59,7 @@ int lidar_stretch = 5;
 
 int inflation_r_waypt = 5;
 
+float rscale = 2;
+
 #endif
 
