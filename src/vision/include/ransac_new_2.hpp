@@ -720,24 +720,23 @@ Parabola getRansacModel(Mat img,Parabola previous)
     return param;
 }
 
-Mat drawLanes(Mat fitLanes, Parabola lanes) {
+Mat drawLanes(Mat output, Parabola lanes) {
 
-    Mat output=fitLanes.clone();
 
     vector<Point2f> left_lane, right_lane;
     float a1 = lanes.a1, a2 = lanes.a2, c1 = lanes.c1, c2 = lanes.c2;
 
-    for (int j = 0; j < fitLanes.rows; j++){
+    for (int j = 0; j < output.rows; j++){
 
         float x, y;
         if (a1 != 0 && c1 != 0) {
-            y = fitLanes.rows - j;
+            y = output.rows - j;
             x = (y*y)/(a1) + c1;
             left_lane.push_back(Point2f(x, j));
         }
 
         if (a2 != 0 && c2 != 0) {
-            y = fitLanes.rows - j;
+            y = output.rows - j;
             x = (y*y)/(a2) + c2;
             right_lane.push_back(Point2f(x, j));
         }

@@ -175,8 +175,11 @@ int main(int argc, char **argv)
         Mat bw;
         cvtColor(frame_orig,bw,cv::COLOR_RGB2GRAY);
 
-        namedWindow("wb",0);
-        imshow("wb",bw);
+        if(false)
+        {
+	        namedWindow("bw",0);
+	        imshow("bw",bw);
+        }
 
         // namedWindow("original",WINDOW_NORMAL);
         // imshow("original", frame_orig);
@@ -291,6 +294,7 @@ int main(int argc, char **argv)
        
         }
 
+        /*
 
         Mat intersectionImages_copy=top_view(intersectionImages);//copy of intersection images for pothole detection
         
@@ -312,12 +316,14 @@ int main(int argc, char **argv)
         	namedWindow("Top_view_intersection",0);
         	imshow("Top_view_intersection",intersectionImages_copy);
         }
+        */
         
         if(is_debug) {cout << "LIDAR obstacles plotting" << endl;}
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
         // if(is_debug) cout << "lidar points " << obs_by_lidar.size() << endl;
 
         if(is_debug) {cout << "Obstacle removal" << endl;}
+
         intersectionImages = remove_obstacles(roi, intersectionImages, obs_by_lidar);
 
         if(true){
@@ -328,7 +334,7 @@ int main(int argc, char **argv)
 
  		Mat hough_image(intersectionImages.rows,intersectionImages.cols, CV_8UC1, Scalar(0));
 
-       namedWindow("hough", 0);
+        namedWindow("hough", 0);
 
         if(lanes.numModel == 1)
         {
@@ -361,6 +367,12 @@ int main(int argc, char **argv)
 
                 double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
                 double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+
+                //waypoint transform for hough line
+                /*
+                waypoint_image.x=x_top;
+                waypoint_image.y=y_top;
+                */
 
                 //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
                 geometry_msgs::PoseStamped waypoint_bot;
@@ -406,7 +418,7 @@ int main(int argc, char **argv)
         if(is_debug) {cout << "RANSAC started" << endl;}
         lanes = getRansacModel(intersectionImages, lanes);
         // if(is_debug) {cout << "Lanes drawn on original image" << endl;}
-        Mat fitLanes = drawLanes(intersectionImages, lanes);
+        Mat fitLanes = drawLanes(frame_orig, lanes);
         //if(is_debug) {cout << "Lanes drawn on blank image" << endl;}
         costmap = drawLanes_white(costmap,lanes);
 
@@ -431,7 +443,7 @@ int main(int argc, char **argv)
         	imshow("lanes_top_view",costmap);
         }
 
-        // costmap=find_pothole(intersectionImages_copy,costmap);
+        costmap=find_pothole(top_view(bw),costmap);
 
         if(true)
         {
@@ -440,11 +452,10 @@ int main(int argc, char **argv)
         }
 
 
-        if (false) {
+        if (true) {
             //cout << "Ransac lanes drawn" << endl;
             namedWindow("lanes fitting", WINDOW_NORMAL);
             imshow("lanes fitting", fitLanes);
-            waitKey(10);
         }
 
 

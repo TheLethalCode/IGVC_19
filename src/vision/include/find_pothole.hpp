@@ -78,6 +78,12 @@ Mat find_pothole(Mat img,Mat costmap)
 	// gray=grass_rm(top_view);
 	Canny(gray,gray,200,400,3);
 
+    if(false)
+    {
+        namedWindow("Canny",0);
+        imshow("Canny",gray);
+    }
+
 	costmap=draw_pothole_from_cannied_img(gray,costmap);
 
 	return costmap;
