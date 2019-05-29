@@ -7,16 +7,16 @@
 
 using namespace std;
 using namespace ros;
-
+/*
 #define xstart1_lat 22.3210062 /// seq: 4100
 #define ystart1_long 87.3111907
 #define xfinal1_lat 22.3208642 /// seq: 4149
-#define yfinal1_long 87.3110999
+#define yfinal1_long 87.3110999*/
 // #define xstart2_lat 22.3208666  /// seq: 4888
 // #define ystart2_long 87.311033
 // #define xfinal2_lat 22.3208595  /// seq: 4902
 // #define yfinal2_long 87.311038
-#define radius 3.5
+#define radius 2
 #define pi 3.14159265359
 
 sensor_msgs::NavSatFix coordinates;
@@ -52,8 +52,13 @@ double distance(double x1,double y1,double x2,double y2)
 
 int main(int argc, char** argv)
 {
-	init (argc, argv, "switchgps");
+	double xstart1_lat,ystart1_long,xfinal1_lat,yfinal1_long;
+	FILE* gps_pts;
+	gps_pts=fopen("gps_points.txt","r");
+	fscanf(gps_pts,"%lf%lf%lf%lf",&xstart1_lat,&ystart1_long,&xfinal1_lat,&yfinal1_long);
 
+	
+	init (argc, argv, "switchgps");
     ros::param::get("/outdoor_waypoint_nav/coordinates_file", path_local);
     //numWaypoints = countWaypointsInFile(path_local);
 
