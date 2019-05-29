@@ -55,7 +55,7 @@ bool check_whether_hough(Mat hough_img,Mat img)
 
   if(lines.size() == 0)
   {
-    cout << "----------------------\nNo hough line could be fit\n----------------------" << endl;
+    // cout << "----------------------\nNo hough line could be fit\n----------------------" << endl;
     return false;
   }
 

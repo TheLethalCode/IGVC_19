@@ -58,7 +58,7 @@ Mat draw_pothole_from_cannied_img(Mat cannied_img,Mat img)
        // drawContours(drawing,contours,mark[i],Scalar(255),CV_FILLED);
      if (index != -1) {
         drawContours(img,contours,index,Scalar(255),CV_FILLED);
-        cout<<"pothole found"<<endl;     
+        // cout<<"pothole found"<<endl;     
      }
      // }
 

@@ -28,12 +28,12 @@
 #include <lane_segmentation.hpp>
 #include <lane_laser_scan.hpp>
 #include <find_pothole.hpp>
-#include <bright.hpp>
 #include <hough.hpp>
+#include <obstacle_det_vision_lidar.hpp>
+// #include <bright.hpp>
 // #include <lidar_plot.hpp>
 
 
-#include <obstacle_det_vision_lidar.hpp>
 // #include <White_obstacle_updated.hpp>
 // #include <obstacles_prev.hpp>
 
@@ -105,6 +105,7 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
     {
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);    
         is_image_retrieved=true;
+        if(is_debug){ cout << "Camera feed given to CV" << endl; }
     }
     catch (cv_bridge::Exception& e)
     {
@@ -149,10 +150,11 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
 
-
+        if(is_debug) {cout << "loop start" << endl;}
         //if image has not been retrieved, skip
         if(!is_image_retrieved)
         {
+            if(is_debug) {cout << "image not retrieved" << endl;}
             spinOnce();
             continue;
         }
@@ -161,6 +163,7 @@ int main(int argc, char **argv)
         //if lidar has not been retrieved, skip
         if(!is_laserscan_retrieved && !use_video)
         {
+            if(is_debug) {cout << "laser scan not retrieved" << endl;}
             spinOnce();
             continue;
         }
@@ -215,6 +218,7 @@ int main(int argc, char **argv)
          */
 
         //cout << "hello1" << endl;
+        if(is_debug) {cout << "2b-r initiated" << endl;}
         Mat twob_r = twob_rChannelProcessing(roi);
 
 
@@ -226,7 +230,7 @@ int main(int argc, char **argv)
         }
 
         //cout << "hello2" << endl;
-
+        if(is_debug) {cout << "2b-g initiated" << endl;}
         Mat twob_g = twob_gChannelProcessing(roi);
 
         if (is_debug || is_threshold) {
@@ -239,6 +243,7 @@ int main(int argc, char **argv)
         //cout << "hello3" << endl;
 
         //processing for blue channel
+        if(is_debug) {cout << "b initiated" << endl;}
         Mat b = blueChannelProcessing(roi);
 
         if (is_debug || is_threshold) {
@@ -249,8 +254,11 @@ int main(int argc, char **argv)
         }
 
         //intersection of all lane filters
+        if(is_debug) {cout << "intersection of lane filters: ";}
         Mat intersectionImages;
+        // if(is_debug) cout << "2b-r : 2b-g : ";
         bitwise_and(twob_r, twob_g, intersectionImages);
+        // if(is_debug) cout << "b" << endl;
         bitwise_and(intersectionImages, b, intersectionImages);
 
         //cout << "intersection done" << endl;
@@ -285,10 +293,13 @@ int main(int argc, char **argv)
 
 
         Mat intersectionImages_copy=top_view(intersectionImages);//copy of intersection images for pothole detection
-
+        
+        if(is_debug) {cout << "pothole" << endl;}
         Mat pothole(roi.rows,roi.cols,CV_8UC1,Scalar(0));
         pothole = find_pothole(intersectionImages_copy,pothole);
 
+        if(is_debug) {cout << "lane to LaserScan" << endl;}
+        
         sensor_msgs::LaserScan pot;
         pot = laneLaser(pothole);
         pot2staticCostmap_publisher.publish(pot);
@@ -301,9 +312,12 @@ int main(int argc, char **argv)
         	namedWindow("Top_view_intersection",0);
         	imshow("Top_view_intersection",intersectionImages_copy);
         }
-    
+        
+        if(is_debug) {cout << "LIDAR obstacles plotting" << endl;}
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
-        //cout << "lidar points " << obs_by_lidar.size() << endl;
+        // if(is_debug) cout << "lidar points " << obs_by_lidar.size() << endl;
+
+        if(is_debug) {cout << "Obstacle removal" << endl;}
         intersectionImages = remove_obstacles(roi, intersectionImages, obs_by_lidar);
 
         if(true){
@@ -312,7 +326,6 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-
  		Mat hough_image(intersectionImages.rows,intersectionImages.cols, CV_8UC1, Scalar(0));
 
        namedWindow("hough", 0);
@@ -320,7 +333,6 @@ int main(int argc, char **argv)
         if(lanes.numModel == 1)
         {
         // cout << "----------------------\none lane\n--------------------...." <<endl;
-
             if(lanes.a1 == 0 && lanes.c1 == 0)
                 side = 'r';
             else if(lanes.a2 == 0 && lanes.c2 == 0)
@@ -328,8 +340,7 @@ int main(int argc, char **argv)
 
             if(check_whether_hough(hough_image,intersectionImages))
             {
-
-
+                if(is_debug) {cout << "Hough Code initiated" << endl;}
                 used_hough = true;
                 Mat hough_lane = top_view(hough_image);
         // cout << "----------------------\nhough line true\n--------------------...." <<endl;
@@ -340,8 +351,9 @@ int main(int argc, char **argv)
 
                 // for(int i=0;i<100;i++)
                    //  cout << "fit hough" << endl;
+                if(is_debug) {cout << "waypoint generation for hough" << endl;}
                 NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta);
-
+                if(is_debug) cout << "Plotting hough waypoint" << endl;
                 intersectionImages = plotWaypoint(hough_image, waypoint_image);
                
                 Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
@@ -352,22 +364,23 @@ int main(int argc, char **argv)
 
                 //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
                 geometry_msgs::PoseStamped waypoint_bot;
-
+                if(is_debug) {cout << "waypoint message position generation" << endl;}
                 waypoint_bot.header.frame_id = "base_link";
                 waypoint_bot.header.stamp = ros::Time::now();
                 waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
                 waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
                 waypoint_bot.pose.position.z = 0;
                 float theta = (waypoint_image.angle);
- 		       imshow("hough", hough_image);
+                imshow("hough", hough_image);
 
-
+                if(is_debug) {cout << "waypoint message quaternion generation" << endl;}
                 tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
                 waypoint_bot.pose.orientation.x = frame_qt.x();
                 waypoint_bot.pose.orientation.y = frame_qt.y();
                 waypoint_bot.pose.orientation.z = frame_qt.z();
                 waypoint_bot.pose.orientation.w = frame_qt.w();
 
+                if(is_debug) {cout << "waypoint published" << endl;}
                 waypoint_publisher.publish(waypoint_bot);
 
                 waitKey(100);
@@ -390,16 +403,18 @@ int main(int argc, char **argv)
         }
 
         Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
-
+        if(is_debug) {cout << "RANSAC started" << endl;}
         lanes = getRansacModel(intersectionImages, lanes);
-        
+        // if(is_debug) {cout << "Lanes drawn on original image" << endl;}
         Mat fitLanes = drawLanes(intersectionImages, lanes);
+        //if(is_debug) {cout << "Lanes drawn on blank image" << endl;}
         costmap = drawLanes_white(costmap,lanes);
 
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
 
         Mat waypts = costmap.clone();
+        if(is_debug) {cout << "Plotting Waypoint" << endl;}
         waypts = plotWaypoint(waypts, waypoint_image);
 
 
@@ -437,6 +452,7 @@ int main(int argc, char **argv)
 
         //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
         sensor_msgs::LaserScan lane;
+        // if(is_debug) {cout << "Plotting obstacles on fit lanes" <<endl;}
         lane = laneLaser(costmap);
         lanes2Costmap_publisher.publish(lane);
         
@@ -457,12 +473,12 @@ int main(int argc, char **argv)
 
         double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
         double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
-
+        cout << "------------------------------------Waypoint------------------------------------" << endl;
         cout <<"z:"<<waypt_top.at<double>(0,0)<<endl;
 
-        cout << "waypt_top " << waypt_top << endl;
+        cout << "waypt_top: " << waypt_top << endl;
 
-        cout << "x= " << x_top << " y=" << y_top << endl;
+        cout << "x: " << x_top << " y:" << y_top << endl;
 
         cout << "waypoint3,1 image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
         //cout << "Waypoint found" << endl;
@@ -474,7 +490,7 @@ int main(int argc, char **argv)
 
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
         geometry_msgs::PoseStamped waypoint_bot;
-
+        if(is_debug) {cout << "waypoint position message generation" << endl;}
         waypoint_bot.header.frame_id = "base_link";
         waypoint_bot.header.stamp = ros::Time::now();
         waypoint_bot.pose.position.x = (costmap.rows - waypoint_image.y)/pixelsPerMetre;
@@ -482,6 +498,7 @@ int main(int argc, char **argv)
         waypoint_bot.pose.position.z = 0;
         float theta = (waypoint_image.angle);
 
+        if(is_debug) {cout << "waypoint quaternion message generation" << endl;}
         tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
         waypoint_bot.pose.orientation.x = frame_qt.x();
         waypoint_bot.pose.orientation.y = frame_qt.y();

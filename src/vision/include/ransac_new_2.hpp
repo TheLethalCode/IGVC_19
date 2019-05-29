@@ -10,7 +10,7 @@
 /*
    parabolas are fit assuming top left as origin - x towards right and y downwards
  */
-
+int debug=0;
 using namespace std;
 using namespace cv;
 
@@ -572,23 +572,24 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
     cout  <<"score_l_gl : "<<score_l_gl<<" score_r_gl : "<<score_r_gl<<endl;
 
     if(score_l_gl!=0 && (score_l_gl) < minLaneInlier){
-        cout<<"left lane removed"<< endl;
+        // cout<<"left lane removed"<< endl;
         bestTempParam.a1=0;
         bestTempParam.c1=0;
         bestTempParam.numModel--;
     }
     if(score_r_gl!=0 && (score_r_gl) < minLaneInlier){
-        cout<<"right lane removed"<<endl;
+        // cout<<"right lane removed"<<endl;
         bestTempParam.a2=0;
         bestTempParam.c2=0;
         bestTempParam.numModel--;
     }
     bestTempParam = no_sudden_change(bestTempParam, img, previous);
     
-    cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
-    cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
-    cout<<"bestTempParam.a2 : "<<bestTempParam.a2<<" bestTempParam.c2 : "<<bestTempParam.c2<<endl;
-
+    if(debug!=0){
+        cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
+        cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
+        cout<<"bestTempParam.a2 : "<<bestTempParam.a2<<" bestTempParam.c2 : "<<bestTempParam.c2<<endl;
+    }
     return bestTempParam;
 }
 
@@ -624,8 +625,9 @@ Parabola getRansacModel(Mat img,Parabola previous)
     //apply ransac for first time it will converge for one lane
     vector<Point> ptArray1;
 
-    cout<<"NEW RANSAC\n";
-   
+    if(debug!=0){ 
+        cout << "---------------------------------NEW RANSAC----------------------------------" << endl;
+    }
     // if (grid_white_thresh >= grid_size*grid_size) {
     //     grid_white_thresh = grid_size*grid_size -1;
     // }

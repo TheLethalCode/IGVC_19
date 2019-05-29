@@ -41,11 +41,11 @@ struct NavPoint{
 int checklane(int y,int x,Mat img,Parabola2 lanes)
 {
     if(fabs(lanes.a1*y*y+lanes.b1*y+lanes.c1-x)< (30/4)) {
-        cout<<"1 :"<<endl;
+        // cout<<"1 :"<<endl;
         return 1;
     }
     if(fabs(lanes.a2*y*y+lanes.b2*y+lanes.c2-x)< (30/4)) {
-        cout<<"2 :"<<endl;
+        // cout<<"2 :"<<endl;
         return 2;
     }
     return 0;
@@ -87,7 +87,7 @@ int isValid_point(Mat img, int i, int j)
 //returns the angle assuming angle along -ve y axis as 0 and cloclwise to it as -ve and anticlockwise as +ve
 float GetAngle(Mat img,int min,int max,Parabola2 lanes,float xc, float yc)
 {
- cout<<"min: "<<min<<" max: "<<max<<endl;
+ // cout<<"min: "<<min<<" max: "<<max<<endl;
  float th1=0,th2=0;
     if(lanes.numModel==2)
     {
@@ -171,7 +171,7 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
     //img contains both obs and lanes
     GetAngleBounds(img,theta_min,theta_max,lanes);
     int theta_mid=((*theta_min)+(*theta_max))/2;
-    cout<<"theta min : "<<*theta_min<<" theta max : "<<*theta_max<<endl;
+    // cout<<"theta min : "<<*theta_min<<" theta max : "<<*theta_max<<endl;
     /*if(*theta_max<35||*theta_min>145)
         stepsize=stepsize/5;*/
     if(lanes.numModel==2)
@@ -255,8 +255,8 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             pt.y = img.rows-stepsize*sin(theta_rad);
             if(theta_m<45)
             {
+                // cout << "noooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo" << endl;
                 float xd,yd;
-                cout << "noooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo" << endl;
                 xd = (img.cols/2)-stepsize*cos(theta_rad);
                 yd = img.rows - stepsize*sin(theta_rad);
                 for(theta=0;theta<180;theta++)
@@ -300,8 +300,8 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             pt.y = img.rows-stepsize*sin(theta_rad);
             if(theta>135)
             {
-                cout << "yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeees" <<endl;
                 float xd,yd;
+                // cout << "yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeees" <<endl; float xd,yd;
                 xd = (img.cols/2)-stepsize*cos(theta_rad);
                 yd = img.rows - stepsize*sin(theta_rad);
                 for(theta=0;theta<180;theta++)
@@ -340,7 +340,7 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             pt.y=img.rows;
         }
     }
-    cout<<"point is "<<pt.x<<" pt.y:"<<pt.y<<endl;
+    // cout<<"pt.x: "<<pt.x<<" pt.y:"<<pt.y<<endl;
       return pt;
 }
 
@@ -388,7 +388,7 @@ NavPoint find_waypoint(Parabola lan,Mat img)
     float a2 = lan.a2;
     float c1 = lan.c1;
     float c2 = lan.c2;
-    cout<<"no. of lanes: "<<lan.numModel<<endl;
+    // cout<<"no. of lanes: "<<lan.numModel<<endl;
     lanes.numModel=lan.numModel;
 
 
@@ -406,7 +406,7 @@ NavPoint find_waypoint(Parabola lan,Mat img)
         if(fabs(lanes.a1)<0.00001)
             lanes.c1=c1;
     }
-    cout<<"a1: "<<lanes.a1<<" b1: "<<lanes.b1<<" c1: "<<lanes.c1<<endl;
+    // cout<<"a1: "<<lanes.a1<<" b1: "<<lanes.b1<<" c1: "<<lanes.c1<<endl;
 
     if(a2==0)
     {
