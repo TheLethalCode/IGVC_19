@@ -2,7 +2,7 @@ Make sure you are using Gazebo 7 before proceeding.
 
 Run the following commands:
 1. sudo apt-get install ros-<distro>-husky-simulator
-2. sudo apt-get install ros-indigo-husky-desktop
+2. sudo apt-get install ros-<distro>-husky-desktop
 3. export HUSKY_GAZEBO_DESCRIPTION=$(rospack find husky_gazebo)/urdf/description.gazebo.xacro
 4. sudo apt-get install ros-kinetic-dwa-local-planner
 5. sudo apt-get install ros-kinetic-move-base
