@@ -13,6 +13,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <vision/TutorialsConfig.h>
 #include <time.h>
+#include <std_msgs/Bool.h>
 
 /*
    Custom header files
@@ -88,7 +89,7 @@ Publisher lanes2Costmap_publisher;
 Publisher pot2staticCostmap_publisher;
 Mat frame_orig;
 
-
+bool use_vision_global = true;
 
 
 int mn(int a,int b)
@@ -119,6 +120,9 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
     resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4));
 }	
 
+void use_vision_callback(const std_msgs::Bool::ConstPtr& msg) {
+	use_vision_global = msg->data;
+}
 
 int main(int argc, char **argv)
 { 
@@ -137,6 +141,8 @@ int main(int argc, char **argv)
     Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
     lanes2Costmap_publisher = n.advertise<sensor_msgs::LaserScan>("/lanes", 2);       //declared globally
     pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
+	Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
+
 
     if (use_video == false) {
         lidar_subsriber = n.subscribe("/scan", 1, &laserscan);
@@ -151,6 +157,11 @@ int main(int argc, char **argv)
 
     while(ros::ok())
     {
+
+    	if (use_vision_global == false) {
+    		spinOnce();
+    		continue;
+    	}
 
         if(is_debug) {cout << "loop start" << endl;}
         //if image has not been retrieved, skip

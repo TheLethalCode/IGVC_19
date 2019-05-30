@@ -20,7 +20,7 @@ ekf_se_odom:
   odom0_config: [false, false, false,
                  false, false, false,
                  true,  true,  false,
-                 false, false, false,
+                 false, false, true,
                  false, false, false]
   odom0_queue_size: 10
   odom0_nodelay: true
@@ -93,7 +93,7 @@ ekf_se_map:
   odom0_config: [false, false, false,
                  false, false, false,
                  true,  true,  false,
-                 false, false, false,
+                 false, false, true,
                  false, false, false]
   odom0_queue_size: 10
   odom0_nodelay: true
@@ -115,7 +115,7 @@ ekf_se_map:
   imu0_config: [false, false, false,
                 false,  false,  false,
                 false, false, false,
-                false,  false,  true,
+                false,  false,  false,
                 false,  false,  false]
   imu0_nodelay: true
   imu0_differential: false

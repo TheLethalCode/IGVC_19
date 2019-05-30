@@ -1,3 +1,6 @@
+#ifndef GPS_WAYPOINT
+#define GPS_WAYPOINT
+
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <fstream>
@@ -29,7 +32,7 @@ std::string utm_zone;
 std::string path_local, path_abs;
 
 
-int countWaypointsInFile(std::string path_local)
+/*int countWaypointsInFile(std::string path_local)
 {
     path_abs = ros::package::getPath("outdoor_waypoint_nav") + path_local;
     std::ifstream fileCount(path_abs.c_str());
@@ -52,9 +55,9 @@ int countWaypointsInFile(std::string path_local)
         ROS_ERROR("Unable to open waypoint file");
     }
     return numWaypoints;
-}
+}*/
 
-std::vector <std::pair<double, double>> getWaypoints(std::string path_local)
+/*std::vector <std::pair<double, double>> getWaypoints(std::string path_local)
 {
     double lati = 0, longi = 0;
 
@@ -76,7 +79,7 @@ std::vector <std::pair<double, double>> getWaypoints(std::string path_local)
         ROS_INFO("%.9g %.9g", iterDisp->first, iterDisp->second);
     }
     return waypointVect;
-}
+}*/
 
 geometry_msgs::PointStamped latLongtoUTM(double lati_input, double longi_input)
 {
@@ -163,6 +166,7 @@ move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, ge
     return goal;
 }
 
+/*
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "gps_waypoint"); //initiate node called gps_waypoint
@@ -247,12 +251,12 @@ int main(int argc, char** argv)
 
         if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
         {
-            ROS_INFO("Husky has reached its goal!");
+            ROS_INFO("Eklavya has reached its goal!");
             //switch to next waypoint and repeat
         }
         else
         {
-            ROS_ERROR("Husky was unable to reach its goal. GPS Waypoint unreachable.");
+            ROS_ERROR("Eklavya was unable to reach its goal. GPS Waypoint unreachable.");
             ROS_INFO("Exiting node...");
             // Notify joy_launch_control that waypoint following is complete
             std_msgs::Bool node_ended;
@@ -262,7 +266,7 @@ int main(int argc, char** argv)
         }
     } // End for loop iterating through waypoint vector
 
-    ROS_INFO("Husky has reached all of its goals!!!\n");
+    ROS_INFO("Eklavya has reached all of its goals!!!\n");
     ROS_INFO("Ending node...");
 
     // Notify joy_launch_control that waypoint following is complete
@@ -274,3 +278,62 @@ int main(int argc, char** argv)
     ros::spin();
     return 0;
 }
+*/
+
+
+int gps_waypoint(double x_latitude, double y_longitude)
+{
+
+    MoveBaseClient ac("/move_base", true);
+    
+    
+    //construct an action client that we use to communication with the action named move_base.
+    //Setting true is telling the constructor to start ros::spin()
+
+    //Get Longitude and Latitude goals from text file
+
+    //Count number of waypoints
+    
+
+    // Iterate through vector of waypoints for setting goals
+
+        //Setting goal:
+        latiGoal = x_latitude;
+        longiGoal = y_longitude;
+
+        ROS_INFO("Received Latitude goal:%.8f", latiGoal);
+        ROS_INFO("Received longitude goal:%.8f", longiGoal);
+
+        //Convert lat/long to utm:
+        UTM_point = latLongtoUTM(latiGoal, longiGoal);
+
+        //Transform UTM to map point in odom frame
+        map_point = UTMtoMapPoint(UTM_point);
+
+        map_next = map_point;
+        bool final_point = true;
+
+        //Build goal to send to move_base
+        move_base_msgs::MoveBaseGoal goal = buildGoal(map_point, map_next, final_point); //initiate a move_base_msg called goal
+
+        // Send Goal
+        ROS_INFO("Sending goal");
+        ac.sendGoal(goal); //push goal to move_base node
+
+        //Wait for result
+        ac.waitForResult(); //waiting to see if move_base was able to reach goal
+
+        if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+        {
+            ROS_INFO("Eklavya has reached its goal!");
+            return 0; //if safely exiting
+
+        }
+        else
+        {
+            ROS_ERROR("Eklavya was unable to reach its goal. GPS Waypoint unreachable.");
+            return 1; //exiting with error
+        }
+}
+
+#endif
