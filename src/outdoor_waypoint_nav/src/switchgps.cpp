@@ -77,6 +77,7 @@ int main(int argc, char** argv)
 	std_msgs::Bool use_vision_msg;
 	use_vision_msg.data = true;
 	Rate loop_rate(10);
+	int count = 0;
 	while(ok())
 	{
 		//cout<<"in loop"<<endl;
@@ -88,7 +89,14 @@ int main(int argc, char** argv)
 		// radius3 = distance(xcurrent,ycurrent,xstart2,ystart2);
 		// radius4 = distance(xcurrent,ycurrent,xfinal2,yfinal2);
 
-		if (!flagstart1 && (radius1 < radius))
+		if (radius1 < radius) {
+			count++;
+		}
+		else {
+			count = 0;
+		}
+
+		if (!flagstart1 && (radius1 < radius) && count >= 10)
 		{
 			flagstart1 = true;
 			use_vision_msg.data = false;
@@ -100,6 +108,14 @@ int main(int argc, char** argv)
 			}
 	
 			int gps_status = gps_waypoint(xfinal1_lat, yfinal1_long);
+
+			spinOnce();
+			radius2 = distance(xcurrent_lat,ycurrent_long,xfinal1_lat,yfinal1_long);
+			while (radius2 > radius) {
+				gps_status = gps_waypoint(xfinal1_lat, yfinal1_long);
+				radius2 = distance(xcurrent_lat,ycurrent_long,xfinal1_lat,yfinal1_long);
+				spinOnce();
+			}
 
 			if (gps_status == 0) {
 				use_vision_msg.data = true;
