@@ -3,7 +3,6 @@
 
 
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
-   
     <rosparam file="$(find huskey_move)/src/param/costmap_common_params.yaml" command="load" ns="global_costmap" />
     <rosparam file="$(find huskey_move)/src/param/costmap_common_params.yaml" command="load" ns="local_costmap" />
     <rosparam file="$(find huskey_move)/src/param/local_costmap_params.yaml" command="load" />
@@ -18,8 +17,11 @@
 		<param name="controller_frequency" value="5.0" />
 		<param name="controller_patience" value="15.0" />
   <!--   <remap from="/cmd_vel" to="/vels" /> -->
-    <param name="/use_sim_time" value="false" />
-
-                
+    <param name="/use_sim_time" value="false" />         
   </node>
+
+  <arg name="rvizconfig" default="$(find tf_eklavya)/igvc.rviz" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+  <node pkg="outdoor_waypoint_nav" type="switchgps" respawn="false" name="GPS_Switcher" output="screen" />
+
  </launch>

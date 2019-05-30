@@ -13,6 +13,10 @@
 #include <std_msgs/Bool.h>
 #include <tf/transform_listener.h>
 #include <math.h>
+#include <tf/transform_datatypes.h>
+#include <tf/transform_broadcaster.h>
+#include <stdio.h>
+using namespace std;
 
 
 
@@ -24,7 +28,7 @@ MoveBaseClient; //create a type definition for a client called MoveBaseClient
 
 std::vector <std::pair<double, double>> waypointVect;
 std::vector<std::pair < double, double> > ::iterator iter; //init. iterator
-geometry_msgs::PointStamped UTM_point, map_point, UTM_next, map_next;
+geometry_msgs::PointStamped UTM_point, UTM_point_current, map_point, map_point_current, UTM_next, map_next;
 int count = 0, waypointCount = 0, wait_count = 0;
 double numWaypoints = 0;
 double latiGoal, longiGoal, latiNext, longiNext;
@@ -124,7 +128,7 @@ geometry_msgs::PointStamped UTMtoMapPoint(geometry_msgs::PointStamped UTM_input)
     return map_point_output;
 }
 
-move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, geometry_msgs::PointStamped map_next, bool last_point)
+move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, geometry_msgs::PointStamped map_point_current, geometry_msgs::PointStamped map_next, bool last_point)
 {
     move_base_msgs::MoveBaseGoal goal;
 
@@ -135,7 +139,6 @@ move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, ge
     // Specify x and y goal
     goal.target_pose.pose.position.x = map_point.point.x; //specify x goal
     goal.target_pose.pose.position.y = map_point.point.y; //specify y goal
-
     // Specify heading goal using current goal and next goal (point robot towards its next goal once it has achieved its current goal)
     if(last_point == false)
     {
@@ -160,9 +163,16 @@ move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, ge
     }
     else
     {
-        goal.target_pose.pose.orientation.w = 1.0;
+        double pitch=0, roll=0, yaw;
+        yaw = atan2(map_point.point.y - map_point_current.point.y, map_point.point.x - map_point_current.point.x);
+        ROS_INFO("Yaw:%.8f", yaw);
+        tf::Quaternion q;
+        q.setRPY(tfScalar(roll), tfScalar(pitch), tfScalar(yaw));
+        goal.target_pose.pose.orientation.x = q.getX();
+        goal.target_pose.pose.orientation.y = q.getY();
+        goal.target_pose.pose.orientation.z = q.getZ();
+        goal.target_pose.pose.orientation.w = q.getW();
     }
-
     return goal;
 }
 
@@ -281,7 +291,7 @@ int main(int argc, char** argv)
 */
 
 
-int gps_waypoint(double x_latitude, double y_longitude)
+int gps_waypoint(double end_lat, double end_long, double current_lat, double current_long)
 {
 
     MoveBaseClient ac("/move_base", true);
@@ -298,24 +308,25 @@ int gps_waypoint(double x_latitude, double y_longitude)
     // Iterate through vector of waypoints for setting goals
 
         //Setting goal:
-        latiGoal = x_latitude;
-        longiGoal = y_longitude;
+        latiGoal = end_lat;
+        longiGoal = end_long;
 
         ROS_INFO("Received Latitude goal:%.8f", latiGoal);
         ROS_INFO("Received longitude goal:%.8f", longiGoal);
 
         //Convert lat/long to utm:
         UTM_point = latLongtoUTM(latiGoal, longiGoal);
+        UTM_point_current = latLongtoUTM(current_lat, current_long);
 
         //Transform UTM to map point in odom frame
         map_point = UTMtoMapPoint(UTM_point);
+        map_point_current = UTMtoMapPoint(UTM_point_current);
 
         map_next = map_point;
         bool final_point = true;
 
         //Build goal to send to move_base
-        move_base_msgs::MoveBaseGoal goal = buildGoal(map_point, map_next, final_point); //initiate a move_base_msg called goal
-
+        move_base_msgs::MoveBaseGoal goal = buildGoal(map_point, map_point_current, map_next, final_point); //initiate a move_base_msg called goal
         // Send Goal
         ROS_INFO("Sending goal");
         ac.sendGoal(goal); //push goal to move_base node
