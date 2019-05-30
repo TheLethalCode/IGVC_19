@@ -108,6 +108,11 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
             }
         }
 
+        if((c1>(2*img.cols/5) && c1<(3*img.cols/5)) || (c2>(2*img.cols/5) && c2<(3*img.cols/5)))
+        {
+        	return previous;
+        }
+
         if(a1!=0 && c1>(img.cols/2))
         {
             present=swap(present);
@@ -428,7 +433,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
 
 
         if (dist(centroid(tempParam.a1,tempParam.c1,img),centroid(tempParam.a2,tempParam.c2,img)) < 20.0){
-            //cout<<"centroid issue."<<endl;
+            cout<<"centroid issue."<<endl;
             if(score_r_loc > score_l_loc)
             {
                 tempParam.a1 = 0;
@@ -446,7 +451,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         }
 
         else if(fabs(tempParam.c1 - tempParam.c2) < 40.0){
-            //cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
+            cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
             if(score_r_loc > score_l_loc)
             {
                 tempParam.a1 = 0;
@@ -466,27 +471,27 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
 
         // intersection in image taken
         
-        else if( isIntersectingLanes_2(img, tempParam)) {
-            //cout<<" isIntersectingLanes issue."<<endl;
-            if(score_r_loc > score_l_loc)
-            {
-                tempParam.a1 = 0;
-                tempParam.c1 = 0;
-                score_l_loc = 0;
-                tempParam.numModel--;
-            }
-            else
-            {
-                tempParam.a2 = 0;
-                tempParam.c2 = 0;
-                score_r_loc = 0;
-                tempParam.numModel--;
-            }
-        }
+        // else if( isIntersectingLanes_2(img, tempParam)) {
+        //     cout<<" isIntersectingLanes issue."<<endl;
+        //     if(score_r_loc > score_l_loc)
+        //     {
+        //         tempParam.a1 = 0;
+        //         tempParam.c1 = 0;
+        //         score_l_loc = 0;
+        //         tempParam.numModel--;
+        //     }
+        //     else
+        //     {
+        //         tempParam.a2 = 0;
+        //         tempParam.c2 = 0;
+        //         score_r_loc = 0;
+        //         tempParam.numModel--;
+        //     }
+        // }
 
 
         else if ((score_common/(score_common + score_l_loc + score_r_loc+1))*100 > common_inliers_thresh) {
-            //cout<<"common points issue."<<endl;
+            cout<<"common points issue."<<endl;
             if(score_r_loc > score_l_loc)
             {
                 tempParam.a1 = 0;
@@ -523,23 +528,23 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         // }
 
 
-        if(fabs(tempParam.a1) <120 && fabs(tempParam.c1) > 150 && score_l_loc!=0)
-        {
-            //cout<<"horizontal issue."<<endl;
-            tempParam.a1 = 0;
-            tempParam.c1 = 0;
-            score_l_loc = 0;
-            tempParam.numModel--;
-        }
+        // if(fabs(tempParam.a1) <120 && fabs(tempParam.c1) > 150 && score_l_loc!=0)
+        // {
+        //     cout<<"horizontal issue."<<endl;
+        //     tempParam.a1 = 0;
+        //     tempParam.c1 = 0;
+        //     score_l_loc = 0;
+        //     tempParam.numModel--;
+        // }
 
-        if(fabs(tempParam.a2) <120 && fabs(tempParam.c2) > 150 && score_r_loc!=0)
-        {
-            //cout<<"horizontal issue."<<endl;
-            tempParam.a2 = 0;
-            tempParam.c2 = 0;
-            score_r_loc = 0;
-            tempParam.numModel--;
-        }
+        // if(fabs(tempParam.a2) <120 && fabs(tempParam.c2) > 150 && score_r_loc!=0)
+        // {
+        //     cout<<"horizontal issue."<<endl;
+        //     tempParam.a2 = 0;
+        //     tempParam.c2 = 0;
+        //     score_r_loc = 0;
+        //     tempParam.numModel--;
+        // }
 
 
 

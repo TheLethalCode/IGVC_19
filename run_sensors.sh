@@ -31,10 +31,10 @@ switch_port () {
     port=$((port+1))
 }
 
-if [ $(rosparam get imu) == "0" ]
-then
-  printf "in" 
-fi
+# if [ $(rosparam get imu) == "0" ]
+# then
+#   printf "in" 
+# fi
 
 sudo chmod 777 /dev/tty*
 rosrun sensor_status error &
