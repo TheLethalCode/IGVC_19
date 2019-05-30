@@ -16,7 +16,7 @@ using namespace ros;
 // #define ystart2_long 87.311033
 // #define xfinal2_lat 22.3208595  /// seq: 4902
 // #define yfinal2_long 87.311038
-#define radius 2
+#define radius 1
 #define pi 3.14159265359
 
 sensor_msgs::NavSatFix coordinates;
