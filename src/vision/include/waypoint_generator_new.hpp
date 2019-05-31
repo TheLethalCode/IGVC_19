@@ -458,6 +458,7 @@ NavPoint find_waypoint(Parabola lan,Mat img)
     return way_point;
 }
 
+//Plots waypoint in a given binary image from a 'NavPoint' message
 Mat plotWaypoint(Mat costmap, NavPoint waypoint_image) 
 {
     Point origin = Point(waypoint_image.x-1, waypoint_image.y-1);   
@@ -466,7 +467,7 @@ Mat plotWaypoint(Mat costmap, NavPoint waypoint_image)
     float y = origin.y - 25*sin(CV_PI/2 - waypoint_image.angle);
     Point dest = Point(x,y);
     
-    //Drawing waypoint according in the costmap image 
+    //Drawing waypoint accordingly in the costmap image 
     circle(costmap, origin, 5, Scalar(255), -1, 8, 0);
     arrowedLine(costmap, origin, dest, Scalar(255), 3, 8, 0, 0.1);
 

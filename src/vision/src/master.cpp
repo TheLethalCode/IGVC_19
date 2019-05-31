@@ -93,13 +93,14 @@ Mat frame_orig;
 //Parameter for GPS switching. Set to false when GPS waypoint starts
 bool use_vision_global = true;
 
+//Not needed right now
 /*int mn(int a,int b)
 {
     if(a<b)
         return a;
     else
         return b;
-}*/  //Not needed right now
+}*/  
 
 //For converting & resizing pointgrey camera node data to image
 void imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -206,19 +207,21 @@ int main(int argc, char **argv)
         // imshow("original", frame_orig);
 
         //For generating top view
-        Mat frame_topview = top_view(frame_orig);
-
         /*if(is_debug == true || is_threshold == true){ 
             namedWindow("frame_topview", WINDOW_NORMAL);
             imshow("frame_topview",frame_topview);
             waitKey(10);
         }*/
 
+        
         /*extraction of region of interest
         Rect roi_rect = Rect(0, frame_orig.rows/3, frame_orig.cols, frame_orig.rows*2/3); //params in order: x, y, height, width (of ROI)*/
 
+        
+        ///Roi set to complete frame since RANSAC is being applied to front view I
         Mat roi = frame_orig.clone();
 
+        
         /*for (int q = 0; q < frame_orig.rows/5; q++) {
             for (int w = 0; w < frame_orig.cols; w++) {
                 roi.at<Vec3b>(q,w)[0] = 0;
@@ -247,7 +250,7 @@ int main(int argc, char **argv)
 
 
         if (is_debug || is_threshold) {
-            // //cout << "2b-r done" << endl;
+            //cout << "2b-r done" << endl;
             namedWindow("2b-r", WINDOW_NORMAL);
             imshow("2b-r", twob_r);
             waitKey(10);
@@ -384,12 +387,15 @@ int main(int argc, char **argv)
                 if(is_debug) cout << "Plotting hough waypoint" << endl;
                 intersectionImages = plotWaypoint(hough_image, waypoint_image);
                
+                // Giving waypt.'s x, y & yaw
                 Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
-                Mat waypt_top = h*waypt;
-  
+                //Converting waypt. in top view
+                Mat waypt_top = h*waypt;    //NOTE the h is PRE-multiplied 
+///=============================================================================================================
+// Why is this done?
                 double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
                 double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
-
+///=============================================================================================================
                 //waypoint transform for hough line
                 /*
                 waypoint_image.x=x_top;
@@ -400,9 +406,9 @@ int main(int argc, char **argv)
                 geometry_msgs::PoseStamped waypoint_bot;
                 if(is_debug) {cout << "waypoint message position generation" << endl;}
                 waypoint_bot.header.frame_id = "base_link";
-                waypoint_bot.header.stamp = ros::Time::now();
+                waypoint_bot.header.stamp = ros::Time::now();   //Important
 
-                //changing waypoint from image to LIDAR frame
+                //changing waypoint position from image to LIDAR frame
                 waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
                 waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
                 waypoint_bot.pose.position.z = 0;
@@ -447,8 +453,10 @@ int main(int argc, char **argv)
         //if(is_debug) {cout << "Lanes drawn on blank image" << endl;}
         costmap = drawLanes_white(costmap,lanes);
 ///=============================================================================================================
+// Not yet commented.       
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
+///=============================================================================================================
 
         Mat waypts = costmap.clone();
         if(is_debug) {cout << "Plotting Waypoint" << endl;}
@@ -503,12 +511,18 @@ int main(int argc, char **argv)
         	}
 		*/
 
-
+        // waypt. given in x, y & yaw
         Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
+        
+        //Converting waypt. in top view
         Mat waypt_top = h*waypt;
 
+//==========================================================================================
+// Why this is done?        
         double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
         double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+//==========================================================================================
+
         cout << "------------------------------------Waypoint------------------------------------" << endl;
         cout <<"z:"<<waypt_top.at<double>(0,0)<<endl;
 
@@ -523,8 +537,9 @@ int main(int argc, char **argv)
         waypoint_image.y=y_top;
 
 
-
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
+        
+        //changing waypoint position from image to LIDAR frame
         geometry_msgs::PoseStamped waypoint_bot;
         if(is_debug) {cout << "waypoint position message generation" << endl;}
         waypoint_bot.header.frame_id = "base_link";
@@ -534,6 +549,7 @@ int main(int argc, char **argv)
         waypoint_bot.pose.position.z = 0;
         float theta = (waypoint_image.angle);
 
+        //converting to Quaternion from Yaw
         if(is_debug) {cout << "waypoint quaternion message generation" << endl;}
         tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
         waypoint_bot.pose.orientation.x = frame_qt.x();
@@ -541,6 +557,7 @@ int main(int argc, char **argv)
         waypoint_bot.pose.orientation.z = frame_qt.z();
         waypoint_bot.pose.orientation.w = frame_qt.w();
 
+        //Publishing points
         waypoint_publisher.publish(waypoint_bot);
         //cout << "Waypoint published\n----------------------------" << endl;
         
