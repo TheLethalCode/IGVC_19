@@ -10,6 +10,12 @@ using namespace std;
 using namespace cv;
 
 Mat obstaclePlot;
+
+/*
+This header plots inflated LIDAR obstacles in front view
+	& stores them in a vector of points
+*/
+
 vector<Point> lidar_plot(sensor_msgs::LaserScan scan, Mat h_, int rows, int cols)
 {
 	vector<Point> vect;		//For storing obstacl points
@@ -61,7 +67,7 @@ vector<Point> lidar_plot(sensor_msgs::LaserScan scan, Mat h_, int rows, int cols
 	}
 	obstaclePlot=temp.clone();
 	
-	// Inflating Obstacles by plotting circles around obstacle pts.
+	// Inflation of obstacles is done by plotting circles around obstacle pts.
 	for(int i=0;i<img.rows;i++)
 		for(int j=0;j<img.cols;j++)
 			if(temp.at<uchar>(i,j)==255)

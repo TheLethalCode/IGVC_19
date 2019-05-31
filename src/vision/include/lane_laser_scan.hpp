@@ -18,7 +18,7 @@ Converts any binary image's white points(Obstacles/Lanes)
     into a LaserScan(LIDAR format) Message.
 */
 
-
+//Takes a b/w image as input
 sensor_msgs::LaserScan laneLaser(Mat img)
 {
     sensor_msgs::LaserScan scan;

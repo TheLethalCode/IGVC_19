@@ -10,12 +10,19 @@
 
 using namespace cv;
 
+/*
+
+This is used when the vision module encouters a horizontal
+  lane(since due to fixed x-axis, RANSAC can't fit them).
+  
+This module:
+  * check_whether_hough: first draws the horizontal lane.
+  * waypoint_for_hough: Generates a waypoint for the lane.
+
+*/
+
 double theta;
 
-double Slope(int x0, int y0, int x1, int y1)
-{
-  //NOTE the angle.
-  return (double)(y0-y1)/(x1-x0);
 /*
 The slope is -ve of what it is by convention.
 
@@ -23,6 +30,10 @@ The -ve sign is introduced to change the origin from
   the image frame(top-left) to the co-ordinate 
   frame(bottom-left).
 */
+double Slope(int x0, int y0, int x1, int y1)
+{
+  //NOTE the angle.
+  return (double)(y0-y1)/(x1-x0);
 
 }
 
@@ -43,9 +54,15 @@ double fullLine(Mat *img, Point a, Point b, Scalar color)
     theta = atan(slope)*180/CV_PI;
     return slope;
 }
+
+/*
+Checks whether hough line is to be applied or not.
+Takes for input:
+    * Final output image of pre-processing (img)
+    * Blank image for plotting the hough line (hough_img)
+*/
 bool check_whether_hough(Mat hough_img,Mat img)
 {
-  //Canny(img, img, 50, 200, 3);
   vector<Vec4i> lines;  //NOTE the vector type
   
   //Hough Lines Probabilistic
@@ -58,10 +75,9 @@ bool check_whether_hough(Mat hough_img,Mat img)
 
   Point p1(0,0), p2(0,0);
   double slope_avg=0;
-  //Mat hough(img.rows,img.cols,CV_8UC1,Scalar(0));
-  
 
-  //Finding maximum line length
+  //Finding maximum line length & its index in lines[]
+  //  We assume that the longest line will be the lane
   float max_dist = 0;
   int max_index = 0;
   for(size_t i = 0; i < lines.size(); i++)
@@ -89,9 +105,8 @@ bool check_whether_hough(Mat hough_img,Mat img)
 
   
   double slope = fullLine(&hough_img, p1, p2, Scalar(255));
-  //  namedWindow("img_hough",0);
-  // imshow("img_hough",img_hough);
-  // waitKey(10);
+  
+  //Checking that the line slope is within a certain threshold angle from the x-axis
   if((atan(slope)*180/CV_PI) <= 20.00 && (atan(slope)*180/CV_PI) >= -20.00)
     return true;
 

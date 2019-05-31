@@ -11,10 +11,18 @@
 using namespace cv;
 using namespace std;
 
+/*
+This header works with 3 different channel configurations 
+    to be finally taken intersection of for effective 
+    grass & noise removal.
+*/
+
+//Simple B channel
 Mat blueChannelProcessing(Mat img)
 {
     Mat channels[3];
-    split(img, channels);   //splits the image into 3 Mat with 1 channel each
+    //Splitting the image into 3 Mats with 1 channel each
+    split(img, channels);   
     Mat b = channels[0];
 
     GaussianBlur(b , b, Size( 9, 9), 0, 0);     //Based on observation
@@ -25,6 +33,7 @@ Mat blueChannelProcessing(Mat img)
 
 }
 
+//2B - G channel
 Mat twob_gChannelProcessing(Mat img)
 {    
     Mat channels[3];
@@ -37,6 +46,7 @@ Mat twob_gChannelProcessing(Mat img)
     return fin;
 }
 
+//2B - R channel
 Mat twob_rChannelProcessing(Mat img)
 {
     Mat channels[3];

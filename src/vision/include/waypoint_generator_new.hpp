@@ -18,10 +18,13 @@ using namespace std;
 using namespace cv;
 
 /*
-This waypoint generation uses the RANSAC parabola model[y^2=a(x-c) (bottom-left origin)]
-    to the equation of the form x= ay^2 + by + c (top-left origin)
+This waypoint generation uses the RANSAC parabola model[y^2=a(x-c) (BOTTOM-LEFT origin)]
+    to the equation of the form x= ay^2 + by + c (TOP-LEFT origin)
 
 On applying the conversion, the eqn. becomes (img.rows-y)^2= a(x-c)
+
+NOTE: 
+    * theta is 0-180 in CCW sense (-ve -> +ve x-axis)
 */
 
 //For this we use the following struct storing 6 variables. 
@@ -147,21 +150,29 @@ void GetAngleBounds (Mat img,int *min,int *max,Parabola2 lanes)
 {
     int theta,theta_min=0,theta_max=180;
     float theta_rad;
+    
+    //theta is 0-180 in CCW sense (-ve -> +ve x-axis)
     for(theta=0;theta<180;theta++)
     {
         theta_rad=theta*CV_PI/180;
 
-        //stepsize: Distance between 2 waypoints   
+        /*
+        stepsize: Distance between 2 waypoints (dynamic_reconfigure parameter)
+            * We find the lane on which the point along the given angle at 'stepsize' distance is on. 
+            * Frame: LIDAR frame (bottom-middle origin)
+        */
         if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,lanes)==1)
         {
             theta_min=theta;
-            break;
+            // break;
         }
 
         if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,lanes)==2)
         {
             theta_max=theta;
-            break;
+//-----------------------------------------------------------------------------------------------        
+// Why the break neccessary?
+            break;  
         }
     }
 
@@ -170,10 +181,11 @@ void GetAngleBounds (Mat img,int *min,int *max,Parabola2 lanes)
 }
 
 /*
-Gets the angle assuming the bottom center as origin taking:
-    * clockwise angle as positive 
-    * -ve x axis as 0 degree line
-    * the Mat img contains only RANSAC plotted lanes
+Gets the position of waypt. in the LIDAR frame (BOTTOM-MIDDLE origin):
+
+NOTE:   
+    * Initial theta convention. 
+    * the Mat img contains only RANSAC plotted lanes.
 */
 NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
 {
@@ -187,60 +199,88 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
     GetAngleBounds(img,theta_min,theta_max,lanes);
     int theta_mid=((*theta_min)+(*theta_max))/2;
     
-    if(lanes.numModel==2)   //both lanes
+    //BOTH LANES PRESENT
+    if(lanes.numModel==2)   
     {
-//-----------------------------------------------------------------------------------------------        
-// Why multiplying by 2/5?
+        // Intuition
         j=img.rows*2/5;
-//-----------------------------------------------------------------------------------------------        
 
-        //Checking if x co-ordinate is within image boudaries
+        /* Checking if given y co-ordinate's corresponding x co-ordinates 
+         of the 2 curves are within image boudaries. */
         if((lanes.a1*j*j+lanes.b1*j+lanes.c1)>0 && (lanes.a2*j*j+lanes.b2*j+lanes.c2)<img.cols)
         {
             pt.y=j;
-            //x= mean of x co-ordinates of 2 curves.
+            //x= mean of x co-ordinates of 2 curves for the given y co-ordinate.
             pt.x= ((lanes.a1*j*j+lanes.b1*j+lanes.c1)+(lanes.a2*j*j+lanes.b2*j+lanes.c2))/2;
         }
     }
+
+    //SINGLE LANE PRESENT
     else if(lanes.numModel==1)
     {
         Parabola2 temp;
         float theta,theta_m,m;
         // float bottom = lanes.a1*(img.rows*img.rows) + lanes.b1 * img.rows + lanes.c1,top = lanes.c1,right = (-lanes.b1-math.sqrt(lanes.b1*lanes.b1 ))
-        // if(lanes.c1>0&&lanes.c1<img.cols){
-        //   if(lanes)
         
+        //LEFT LANE
         if(lanes.a1!=0||lanes.b1!=0||lanes.c1!=0)
         {
+            /*
+            To get the waypoint in a direction parallel to the current lane,
+                we create a shifted curve.
+            i.e. the eqn. now becomes x-ll = a(y-bb)^2 + b(y-bb) + c
+            */  
             temp.a1 = lanes.a1;
-//-------------------------------------------------------------------------------
-// Why signum is used although mathematically it is correct without sgn?
+//-------------------------------------------------------------------------------------------------
+//Still doubtful           
+            /*
+            Signum is being used to accomodate for the 2 concavities(i.e. +ve/-ve 'a' values)
+                * If we shift for waypt. by maths (i.e. a(y-bb)^2 + b(y-bb) + c= x-ll),
+                    we'll get the shift in the direction of the concavity.  
+                * Signum automatically takes care of this. 
+            */ 
             temp.b1=lanes.b1-2*lanes.a1*bb*sgn(lanes.a1);
             temp.c1 = lanes.c1+ll+lanes.a1*bb*bb-sgn(lanes.a1)*bb*lanes.b1;
-//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 
             float theta_rad;
             
-//-------------------------------------------------------------------------------
-// use of this loop is effectively 0
+            /*
+            Finding the max angle from left that can be acoomodated in the stepsize.
+            Hence the start from 180.
+            */
             for(theta=180;theta>0;theta--)
             {
                 theta_rad=theta*CV_PI/180;
 
                 if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,temp)==1)
-                    1*theta_m=theta;
+                    theta_m=theta;
 
             }
-//-------------------------------------------------------------------------------
 
-            theta_rad=theta_m*CV_PI/180;
+            theta_rad=theta_m*CV_PI/180;    //Converting to radians
+            
+            //Creating a pt. at theta angle & stepsize away
             pt.x = img.cols/2-stepsize*cos(theta_rad);
             pt.y = img.rows-stepsize*sin(theta_rad);
+            
+            /*
+            If theta is less than 45, 
+                the waypoint will be generated too close to the bottom.
+            */
             if(theta_m<45)
             {
+                
                 float xd,yd;
                 xd = (img.cols/2)-stepsize*cos(theta_rad);
                 yd = img.rows - stepsize*sin(theta_rad);
+                
+                // So we find a new theta by moving along it from the shifted point.
+                // A new stepsize ('dist' variable) is used.
+//-------------------------------------------------------------------------------------------------
+                
+//-------------------------------------------------------------------------------------------------
+                
                 for(theta=0;theta<180;theta++)
                 {
                     theta_rad=theta*CV_PI/180;
@@ -255,12 +295,16 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
 
 
         }
+
+        //RIGHT LANE
         else if(lanes.a2!=0||lanes.b2!=0||lanes.c2!=0)
         {
             temp.a2 = lanes.a2;
             temp.b2=lanes.b2 +2*lanes.a2*bb*sgn(lanes.a2);
             temp.c2 = lanes.c2-ll+lanes.a2*bb*bb+sgn(lanes.a2)*bb*lanes.b2;
             float theta_rad;
+            
+            // For the max angle from right, we start from 0.
             for(theta=0;theta<180;theta++)
             {
                 theta_rad=theta*CV_PI/180;
@@ -269,18 +313,26 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
                 {
                     theta_m=theta;
                     break;
-                    //cout<<"theta_min : "<<theta_min<<endl;
                 }
 
             }
             theta_rad=theta_m*CV_PI/180;
+            
+            //Creating a pt. at theta angle & stepsize away
             pt.x = img.cols/2-stepsize*cos(theta_rad);
             pt.y = img.rows-stepsize*sin(theta_rad);
+            
+            /*
+            If theta is greater than 135, 
+                the waypoint will be generated too close to the bottom.
+            */
             if(theta>135)
             {
                 float xd,yd;
                 xd = (img.cols/2)-stepsize*cos(theta_rad);
                 yd = img.rows - stepsize*sin(theta_rad);
+                
+                // So we find a new theta by increasing the stepsize using dist variable.
                 for(theta=0;theta<180;theta++)
                 {
                     theta_rad=theta*CV_PI/180;
@@ -298,12 +350,7 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             }
         }
     }
-    //if(*theta_max==180&&*theta_min!=0)
-    //{
 
-        
-
-    //}
     if(lanes.numModel==1)
     {
         if(*theta_max<25)
@@ -317,7 +364,6 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             pt.y=img.rows;
         }
     }
-    // cout<<"pt.x: "<<pt.x<<" pt.y:"<<pt.y<<endl;
       return pt;
 }
 
@@ -381,7 +427,7 @@ NavPoint find_waypoint(Parabola lan,Mat img)
         lanes.b1 = (-2*img.rows)/a1;
         lanes.c1 = (img.rows*img.rows + a1*c1)/a1;
         
-        //if in case parabola is nearly fit into y=0
+        //if in case parabola is linearly fit into x= my + c
         if(fabs(lanes.a1)<0.00001)
             lanes.c1=c1;
     }
@@ -400,13 +446,13 @@ NavPoint find_waypoint(Parabola lan,Mat img)
         lanes.b2 = (-2*img.rows)/a2;
         lanes.c2 = (img.rows*img.rows + a2*c2)/a2;
         
-        //if in case parabola is nearly fit into y=0
+        //if in case parabola is linearly fit into x= my + c
         if(fabs(lanes.a2)<0.00001)
             lanes.c2=c2;
     }
 
 
-    //Plotting transformed image to check
+    //Plotting transformed image
     if(false) {
     Mat fitLanes1 = drawLanes1(img, lanes);
     namedWindow("Waypoint RANSAC plot",0);
@@ -417,12 +463,8 @@ NavPoint find_waypoint(Parabola lan,Mat img)
     int theta_min,theta_max;
 
     way_point= getCoordinatesxy(img,&theta_min,&theta_max,lanes) ;
-     /*way_point.x = (img.cols/2-stepsize*cos(coordinateAngle));
-    way_point.y = (img.rows-stepsize*sin(coordinateAngle));*/
     float slope = GetAngle(img,theta_min,theta_max,lanes,way_point.x,way_point.y);
 
-   
-    /*cout<<"coordinate angle "<<coordinateAngle<<endl;*/
     way_point.angle = slope;
     
     count_check=0;
