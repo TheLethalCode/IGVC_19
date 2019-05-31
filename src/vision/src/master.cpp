@@ -1,3 +1,8 @@
+/*
+NOTE: For debugging couts:
+        * Open rqt_reconfigure
+        * Set is_debug to true
+*/
 #include <iostream>
 #include <math.h>
 #include <opencv2/opencv.hpp>
@@ -15,11 +20,8 @@
 #include <time.h>
 #include <std_msgs/Bool.h>
 
-/*
-   Custom header files
- */
 
-
+//Custom Header files
 #include <params.hpp>
 #include <matrixTransformation.hpp>
 #include <lidar_new.hpp>
@@ -30,10 +32,8 @@
 #include <lane_laser_scan.hpp>
 #include <find_pothole.hpp>
 #include <hough.hpp>
-#include <obstacle_det_vision_lidar.hpp>
-// #include <bright.hpp>
-// #include <lidar_plot.hpp>
-
+#include <obstacle_det_vision_lidar.hpp>    //Obstacle Removal
+// #include <bright.hpp>    //For brightest pixel first approach
 
 // #include <White_obstacle_updated.hpp>
 // #include <obstacles_prev.hpp>
@@ -42,7 +42,8 @@ using namespace std;
 using namespace cv;
 using namespace ros;
 
-
+//Dynamic Reconfigure callback function
+// Link: http://wiki.ros.org/dynamic_reconfigure
 void callback(node::TutorialsConfig &config, uint32_t level)
 {
     is_debug = config.is_debug;
@@ -85,21 +86,22 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     rscale = config.rscale;
 }
 
-Publisher lanes2Costmap_publisher;
-Publisher pot2staticCostmap_publisher;
+Publisher lanes2Costmap_publisher;  //For putting lanes in costmap
+Publisher pot2staticCostmap_publisher;  //For putting potholes in costmap
 Mat frame_orig;
 
+//Parameter for GPS switching. Set to false when GPS waypoint starts
 bool use_vision_global = true;
 
-
-int mn(int a,int b)
+/*int mn(int a,int b)
 {
     if(a<b)
         return a;
     else
         return b;
-}
+}*/  //Not needed right now
 
+//For converting & resizing pointgrey camera node data to image
 void imageCb(const sensor_msgs::ImageConstPtr& msg)
 {
     cv_bridge::CvImagePtr cv_ptr;
@@ -116,7 +118,7 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg)
     }
     frame_orig = (cv_ptr->image);
 
-
+    //Resizing Mat to 1/16th area so as to reduce computation
     resize(frame_orig, frame_orig, Size(frame_orig.cols/4, frame_orig.rows/4));
 }	
 
@@ -126,18 +128,19 @@ void use_vision_callback(const std_msgs::Bool::ConstPtr& msg) {
 
 int main(int argc, char **argv)
 { 
-
     init(argc,argv,"master");
     NodeHandle n;
     image_transport::ImageTransport it(n);
 
+    //Taken from dynamic reconfigure tutorials
     dynamic_reconfigure::Server<node::TutorialsConfig> server;
     dynamic_reconfigure::Server<node::TutorialsConfig>::CallbackType f;
     f = boost::bind(&callback, _1, _2);
     server.setCallback(f);
 
+
     Subscriber lidar_subsriber;
-    image_transport::Subscriber sub = it.subscribe("/camera/image_color", 2, imageCb);
+    image_transport::Subscriber sub = it.subscribe("/camera/image_color", 2, imageCb);  //NOTE Topic
     Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
     lanes2Costmap_publisher = n.advertise<sensor_msgs::LaserScan>("/lanes", 2);       //declared globally
     pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
@@ -149,7 +152,7 @@ int main(int argc, char **argv)
     }
 
     Parabola lanes;		//For Ransac implementation(it is a structure)
-    lanes.a1=0;
+    lanes.a1=0;         //For definition lookup ransac_new_2.hpp
     lanes.c1=0;
     lanes.a2=0;
     lanes.c2=0;
@@ -158,13 +161,16 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
 
-    	if (use_vision_global == false) {
+        if(is_debug) {cout << "loop start" << endl;}
+    	
+        //For GPS switching, 
+        if (use_vision_global == false) {
+            if(is_debug) {cout << "vision global set to false" << endl;}
     		spinOnce();
     		continue;
     	}
 
-        if(is_debug) {cout << "loop start" << endl;}
-        //if image has not been retrieved, skip
+        //If image has not been retrieved, skip
         if(!is_image_retrieved)
         {
             if(is_debug) {cout << "image not retrieved" << endl;}
@@ -173,7 +179,7 @@ int main(int argc, char **argv)
         }
 
 
-        //if lidar has not been retrieved, skip
+        //If lidar has not been retrieved, skip
         if(!is_laserscan_retrieved && !use_video)
         {
             if(is_debug) {cout << "laser scan not retrieved" << endl;}
@@ -181,11 +187,13 @@ int main(int argc, char **argv)
             continue;
         }
 
+        //Used for finding FPS
         clock_t tic,toc;
 
+        //Start time
         tic=clock();
 
-        Mat bw;
+        Mat bw;     //For finding potholes(since we are using canny in it.)
         cvtColor(frame_orig,bw,cv::COLOR_RGB2GRAY);
 
         if(false)
@@ -197,32 +205,33 @@ int main(int argc, char **argv)
         // namedWindow("original",WINDOW_NORMAL);
         // imshow("original", frame_orig);
 
+        //For generating top view
         Mat frame_topview = top_view(frame_orig);
 
-        // if(is_debug == true || is_threshold == true){ 
-        //     namedWindow("frame_topview", WINDOW_NORMAL);
-        //     imshow("frame_topview",frame_topview);
-        //     waitKey(10);
-        // }
+        /*if(is_debug == true || is_threshold == true){ 
+            namedWindow("frame_topview", WINDOW_NORMAL);
+            imshow("frame_topview",frame_topview);
+            waitKey(10);
+        }*/
 
-        //extraction of region of interest
-        // Rect roi_rect = Rect(0, frame_orig.rows/3, frame_orig.cols, frame_orig.rows*2/3); //params in order: x, y, height, width (of ROI)
+        /*extraction of region of interest
+        Rect roi_rect = Rect(0, frame_orig.rows/3, frame_orig.cols, frame_orig.rows*2/3); //params in order: x, y, height, width (of ROI)*/
 
         Mat roi = frame_orig.clone();
 
-        // for (int q = 0; q < frame_orig.rows/5; q++) {
-        //     for (int w = 0; w < frame_orig.cols; w++) {
-        //         roi.at<Vec3b>(q,w)[0] = 0;
-        //         roi.at<Vec3b>(q,w)[1] = 0;
-        //         roi.at<Vec3b>(q,w)[2] = 0;
-        //     }
-        // }
+        /*for (int q = 0; q < frame_orig.rows/5; q++) {
+            for (int w = 0; w < frame_orig.cols; w++) {
+                roi.at<Vec3b>(q,w)[0] = 0;
+                roi.at<Vec3b>(q,w)[1] = 0;
+                roi.at<Vec3b>(q,w)[2] = 0;
+            }
+        }*/
 
-        // if (is_debug || is_threshold) {
-        //     namedWindow("roi",WINDOW_NORMAL);
-        //     imshow("roi",roi); 
-        //     waitKey(10);
-        // }
+        /*if (is_debug || is_threshold) {
+            namedWindow("roi",WINDOW_NORMAL);
+            imshow("roi",roi); 
+            waitKey(10);
+        }*/
 
         /*
            if (false) {
@@ -233,7 +242,6 @@ int main(int argc, char **argv)
         }
          */
 
-        //cout << "hello1" << endl;
         if(is_debug) {cout << "2b-r initiated" << endl;}
         Mat twob_r = twob_rChannelProcessing(roi);
 
@@ -245,7 +253,6 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-        //cout << "hello2" << endl;
         if(is_debug) {cout << "2b-g initiated" << endl;}
         Mat twob_g = twob_gChannelProcessing(roi);
 
@@ -256,21 +263,18 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-        //cout << "hello3" << endl;
-
         //processing for blue channel
         if(is_debug) {cout << "b initiated" << endl;}
         Mat b = blueChannelProcessing(roi);
 
         if (is_debug || is_threshold) {
-            //cout << "b done" << endl;
             namedWindow("b", WINDOW_NORMAL);
             imshow("b", b);
             waitKey(10);
         }
 
-        //intersection of all lane filters
-        if(is_debug) {cout << "intersection of lane filters: ";}
+        //Taking intersection of all lane filters
+        if(is_debug) {cout << "Taking intersection of lane filters= ";}
         Mat intersectionImages;
         // if(is_debug) cout << "2b-r : 2b-g : ";
         bitwise_and(twob_r, twob_g, intersectionImages);
@@ -279,12 +283,12 @@ int main(int argc, char **argv)
 
         //cout << "intersection done" << endl;
 
-        // if (is_debug || is_threshold) {
-        //     //cout << "intersection image" << endl;
-        //     namedWindow("intersectionImages_before", WINDOW_NORMAL);
-        //     imshow("intersectionImages_before", intersectionImages);
-        //     waitKey(10);
-        // }
+        /*if (is_debug || is_threshold) {
+            //cout << "intersection image" << endl;
+            namedWindow("intersectionImages_before", WINDOW_NORMAL);
+            imshow("intersectionImages_before", intersectionImages);
+            waitKey(10);
+        }*/
 
         // resize(intersectionImages, intersectionImages, Size(intersectionImages.cols/3, intersectionImages.rows/3));
         // medianBlur(intersectionImages, intersectionImages, medianBlurkernel);
@@ -335,9 +339,11 @@ int main(int argc, char **argv)
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
         // if(is_debug) cout << "lidar points " << obs_by_lidar.size() << endl;
 
+//-----------------------------------------------------------------------------------------------------------        
+// Obstacle Removal not yet commented
         if(is_debug) {cout << "Obstacle removal" << endl;}
-
         intersectionImages = remove_obstacles(roi, intersectionImages, obs_by_lidar);
+//-----------------------------------------------------------------------------------------------------------        
 
         if(true){
         	namedWindow("Obs_removed", 0);
@@ -345,13 +351,16 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
- 		Mat hough_image(intersectionImages.rows,intersectionImages.cols, CV_8UC1, Scalar(0));
+ 		//Creating a Mat for hough.hpp
+        Mat hough_image(intersectionImages.rows,intersectionImages.cols, CV_8UC1, Scalar(0));
 
         namedWindow("hough", 0);
 
         if(lanes.numModel == 1)
         {
-        // cout << "----------------------\none lane\n--------------------...." <<endl;
+            // if(is_debug){cout << "----------------------\nOne Lane\n--------------------...." <<endl;}
+            
+            //Checking if lane is left or right
             if(lanes.a1 == 0 && lanes.c1 == 0)
                 side = 'r';
             else if(lanes.a2 == 0 && lanes.c2 == 0)
@@ -359,25 +368,25 @@ int main(int argc, char **argv)
 
             if(check_whether_hough(hough_image,intersectionImages))
             {
-                if(is_debug) {cout << "Hough Code initiated" << endl;}
+                if(is_debug) {cout << "Hough Code Initiated" << endl;}
                 used_hough = true;
                 Mat hough_lane = top_view(hough_image);
-        // cout << "----------------------\nhough line true\n--------------------...." <<endl;
 
                 sensor_msgs::LaserScan hough;
                 hough = laneLaser(hough_lane);
                 lanes2Costmap_publisher.publish(hough);
 
-                // for(int i=0;i<100;i++)
-                   //  cout << "fit hough" << endl;
+
                 if(is_debug) {cout << "waypoint generation for hough" << endl;}
                 NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta);
+                //theta is globally declared in hough.hpp
+
                 if(is_debug) cout << "Plotting hough waypoint" << endl;
                 intersectionImages = plotWaypoint(hough_image, waypoint_image);
                
                 Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
                 Mat waypt_top = h*waypt;
-
+  
                 double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
                 double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
 
@@ -392,12 +401,15 @@ int main(int argc, char **argv)
                 if(is_debug) {cout << "waypoint message position generation" << endl;}
                 waypoint_bot.header.frame_id = "base_link";
                 waypoint_bot.header.stamp = ros::Time::now();
+
+                //changing waypoint from image to LIDAR frame
                 waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
                 waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
                 waypoint_bot.pose.position.z = 0;
                 float theta = (waypoint_image.angle);
                 imshow("hough", hough_image);
 
+                //converting to Quaternion from Yaw 
                 if(is_debug) {cout << "waypoint message quaternion generation" << endl;}
                 tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
                 waypoint_bot.pose.orientation.x = frame_qt.x();
@@ -416,10 +428,10 @@ int main(int argc, char **argv)
         }
         imshow("hough", hough_image);
 
-        // cout << "----------------------\nhough skipped\n--------------------...." <<endl;
+        // cout << "----------------------\nHough Skipped\n--------------------...." <<endl;
 
-       
-       // intersectionImages = brightest(intersectionImages);
+        // Brightest Pixel per Row approach
+        // intersectionImages = brightest(intersectionImages);
 
         if(false)
         {
@@ -434,7 +446,7 @@ int main(int argc, char **argv)
         Mat fitLanes = drawLanes(frame_orig, lanes);
         //if(is_debug) {cout << "Lanes drawn on blank image" << endl;}
         costmap = drawLanes_white(costmap,lanes);
-
+///=============================================================================================================
         //return waypoint assuming origin at bottom left of image (in pixel coordinates)
         NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
 

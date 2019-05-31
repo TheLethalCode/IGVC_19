@@ -21,6 +21,7 @@ using namespace cv;
 #define botlength 90
 #define botwidth 30*/
 
+// A new struct for equation of the form ax^2 + bx + c= 0
 typedef struct Parabola2 {
     int numModel = 0;
     float a1 = 0.0;
@@ -457,11 +458,15 @@ NavPoint find_waypoint(Parabola lan,Mat img)
     return way_point;
 }
 
-Mat plotWaypoint(Mat costmap, NavPoint waypoint_image) {
-    Point origin = Point(waypoint_image.x-1, waypoint_image.y -1);
+Mat plotWaypoint(Mat costmap, NavPoint waypoint_image) 
+{
+    Point origin = Point(waypoint_image.x-1, waypoint_image.y-1);   
+    // -1 added to avoid seg fault if img.rows/cols returned
     float x = origin.x - 25*cos(CV_PI/2 - waypoint_image.angle);
     float y = origin.y - 25*sin(CV_PI/2 - waypoint_image.angle);
     Point dest = Point(x,y);
+    
+    //Drawing waypoint according in the costmap image 
     circle(costmap, origin, 5, Scalar(255), -1, 8, 0);
     arrowedLine(costmap, origin, dest, Scalar(255), 3, 8, 0, 0.1);
 

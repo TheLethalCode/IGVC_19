@@ -14,12 +14,12 @@ using namespace std;
 Mat blueChannelProcessing(Mat img)
 {
     Mat channels[3];
-    split(img, channels);
+    split(img, channels);   //splits the image into 3 Mat with 1 channel each
     Mat b = channels[0];
 
-    GaussianBlur(b , b, Size( 9, 9), 0, 0);
+    GaussianBlur(b , b, Size( 9, 9), 0, 0);     //Based on observation
     adaptiveThreshold(b,b,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,neighbourhoodSize, constantSubtracted);
-    medianBlur(b,b,medianBlurkernel);
+    medianBlur(b,b,medianBlurkernel);   //To remove salt & pepper noise
 
     return b;
 
@@ -39,14 +39,14 @@ Mat twob_gChannelProcessing(Mat img)
 
 Mat twob_rChannelProcessing(Mat img)
 {
-    // cout << "1" << endl;
     Mat channels[3];
     split(img, channels);
     Mat fin = 2*channels[0] - channels[2];
 
+    //For storing square of channels
     Mat_<int> b2, g2, r2, mean2;
 
-    multiply(channels[0], channels[0], b2);
+    multiply(channels[0], channels[0], b2); //multiplies matrices
     multiply(channels[1], channels[1], g2);
     multiply(channels[2], channels[2], r2);
 
@@ -54,13 +54,17 @@ Mat twob_rChannelProcessing(Mat img)
     multiply(mean, mean, mean2);
     
     Mat_<int> zero_moment = (Mat_<int>)(b2 + g2 + r2)/3;
+    
+    //Variance is being used purely based on observation
     Mat_<float> variance = (Mat_<float>)(zero_moment - mean2);
+    //Vairance= (Mean of sq.s) - (sq. of mean)
 
     Mat mask, result;
 
     threshold(variance, mask, 1500, 255, THRESH_BINARY);
     mask.convertTo(mask, CV_8U);
 
+    //Taking intersection of original & thresholded variance intensities 
     bitwise_and(fin, mask, result);
 
     adaptiveThreshold(result,result,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,neighbourhoodSize, constantSubtracted);
