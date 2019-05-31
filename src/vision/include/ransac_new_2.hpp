@@ -9,7 +9,7 @@
 
 /*
     * This RANSAC model fits both lane curves simultaneously by taking 4 random points (2 on each lanes).
-    * The parabolas are fit assuming top-left as origin: i.e. x towards right and y downwards.
+    * The parabolas are fit assuming bottom-left as origin: i.e. x towards right and y downwards.
     * The equation used for parabola is (y^2)= a(x-c).
     * Both a & c are found by solving simultaneous linear equations.
  */
@@ -387,7 +387,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         /*
         Checking if points for the lane have the same x or y co-ordinates
             * Same x co-ordinates => infinite no. of parabolas.
-            * Same y co-ordinates isn't possible due to a fixed axis(top row).
+            * Same y co-ordinates isn't possible due to a fixed axis(bottom row).
         */  
         if(ran_points[0].x == ran_points[1].x || ran_points[2].x==ran_points[3].x || ran_points[0].y == ran_points[1].y || ran_points[2].y==ran_points[3].y){
             i--;
@@ -471,7 +471,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
             }
         }
 
-        //Checking if the curves are too close at the top
+        //Checking if the curves are too close at the bottom
         else if(fabs(tempParam.c1 - tempParam.c2) < 40.0){
             cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
             if(score_r_loc > score_l_loc)

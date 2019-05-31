@@ -445,17 +445,18 @@ int main(int argc, char **argv)
             imshow("brightest_pixel",intersectionImages);
         }
 
-        Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
         if(is_debug) {cout << "RANSAC started" << endl;}
         lanes = getRansacModel(intersectionImages, lanes);
         // if(is_debug) {cout << "Lanes drawn on original image" << endl;}
         Mat fitLanes = drawLanes(frame_orig, lanes);
         //if(is_debug) {cout << "Lanes drawn on blank image" << endl;}
+        Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
         costmap = drawLanes_white(costmap,lanes);
 ///=============================================================================================================
 // Not yet commented.       
-        //return waypoint assuming origin at bottom left of image (in pixel coordinates)
-        NavPoint waypoint_image = find_waypoint(lanes,costmap); //in radians
+        /* Returns waypoint assuming origin at bottom left of image (in pixel coordinates)
+        & orientation in radians. */ 
+        NavPoint waypoint_image = find_waypoint(lanes,costmap); 
 ///=============================================================================================================
 
         Mat waypts = costmap.clone();

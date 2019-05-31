@@ -8,20 +8,23 @@
 #include <iostream>
 #include <math.h>
 #include "ransac_new_2.hpp"
-#define ll 80
-#define bb 80
+
+
+#define ll 80   //x co-ordinate shift   
+#define bb 80   //y co-ordinate shift
 #define dist 180
 
 using namespace std;
 using namespace cv;
 
-/*#define pixelsPerMeter 112.412
-#define stepsize 3.5*pixelsPerMeter
+/*
+This waypoint generation uses the RANSAC parabola model[y^2=a(x-c) (bottom-left origin)]
+    to the equation of the form x= ay^2 + by + c (top-left origin)
 
-#define botlength 90
-#define botwidth 30*/
+On applying the conversion, the eqn. becomes (img.rows-y)^2= a(x-c)
+*/
 
-// A new struct for equation of the form ax^2 + bx + c= 0
+//For this we use the following struct storing 6 variables. 
 typedef struct Parabola2 {
     int numModel = 0;
     float a1 = 0.0;
@@ -31,28 +34,38 @@ typedef struct Parabola2 {
     float b1 = 0.0;
     float c2 = 0.0;
 } Parabola2;
+
 float xc,yc;
+
+// Custom struct for storing x, y & yaw
 struct NavPoint{
     int x;
     int y;
     float angle;
 };
 
-//returns 1 if input point closer to left lane, 2 if close to right lane, 0 if none
+/*
+Function to find the lane closest to a point    
+    * Checks it by finding closeness of (ay^2 + by + c -x) to 0
+    * Returns: 
+        ~ 1 if input point closer to left lane 
+        ~ 2 if close to right lane
+        ~ 0 if none
+*/
 int checklane(int y,int x,Mat img,Parabola2 lanes)
 {
-    if(fabs(lanes.a1*y*y+lanes.b1*y+lanes.c1-x)< (30/4)) {
-        // cout<<"1 :"<<endl;
+    if(fabs(lanes.a1*y*y+lanes.b1*y+lanes.c1-x)< (30/4)) 
         return 1;
-    }
-    if(fabs(lanes.a2*y*y+lanes.b2*y+lanes.c2-x)< (30/4)) {
-        // cout<<"2 :"<<endl;
+
+    if(fabs(lanes.a2*y*y+lanes.b2*y+lanes.c2-x)< (30/4))
         return 2;
-    }
+    
     return 0;
 }
 
-bool isValid(Mat img, int i, int j) {
+//Ensures that the chosen pixel is not out of bounds of the image
+bool isValid(Mat img, int i, int j) 
+{
     if (i < 0 || i >= img.rows || j < 0 || j >= img.cols) {
         return false;
     }
@@ -122,6 +135,7 @@ float GetAngle(Mat img,int min,int max,Parabola2 lanes,float xc, float yc)
     }
 }
 
+//Signum Function
 int sgn(float x){
     if(x>0) return 1;
     else if(x<0) return -1;
@@ -137,126 +151,93 @@ void GetAngleBounds (Mat img,int *min,int *max,Parabola2 lanes)
     {
         theta_rad=theta*CV_PI/180;
 
+        //stepsize: Distance between 2 waypoints   
         if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,lanes)==1)
         {
             theta_min=theta;
-            //cout<<"theta_min : "<<theta_min<<endl;
+            break;
         }
 
         if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,lanes)==2)
         {
             theta_max=theta;
-            //cout<<"THETA_MAX PRINT: "<<theta_max<<endl;
             break;
         }
     }
-
-
-
 
     *min=theta_min;
     *max=theta_max;
 }
 
-//gets the angle assuming the bottom center as origin taking clockwise angle as positive, -ve x axis as 0 degree line
+/*
+Gets the angle assuming the bottom center as origin taking:
+    * clockwise angle as positive 
+    * -ve x axis as 0 degree line
+    * the Mat img contains only RANSAC plotted lanes
+*/
 NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
 {
-    int i,j,check1=0;
+    int i,j;
     int theta;
-    int theta_head=90;
     NavPoint pt;
     float ptx,pty;
     pt.x=img.cols/2;
     pt.y=img.rows/2;
 
-    //img contains both obs and lanes
     GetAngleBounds(img,theta_min,theta_max,lanes);
     int theta_mid=((*theta_min)+(*theta_max))/2;
-    // cout<<"theta min : "<<*theta_min<<" theta max : "<<*theta_max<<endl;
-    /*if(*theta_max<35||*theta_min>145)
-        stepsize=stepsize/5;*/
-    if(lanes.numModel==2)
+    
+    if(lanes.numModel==2)   //both lanes
     {
-        /*for(theta=0;theta<((*theta_max)-(*theta_min))/2;theta++)
-        {
-            i=img.rows-stepsize*sin((theta_mid+theta)*CV_PI/180);
-            j=img.cols/2-stepsize*cos((theta_mid+theta)*CV_PI/180);
-            
-            if (!isValid(img, i, j)) {
-                continue;
-            }
-            if(img.at<Vec3b>(i,j)[0]==0&&img.at<Vec3b>(i,j)[1]==0&&img.at<Vec3b>(i,j)[2]==0)
-            {
-                cout  << isValid(img, i, j) <<endl;
-                if(isValid_point(img,i,j))
-                {
-                    pt.y=i;
-                    ptx=j;
-                    pty=i;
-                    pt.x=j;
-                    check1=1;
-                    break;
-                }
-            }
+//-----------------------------------------------------------------------------------------------        
+// Why multiplying by 2/5?
+        j=img.rows*2/5;
+//-----------------------------------------------------------------------------------------------        
 
-            i=img.rows-stepsize*sin((theta_mid-theta)*CV_PI/180);
-            j=img.cols/2-stepsize*cos((theta_mid-theta)*CV_PI/180);
-            if (!isValid(img, i, j)) {
-                continue;
-            }
-            if(img.at<Vec3b>(i,j)[0]==0&&img.at<Vec3b>(i,j)[1]==0&&img.at<Vec3b>(i,j)[2]==0)
-            {
-                if(isValid_point(img,i,j))
-                {
-                    pt.y=i;
-                    ptx=j;
-                    ptx=i;
-                    pt.x=j;
-                    check1=1;
-                    break;
-                }
-            }
-        }*/
-        j=img.rows*2/5;
-        j=img.rows*2/5;
-        if((lanes.a1*j*j+lanes.b1*j+lanes.c1)>0&&(lanes.a2*j*j+lanes.b2*j+lanes.c2)<img.cols)
+        //Checking if x co-ordinate is within image boudaries
+        if((lanes.a1*j*j+lanes.b1*j+lanes.c1)>0 && (lanes.a2*j*j+lanes.b2*j+lanes.c2)<img.cols)
         {
             pt.y=j;
+            //x= mean of x co-ordinates of 2 curves.
             pt.x= ((lanes.a1*j*j+lanes.b1*j+lanes.c1)+(lanes.a2*j*j+lanes.b2*j+lanes.c2))/2;
-
         }
     }
     else if(lanes.numModel==1)
     {
         Parabola2 temp;
         float theta,theta_m,m;
-       // float bottom = lanes.a1*(img.rows*img.rows) + lanes.b1 * img.rows + lanes.c1,top = lanes.c1,right = (-lanes.b1-math.sqrt(lanes.b1*lanes.b1 ))
-       // if(lanes.c1>0&&lanes.c1<img.cols){
-         //   if(lanes)
+        // float bottom = lanes.a1*(img.rows*img.rows) + lanes.b1 * img.rows + lanes.c1,top = lanes.c1,right = (-lanes.b1-math.sqrt(lanes.b1*lanes.b1 ))
+        // if(lanes.c1>0&&lanes.c1<img.cols){
+        //   if(lanes)
         
         if(lanes.a1!=0||lanes.b1!=0||lanes.c1!=0)
         {
             temp.a1 = lanes.a1;
+//-------------------------------------------------------------------------------
+// Why signum is used although mathematically it is correct without sgn?
             temp.b1=lanes.b1-2*lanes.a1*bb*sgn(lanes.a1);
             temp.c1 = lanes.c1+ll+lanes.a1*bb*bb-sgn(lanes.a1)*bb*lanes.b1;
+//-------------------------------------------------------------------------------
+
             float theta_rad;
+            
+//-------------------------------------------------------------------------------
+// use of this loop is effectively 0
             for(theta=180;theta>0;theta--)
             {
                 theta_rad=theta*CV_PI/180;
 
                 if(checklane(img.rows-stepsize*sin(theta_rad),img.cols/2-stepsize*cos(theta_rad),img,temp)==1)
-                {
-                    theta_m=theta;
-                    //cout<<"theta_min : "<<theta_min<<endl;
-                }
+                    1*theta_m=theta;
 
             }
+//-------------------------------------------------------------------------------
+
             theta_rad=theta_m*CV_PI/180;
             pt.x = img.cols/2-stepsize*cos(theta_rad);
             pt.y = img.rows-stepsize*sin(theta_rad);
             if(theta_m<45)
             {
-                // cout << "noooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo" << endl;
                 float xd,yd;
                 xd = (img.cols/2)-stepsize*cos(theta_rad);
                 yd = img.rows - stepsize*sin(theta_rad);
@@ -265,11 +246,7 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
                     theta_rad=theta*CV_PI/180;
 
                     if(checklane(yd-dist*sin(theta_rad),xd-dist*cos(theta_rad),img,temp)==1)
-                    {
                         theta_m=theta;
-                        //cout<<"theta_min : "<<theta_min<<endl;
-                    }
-
                 }
                 theta_rad = theta_m*CV_PI/180;
                 pt.x = xd-dist*cos(theta_rad);
@@ -302,7 +279,6 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
             if(theta>135)
             {
                 float xd,yd;
-                // cout << "yeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeees" <<endl; float xd,yd;
                 xd = (img.cols/2)-stepsize*cos(theta_rad);
                 yd = img.rows - stepsize*sin(theta_rad);
                 for(theta=0;theta<180;theta++)
@@ -382,17 +358,16 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
 
 NavPoint find_waypoint(Parabola lan,Mat img)
 {   
-
+    //It has got classified lanes(left is 1st curve)
     Parabola2 lanes;
     int count_check;
     float a1 = lan.a1;
     float a2 = lan.a2;
     float c1 = lan.c1;
     float c2 = lan.c2;
-    // cout<<"no. of lanes: "<<lan.numModel<<endl;
     lanes.numModel=lan.numModel;
 
-
+    //If no left lane
     if(a1==0)
     {
         lanes.a1 = 0;
@@ -401,16 +376,20 @@ NavPoint find_waypoint(Parabola lan,Mat img)
     }
     else
     {
+        //Equation at line 22    
         lanes.a1 = 1/a1;
         lanes.b1 = (-2*img.rows)/a1;
         lanes.c1 = (img.rows*img.rows + a1*c1)/a1;
+        
+        //if in case parabola is nearly fit into y=0
         if(fabs(lanes.a1)<0.00001)
             lanes.c1=c1;
     }
-    // cout<<"a1: "<<lanes.a1<<" b1: "<<lanes.b1<<" c1: "<<lanes.c1<<endl;
 
+    //If no right lane
     if(a2==0)
     {
+        //Equation at line 22
         lanes.a2 = 0;
         lanes.b2 = 0;
         lanes.c2 = 0;
@@ -420,11 +399,11 @@ NavPoint find_waypoint(Parabola lan,Mat img)
         lanes.a2 = 1/a2;
         lanes.b2 = (-2*img.rows)/a2;
         lanes.c2 = (img.rows*img.rows + a2*c2)/a2;
+        
+        //if in case parabola is nearly fit into y=0
         if(fabs(lanes.a2)<0.00001)
             lanes.c2=c2;
     }
-
-
 
 
     //Plotting transformed image to check
