@@ -61,16 +61,16 @@ int main(int argc, char** argv)
       throw -1;
     }
     fscanf(gps_pts,"%lf %lf %lf %lf",&start_lat, &start_long, &mid1_lat, &mid1_long);
+    fscanf(gps_pts,"%lf %lf %lf %lf",&mid2_lat, &mid2_long, &end_lat, &end_long);
   }
   catch (int e) {
     ROS_INFO("Try running the gps switching code from the root of the IGVC workspace\n");
     return 0;
   }
 
-  double radius1,radius2;
+  double radius1,radius2, radius3, radius4;
 
-  bool flagstart1 = false,flagfinal1 = false;
-  bool flagstart2 = false,flagfinal2 = false;
+  bool flagstart1 = false;
 
   std_msgs::Bool use_vision_msg;
   use_vision_msg.data = true;
@@ -99,6 +99,7 @@ int main(int argc, char** argv)
         count1 = 0;
       }
 
+      //entering no man's land
       if (!flagstart1 && (radius1 < radius) && count1 >= 10)
       {
         flagstart1 = true;
@@ -114,14 +115,34 @@ int main(int argc, char** argv)
         //change teb parameters
         system("teb_params_no_mans_land.sh");
 
-        //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
-        int gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long); 
+        spinOnce();
+        radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
         spinOnce();
 
-        radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
         while (radius2 > radius) {
           gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long); 
+          //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
           radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
+          spinOnce();
+        }
+
+        spinOnce();
+        radius3 = distance(current_lat, current_long, mid2_lat, mid2_long);
+        spinOnce();
+
+        while (radius3 > radius) {
+          gps_status = gps_waypoint(mid2_lat, mid2_long, current_lat, current_long); 
+          radius3 = distance(current_lat, current_long, mid2_lat, mid2_long);
+          spinOnce();
+        }
+
+        spinOnce();
+        radius4 = distance(current_lat, current_long, end_lat, end_long);
+        spinOnce();
+
+        while (radius4 > radius) {
+          gps_status = gps_waypoint(end_lat, end_long, current_lat, current_long); 
+          radius4 = distance(current_lat, current_long, end_lat, end_long);
           spinOnce();
         }
 
