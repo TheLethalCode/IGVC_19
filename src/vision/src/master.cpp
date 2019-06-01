@@ -147,6 +147,9 @@ int main(int argc, char **argv)
     pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
 	Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
 
+    int waypoint_count = 0;
+
+
 
     if (use_video == false) {
         lidar_subsriber = n.subscribe("/scan", 1, &laserscan);
@@ -398,10 +401,9 @@ int main(int argc, char **argv)
                 double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
 
                 //waypoint transform for hough line
-                /*
                 waypoint_image.x=x_top;
                 waypoint_image.y=y_top;
-                */
+
 
                 //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
                 geometry_msgs::PoseStamped waypoint_bot;
@@ -445,6 +447,8 @@ int main(int argc, char **argv)
             namedWindow("brightest_pixel",0);
             imshow("brightest_pixel",intersectionImages);
         }
+
+        intersectionImages = top_view(intersectionImages);
 
         if(is_debug) {cout << "RANSAC started" << endl;}
         lanes = getRansacModel(intersectionImages, lanes);
@@ -537,6 +541,11 @@ int main(int argc, char **argv)
         waypoint_image.y=y_top;
 
 
+        waypoint_image.x-=40*sin(waypoint_image.angle);
+        waypoint_image.y-=40*cos(waypoint_image.angle);
+
+
+
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
         
         //changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
@@ -558,7 +567,10 @@ int main(int argc, char **argv)
         waypoint_bot.pose.orientation.w = frame_qt.w();
 
         //Publishing waypoint
-        waypoint_publisher.publish(waypoint_bot);
+        if (waypoint_count == 3) {
+            waypoint_publisher.publish(waypoint_bot);
+            waypoint_count = 0;        
+        }
         //cout << "Waypoint published\n----------------------------" << endl;
         
 
@@ -571,13 +583,14 @@ int main(int argc, char **argv)
             destroyWindow("intersectionImages_before");
         }
 
-        waitKey(100);
+        waitKey(150);
         is_image_retrieved = false;
         is_laserscan_retrieved = false;
 
         
         used_hough = false;
         toc=clock();
+        waypoint_count++;
         cout<<"FPS:"<<CLOCKS_PER_SEC/(toc-tic)<<endl;
         spinOnce();
     }

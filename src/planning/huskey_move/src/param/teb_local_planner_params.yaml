@@ -29,7 +29,7 @@ TebLocalPlannerROS:
    type: "line"
    radius: 0.2 # for type "circular"
    line_start: [0.0, 0.0] # for type "line"
-   line_end: [0.4, 0.0] # for type "line"
+   line_end: [-0.8, 0.0] # for type "line"
    front_offset: 0.2 # for type "two_circles"
    front_radius: 0.2 # for type "two_circles"
    rear_offset: 0.2 # for type "two_circles"
@@ -40,12 +40,13 @@ TebLocalPlannerROS:
     
  xy_goal_tolerance: 0.3
  yaw_goal_tolerance: 0.3
- free_goal_vel: False
+ free_goal_vel: True
     
  # Obstacles
     
- min_obstacle_dist: 0.7 # This value must also include our robot's expansion, since footprint_model is set to "line".
- inflation_dist: 1.0
+ min_obstacle_dist: 0.7
+  # This value must also include our robot's expansion, since footprint_model is set to "line".
+ inflation_dist: 1
  include_costmap_obstacles: True
  costmap_obstacles_behind_robot_dist: 1.0
  obstacle_poses_affected: 30

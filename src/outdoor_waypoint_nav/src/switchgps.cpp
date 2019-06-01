@@ -9,7 +9,7 @@ using namespace std;
 using namespace ros;
 #define radius 1
 #define pi 3.14159265359
-char* gps_file = "/home/vib2810/igvc_19/gps_points.txt"; 
+char* gps_file = "gps_points.txt"; 
 
 
 sensor_msgs::NavSatFix coordinates;

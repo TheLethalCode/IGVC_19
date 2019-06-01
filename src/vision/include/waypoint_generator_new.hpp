@@ -12,7 +12,7 @@
 
 #define ll 80   //x co-ordinate shift   
 #define bb 80   //y co-ordinate shift
-#define dist 180
+#define dist 200
 
 using namespace std;
 using namespace cv;
@@ -194,7 +194,7 @@ NavPoint getCoordinatesxy(Mat img,int *theta_min,int *theta_max,Parabola2 lanes)
     NavPoint pt;
     float ptx,pty;
     pt.x=img.cols/2;
-    pt.y=img.rows/2;
+    pt.y=img.rows*0.3;
 
     GetAngleBounds(img,theta_min,theta_max,lanes);
     int theta_mid=((*theta_min)+(*theta_max))/2;
