@@ -343,7 +343,7 @@ int main(int argc, char **argv)
         // if(is_debug) cout << "lidar points " << obs_by_lidar.size() << endl;
 
 //-----------------------------------------------------------------------------------------------------------        
-// Obstacle Removal not yet commented
+// Obstacle Removal not yet commented/documented
         if(is_debug) {cout << "Obstacle removal" << endl;}
         intersectionImages = remove_obstacles(roi, intersectionImages, obs_by_lidar);
 //-----------------------------------------------------------------------------------------------------------        
@@ -387,15 +387,16 @@ int main(int argc, char **argv)
                 if(is_debug) cout << "Plotting hough waypoint" << endl;
                 intersectionImages = plotWaypoint(hough_image, waypoint_image);
                
-                // Giving waypt.'s x, y & yaw
+                // Giving waypt.'s x, y & z co-ordinates(here z= 1)
                 Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
                 //Converting waypt. in top view
-                Mat waypt_top = h*waypt;    //NOTE the h is PRE-multiplied 
-///=============================================================================================================
-// Why is this done?
+                Mat waypt_top = h*waypt;    //NOTE that the h is PRE-multiplied 
+                // & it takes a 3-D pt.
+
+                //Actual 2-D x= x/z & y= y/z 
                 double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
                 double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
-///=============================================================================================================
+
                 //waypoint transform for hough line
                 /*
                 waypoint_image.x=x_top;
@@ -408,7 +409,7 @@ int main(int argc, char **argv)
                 waypoint_bot.header.frame_id = "base_link";
                 waypoint_bot.header.stamp = ros::Time::now();   //Important
 
-                //changing waypoint position from image to LIDAR frame
+                //changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
                 waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
                 waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
                 waypoint_bot.pose.position.z = 0;
@@ -512,17 +513,15 @@ int main(int argc, char **argv)
         	}
 		*/
 
-        // waypt. given in x, y & yaw
+        // Giving waypt.'s x, y & z co-ordinates(here z= 1)
         Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
-        
         //Converting waypt. in top view
-        Mat waypt_top = h*waypt;
+        Mat waypt_top = h*waypt; //NOTE that the h is PRE-multiplied 
+		// & it takes a 3-D pt.
 
-//==========================================================================================
-// Why this is done?        
+		//Actual 2-D x= x/z & y= y/z       
         double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
         double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
-//==========================================================================================
 
         cout << "------------------------------------Waypoint------------------------------------" << endl;
         cout <<"z:"<<waypt_top.at<double>(0,0)<<endl;
@@ -540,7 +539,7 @@ int main(int argc, char **argv)
 
         //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
         
-        //changing waypoint position from image to LIDAR frame
+        //changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
         geometry_msgs::PoseStamped waypoint_bot;
         if(is_debug) {cout << "waypoint position message generation" << endl;}
         waypoint_bot.header.frame_id = "base_link";
@@ -558,7 +557,7 @@ int main(int argc, char **argv)
         waypoint_bot.pose.orientation.z = frame_qt.z();
         waypoint_bot.pose.orientation.w = frame_qt.w();
 
-        //Publishing points
+        //Publishing waypoint
         waypoint_publisher.publish(waypoint_bot);
         //cout << "Waypoint published\n----------------------------" << endl;
         
