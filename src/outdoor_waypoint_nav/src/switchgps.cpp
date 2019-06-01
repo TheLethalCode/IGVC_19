@@ -9,8 +9,6 @@ using namespace std;
 using namespace ros;
 #define radius 1
 #define pi 3.14159265359
-char* gps_file = "/home/vib2810/igvc_19/gps_points.txt"; 
-
 
 sensor_msgs::NavSatFix coordinates;
 
@@ -56,7 +54,7 @@ int main(int argc, char** argv)
   double start_lat, start_long, mid1_lat ,mid1_long, mid2_lat ,mid2_long, end_lat, end_long;
   FILE* gps_pts;
   try {
-    gps_pts=fopen(gps_file,"r");
+    gps_pts=fopen("gps_points.txt","r");
     if (gps_pts == NULL) {
       throw -1;
     }
@@ -102,6 +100,7 @@ int main(int argc, char** argv)
       //entering no man's land
       if (!flagstart1 && (radius1 < radius) && count1 >= 10)
       {
+	int gps_status;
         flagstart1 = true;
         use_vision_msg.data = false;
 
