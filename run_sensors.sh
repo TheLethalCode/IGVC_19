@@ -17,6 +17,7 @@ cleanup()
   sleep 1
   killall -9 nodelet
   sleep 1
+  # kill -9 $PPID
   exit 1
 }
 
@@ -31,7 +32,7 @@ switch_port () {
     printf "port: %d concat:%s\n" $port $temp
     port=$((port+1))
 }
-
+python bash_edit.py
 rosparam set kill 0
 sudo chmod 777 /dev/tty*
 rosrun sensor_status error &
