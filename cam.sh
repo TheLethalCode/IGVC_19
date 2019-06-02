@@ -1,3 +1,10 @@
+trap cleanup 2
+cleanup()
+{
+  killall -9 nodelet
+  kill -9 $PPID
+  exit 1
+}
 roslaunch pointgrey_camera_driver camera.launch &
 sleep 1
 
