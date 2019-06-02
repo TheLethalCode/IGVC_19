@@ -1,0 +1,12 @@
+digraph G {
+"base_link" -> "gps"[label="Broadcaster: /bl_gps\nAverage rate: 98.880 Hz\nMost recent transform: 1559500311.651 ( 0.002 sec old)\nBuffer length: 4.935 sec\n"];
+"base_link" -> "axle"[label="Broadcaster: /bl_rear_link\nAverage rate: 98.827 Hz\nMost recent transform: 1559500311.661 ( -0.008 sec old)\nBuffer length: 4.938 sec\n"];
+"base_link" -> "laser"[label="Broadcaster: /bl_lidar\nAverage rate: 98.824 Hz\nMost recent transform: 1559500311.661 ( -0.008 sec old)\nBuffer length: 4.938 sec\n"];
+"base_link" -> "front_axel_link"[label="Broadcaster: /bl_front_link\nAverage rate: 98.824 Hz\nMost recent transform: 1559500311.651 ( 0.002 sec old)\nBuffer length: 4.928 sec\n"];
+"base_link" -> "base_footprint"[label="Broadcaster: /bl_bf\nAverage rate: 98.880 Hz\nMost recent transform: 1559500311.661 ( -0.008 sec old)\nBuffer length: 4.935 sec\n"];
+"base_link" -> "imu"[label="Broadcaster: /bl_imu\nAverage rate: 98.884 Hz\nMost recent transform: 1559500311.661 ( -0.008 sec old)\nBuffer length: 4.935 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1559500311.652"[ shape=plaintext ] ;
+ }->"base_link";
+}
