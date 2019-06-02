@@ -43,7 +43,7 @@ bool vectorNav::fetch() {
     VnVector3 vn200_magnetic, vn200_acceleration, vn200_angular_rate;
     vn200_getYawPitchRoll(&vn200, &vn200_attitude);
     yaw = vn200_attitude.yaw;
-    // pitch = vn200_attitude.pitch;
+    pitch = vn200_attitude.pitch;
     vn200_getYawPitchRollMagneticAccelerationAngularRate(&vn200, &vn200_attitude, &vn200_magnetic, &vn200_acceleration, &vn200_angular_rate);
     _twist.angular.z=vn200_angular_rate.c2;
     if (!imu_only) {
