@@ -43,17 +43,18 @@ bool vectorNav::fetch() {
     VnVector3 vn200_magnetic, vn200_acceleration, vn200_angular_rate;
     vn200_getYawPitchRoll(&vn200, &vn200_attitude);
     yaw = vn200_attitude.yaw;
-    pitch = vn200_attitude.pitch;
+    // pitch = vn200_attitude.pitch;
     vn200_getYawPitchRollMagneticAccelerationAngularRate(&vn200, &vn200_attitude, &vn200_magnetic, &vn200_acceleration, &vn200_angular_rate);
     _twist.angular.z=vn200_angular_rate.c2;
     if (!imu_only) {
-        unsigned char gpsFix, numberOfSatellites;
+        unsigned char gpsFix, numberOfSatellites=0;
         float speedAccuracy, timeAccuracy, attitudeUncertainty, positionUncertainty, velocityUncertainty, temperature, pressure;
         double gpsTime, latitude, longitude, altitude;
         VnVector3 magnetic, acceleration, angularRate, ypr, latitudeLognitudeAltitude, nedVelocity, positionAccuracy;
 
         vn200_getGpsSolution(&vn200, &gpsTime, &gpsWeek, &gpsFix, &numberOfSatellites, &latitudeLognitudeAltitude, &nedVelocity, &positionAccuracy, &speedAccuracy, &timeAccuracy);
         a++;
+        // numberOfSatellites = 0;
         if(a>40)
         {
             ROS_INFO("Triangulating from %d satellites", numberOfSatellites);
