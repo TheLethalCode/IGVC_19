@@ -12,11 +12,11 @@ while [ 1 ]
 do
     if [ $(rosparam get cam) == "0" ]
     then
-      printf "Killing camera !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+      printf "!!!!!!!\nKilling Camera\n!!!!!!!"
       killall -9 nodelet
       sleep 1
       # sudo chmod 777 /dev/tty*
-      printf "Relaunching camera -----------------------------------------------------------------------"
+      printf "--------\nRelaunching IMU\n---------"
       roslaunch pointgrey_camera_driver camera.launch &
       sleep 3
     fi
@@ -27,7 +27,7 @@ do
       kill -9 $PPID
       exit 1
     fi
-    sleep 3
+    sleep 1
 done
 
 
