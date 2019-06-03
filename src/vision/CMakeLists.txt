@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
   dynamic_reconfigure
+  tf
 )
 
 generate_dynamic_reconfigure_options(

@@ -1,15 +1,20 @@
 #ifndef PARAMS
 #define PARAMS
 
+/* config file */
 bool is_debug = false;
-bool is_run = true;
-bool is_threshold = false;
-
+bool is_important = true;
+bool use_pothole = false;
+bool use_ramp = false;
+bool use_odom_lane_classify = false;
+bool costmap_publish_ransac = false;
 
 bool is_image_retrieved = false;
 bool use_video = false;
 char side;
 bool used_hough = false;
+
+int costmap_median_blur = 3;
 
 double wTh = 50; //set threshold for white color
 
@@ -64,5 +69,7 @@ float rscale = 2;
 int hough_min_points = 100; 
 int hough_min_line_length = 160;
 int hough_max_line_gap = 50;
+
+/* other global parameters */ 
 #endif
 

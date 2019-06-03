@@ -179,6 +179,20 @@ Parabola swap_odom(Parabola param) {
     return param;
 }
 
+/*
+   Calculate distance of passed point from curve
+   Gives the minimum of the abs diff. in X/Y.
+ */
+float get_del(Point p, float a, float c)
+{
+    float predictedX = ((p.y*p.y)/(a) + c);
+    float errorx = fabs(p.x - predictedX);
+
+    float predictedY = sqrt(fabs(a*(p.x-c)));
+    float errory = fabs(p.y - predictedY);
+
+    return min(errorx, errory);
+}
 
 Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<Point> ptArray1)
 {
@@ -555,22 +569,6 @@ float min(float a, float b){
         return a;
     return b;
 }
-
-/*
-   Calculate distance of passed point from curve
-   Gives the minimum of the abs diff. in X/Y.
- */
-float get_del(Point p, float a, float c)
-{
-    float predictedX = ((p.y*p.y)/(a) + c);
-    float errorx = fabs(p.x - predictedX);
-
-    float predictedY = sqrt(fabs(a*(p.x-c)));
-    float errory = fabs(p.y - predictedY);
-
-    return min(errorx, errory);
-}
-
 
 
 //removes both the lanes if they intersect within the image frame
@@ -1016,13 +1014,12 @@ Point centroid(float a,float c,Mat img)
 
 
 
-Parabola getRansacModel(Mat img,Parabola previous)
+Parabola getRansacModel(Mat img,Parabola previous, std::vector<Point> &ptArray1)
 {
     //apply ransac for first time it will converge for one lane
 
     //Vector for storing white points
-    vector<Point> ptArray1;
-
+    ptArray1.clear();
     if(debug!=0)
     { 
         //cout << "---------------------------------NEW RANSAC----------------------------------" << endl;
@@ -1035,7 +1032,7 @@ Parabola getRansacModel(Mat img,Parabola previous)
 
 
     int count = 0;
-    //Iterating through all the grif elements
+    //Iterating through all the grid elements
     for(int i=((grid_size-1)/2);i<img.rows-(grid_size-1)/2;i+=grid_size)
     {
         for(int j=((grid_size-1)/2);j<img.cols-(grid_size-1)/2;j+=grid_size)
@@ -1061,14 +1058,13 @@ Parabola getRansacModel(Mat img,Parabola previous)
         }
     }
 
+    if (is_debug || is_important) {
+        namedWindow("grid",WINDOW_NORMAL);
+        imshow("grid",plot_grid);
+    }
 
-    namedWindow("grid",WINDOW_NORMAL);
 
-    imshow("grid",plot_grid);
-
-
-
-    //declare a Parabola vaiable to store the Parabola
+    //declare a Parabola variable to store the Parabola
     Parabola param;
     //get parameters of first Parabola form ransac function
 
@@ -1077,19 +1073,12 @@ Parabola getRansacModel(Mat img,Parabola previous)
     {
         return_prev_params = 1;
         param = ransac(ptArray1, param, img, previous);
-
     }
 
     else {
         return previous;
     }
-    param=classify_lanes(img,param,previous);
 
-    //Uncomment the next line to use the other lane classification approach
-    // param=classify_lanes_odom(img,param,previous,ptArray1);
-
-    //Uncomment the next line to disallow sudden changes in lane params
-    // param = no_sudden_change(param, img, previous);
     return param;
 }
 

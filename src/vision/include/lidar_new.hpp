@@ -14,11 +14,6 @@ using namespace ros;
 using namespace std;
 using namespace cv;
 
-/*
-Mat imgogi;
-Mat lidar_plot;
-Mat obstaclePlot;
-*/
 bool is_laserscan_retrieved = false;
 
 sensor_msgs::LaserScan lidar_scan;

@@ -90,6 +90,7 @@ int main(int argc, char** argv)
             cout<< "radius2: " << radius2 << endl;
             cout<< "radius3: " << radius3 << endl;
             cout<< "radius4: " << radius4 << endl;
+            cout << "--------------" << endl;
 
             if (radius1 < radius) {
                 count1++;
@@ -99,10 +100,16 @@ int main(int argc, char** argv)
             }
 
             //entering no man's land
-            if (!flagstart1 && (radius1 < radius) && count1 >= 10)
+            if (!flagstart1 && count1 >= 10)
             {
+
+            	for (int j = 0; j <= 10; j++) {
+	            	cout << "Switched to GPS waypoints" << endl;
+            	}
+
                 int gps_status;
                 flagstart1 = true;
+
                 use_vision_msg.data = false;
 
                 int q = 100;
@@ -115,36 +122,83 @@ int main(int argc, char** argv)
                 //change teb parameters
                 system("bash teb_params_no_mans_land.sh");
 
+				for (int j = 0; j <= 10; j++) {
+	            	cout << "Going towards 2nd waypoint" << endl;
+            	}
+
                 spinOnce();
                 radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
                 spinOnce();
 
-                while (radius2 > radius) {
+                
+                int count2 = 0;
+                while (radius2 > radius && count2 <= 10) {
+                	for (int j = 0; j <= 10; j++) {
+	            		cout << "Still searching for 2nd waypoint, radius2: " << radius2 << endl;
+            		}
                     gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long); 
                     //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
                     radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
+                    if (radius2 < radius) {
+                    	count2++;
+                    }
+                    else {
+                    	count2 = 0;
+                    }
                     spinOnce();
                 }
+
+				for (int j = 0; j <= 10; j++) {
+	            	cout << "Going towards 3rd waypoint" << endl;
+            	}
 
                 spinOnce();
                 radius3 = distance(current_lat, current_long, mid2_lat, mid2_long);
                 spinOnce();
 
-                while (radius3 > radius) {
+                int count3 = 0;
+                while (radius3 > radius && count3 <= 10) {
+                	for (int j = 0; j <= 10; j++) {
+	            		cout << "Still searching for 3rd waypoint, radius3: " << radius3 << endl;
+            		}
                     gps_status = gps_waypoint(mid2_lat, mid2_long, current_lat, current_long); 
                     radius3 = distance(current_lat, current_long, mid2_lat, mid2_long);
+                    if (radius3 < radius) {
+                    	count3++;
+                    }
+                    else {
+                    	count3 = 0;
+                    }
                     spinOnce();
                 }
+
+				for (int j = 0; j <= 10; j++) {
+	            	cout << "Going towards 4th waypoint" << endl;
+            	}
 
                 spinOnce();
                 radius4 = distance(current_lat, current_long, end_lat, end_long);
                 spinOnce();
 
-                while (radius4 > radius) {
+                int count4 = 0;
+                while (radius4 > radius && count4 <= 10) {
+                	for (int j = 0; j <= 10; j++) {
+	            		cout << "Still searching for 4th waypoint, radius4: " << radius4 << endl;
+            		}
                     gps_status = gps_waypoint(end_lat, end_long, current_lat, current_long); 
                     radius4 = distance(current_lat, current_long, end_lat, end_long);
+                    if (radius4 < radius) {
+                    	count4++;
+                    }
+                    else {
+                    	count4 = 0;
+                    }
                     spinOnce();
                 }
+
+                for (int j = 0; j <= 10; j++) {
+	            	cout << "Switching to vision" << endl;
+            	}
 
                 use_vision_msg.data = true;
                 system("bash teb_params_vision.sh");
