@@ -415,7 +415,10 @@ int main(int argc, char **argv)
                 waypoint_image.y=y_top;
 
                 sensor_msgs::LaserScan lane;
-                lane = laneLaser(top_view(intersectionImages));
+
+                Mat hough_published = intersectionImages.clone();
+                medianBlur(hough_published, hough_published, 3);
+                lane = laneLaser(top_view(hough_published));
                 lanes2Costmap_publisher.publish(lane);  
 
 
@@ -462,8 +465,14 @@ int main(int argc, char **argv)
         costmap=top_view(intersectionImages);
         costmap=find_pothole(top_view(bw),costmap);
 
+        Mat costmap_published = costmap.clone();
+        medianBlur(costmap_published, costmap_published, 5);
+
+        namedWindow("costmap_published", 0);
+        imshow("costmap_published", costmap_published);
         sensor_msgs::LaserScan lane;
-        lane = laneLaser(costmap);
+        lane = laneLaser(costmap_published);
+
         lanes2Costmap_publisher.publish(lane);
 
         if(true)
@@ -497,10 +506,10 @@ int main(int argc, char **argv)
 
 
 
-        cout<<"lanes_2 a1 = "<<lanes_2.a1<<" lanes_2 a2 = "<<lanes_2.a2<<endl;
-        cout<<"lanes_2 b1 = "<<lanes_2.b1<<" lanes_2 b2 = "<<lanes_2.b2<<endl;
-        cout<<"lanes_2 c1 = "<<lanes_2.c1<<" lanes_2 c2 = "<<lanes_2.c2<<endl;
-        cout<<"number of lanes::"<<lanes_2.numModel<<endl;
+        // cout<<"lanes_2 a1 = "<<lanes_2.a1<<" lanes_2 a2 = "<<lanes_2.a2<<endl;
+        // cout<<"lanes_2 b1 = "<<lanes_2.b1<<" lanes_2 b2 = "<<lanes_2.b2<<endl;
+        // cout<<"lanes_2 c1 = "<<lanes_2.c1<<" lanes_2 c2 = "<<lanes_2.c2<<endl;
+        // cout<<"number of lanes::"<<lanes_2.numModel<<endl;
 
         frame_topview = drawLanes_top(frame_topview,lanes_2);
 

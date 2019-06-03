@@ -594,7 +594,9 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
             bestTempParam.numModel = tempParam.numModel;
         }
     } //end of iteration loop
-    cout  <<"score_l_gl : "<<score_l_gl<<" score_r_gl : "<<score_r_gl<<endl;
+
+
+    cout  <<"score_l_gl : "<< score_l_gl <<" score_r_gl : "<< score_r_gl <<endl;
 
     //Checking for imn. no. of inliers
     if(score_l_gl!=0 && (score_l_gl) < minLaneInlier){

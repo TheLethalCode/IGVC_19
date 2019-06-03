@@ -7,7 +7,7 @@
 
 using namespace std;
 using namespace ros;
-#define radius 1
+#define radius 3
 #define pi 3.14159265359
 
 
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 
 
         //change teb parameters
-        system("teb_params_no_mans_land.sh");
+        system("bash teb_params_no_mans_land.sh");
 
         spinOnce();
         radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 
         if (gps_status == 0) {
           use_vision_msg.data = true;
-          system("teb_params_vision.sh");
+          system("bash teb_params_vision.sh");
         }
       }
 

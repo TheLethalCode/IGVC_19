@@ -98,7 +98,7 @@ NavPoint get_point(Mat img,Parabola2 para,float x,float y,float dist)
 		
 		p.x= (x-(1/(sqrt(1+slope*slope)))*dist);
 		p.y=(y+(slope/(sqrt(1+slope*slope)))*dist);
-		cout<<"p.x "<<p.x<<"  p.y  "<<p.y<<"  x  "<<x<<"  y  "<<y<<endl;
+		// cout<<"p.x "<<p.x<<"  p.y  "<<p.y<<"  x  "<<x<<"  y  "<<y<<endl;
         return p;
 
 	}
@@ -157,7 +157,7 @@ NavPoint getCoordinatesxy(Mat img,float average_angle_l,float average_angle_r,Pa
             pt.x= ((lanes.a1*j*j+lanes.b1*j+lanes.c1)+(lanes.a2*j*j+lanes.b2*j+lanes.c2))/2;
         }
         pt.angle=(average_angle_r+average_angle_l)/2;
-        cout<<"pt.x:"<<pt.x<<"  pt.y:"<<pt.y<<endl;
+        // cout<<"pt.x:"<<pt.x<<"  pt.y:"<<pt.y<<endl;
     }
 
     //SINGLE LANE PRESENT
@@ -250,9 +250,9 @@ NavPoint find_waypoint(Parabola2 lanes,Mat img)
   	float average_angle_l=avg_angle_rad(lanes,img,true);
 	float average_angle_r=avg_angle_rad(lanes,img,false);
 	way_point= getCoordinatesxy(img,average_angle_l,average_angle_r,lanes) ;
-    cout<<"lft ang "<<average_angle_l<<" right ang"<<average_angle_r<<endl;
-    cout<<"before "<<way_point.angle<<endl;
-    cout<<"lanes.num"<<lanes.numModel<<endl;
+    // cout<<"lft ang "<<average_angle_l<<" right ang"<<average_angle_r<<endl;
+    // cout<<"before "<<way_point.angle<<endl;
+    // cout<<"lanes.num"<<lanes.numModel<<endl;
     if(lanes.numModel!=2)
     {
         if(way_point.angle>0)
@@ -261,7 +261,7 @@ NavPoint find_waypoint(Parabola2 lanes,Mat img)
         }
         else
         way_point.angle=-1*CV_PI/2-way_point.angle;
-        cout<<"after "<<way_point.angle<<endl;
+        // cout<<"after "<<way_point.angle<<endl;
         if(fabs(average_angle_l+CV_PI/2)<0.0001&&fabs(average_angle_r-CV_PI/2)<0.0001)
             way_point.angle=0;
         //way_point.angle=1.2;
@@ -295,7 +295,7 @@ Mat plotWaypoint(Mat costmap, NavPoint waypoint_image)
 {
     Point origin = Point(waypoint_image.x-1, waypoint_image.y-1);   
     // -1 added to avoid seg fault if img.rows/cols returned
-    cout<<"x"<<origin.x<<"         y"<<origin.y<<endl;
+    // cout<<"x"<<origin.x<<"         y"<<origin.y<<endl;
     float x = origin.x - 25*cos(CV_PI/2 - waypoint_image.angle);
     float y = origin.y - 25*sin(CV_PI/2 - waypoint_image.angle);
     Point dest = Point(x,y);
