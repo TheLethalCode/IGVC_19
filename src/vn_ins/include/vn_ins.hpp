@@ -40,10 +40,10 @@ private:
     std::string vn200_com_port;
     ros::NodeHandle *node_handle;
     std::string node_name;
-    std_msgs::Float64 _yaw;
+    std_msgs::Float64 _yaw , _pitch;
     std::string fix_topic_name, yaw_topic_name;
     std::string imu_topic_name, twist_topic_name;
-    ros::Publisher fix_publisher, yaw_publisher;
+    ros::Publisher fix_publisher, yaw_publisher , pitch_publisher;
     ros::Publisher imu_pub, twist_pub;
     sensor_msgs::NavSatFix _gps;
     sensor_msgs::Imu _imu;

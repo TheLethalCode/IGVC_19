@@ -17,6 +17,7 @@ cleanup()
   sleep 1
   killall -9 nodelet
   sleep 1
+  # kill -9 $PPID
   exit 1
 }
 
@@ -31,7 +32,7 @@ switch_port () {
     printf "port: %d concat:%s\n" $port $temp
     port=$((port+1))
 }
-
+python bash_edit.py
 rosparam set kill 0
 sudo chmod 777 /dev/tty*
 sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576

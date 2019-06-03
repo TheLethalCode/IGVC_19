@@ -38,21 +38,23 @@ bool vectorNav::fetch() {
     node_handle->getParam("imu_only", imu_only);
 
     unsigned short gpsWeek, status;
-    float yaw;
+    float yaw, pitch;
     VnYpr vn200_attitude;
     VnVector3 vn200_magnetic, vn200_acceleration, vn200_angular_rate;
     vn200_getYawPitchRoll(&vn200, &vn200_attitude);
     yaw = vn200_attitude.yaw;
+    pitch = vn200_attitude.pitch;
     vn200_getYawPitchRollMagneticAccelerationAngularRate(&vn200, &vn200_attitude, &vn200_magnetic, &vn200_acceleration, &vn200_angular_rate);
     _twist.angular.z=vn200_angular_rate.c2;
     if (!imu_only) {
-        unsigned char gpsFix, numberOfSatellites;
+        unsigned char gpsFix, numberOfSatellites=0;
         float speedAccuracy, timeAccuracy, attitudeUncertainty, positionUncertainty, velocityUncertainty, temperature, pressure;
         double gpsTime, latitude, longitude, altitude;
         VnVector3 magnetic, acceleration, angularRate, ypr, latitudeLognitudeAltitude, nedVelocity, positionAccuracy;
 
         vn200_getGpsSolution(&vn200, &gpsTime, &gpsWeek, &gpsFix, &numberOfSatellites, &latitudeLognitudeAltitude, &nedVelocity, &positionAccuracy, &speedAccuracy, &timeAccuracy);
         a++;
+        // numberOfSatellites = 0;
         if(a>40)
         {
             ROS_INFO("Triangulating from %d satellites", numberOfSatellites);
@@ -70,7 +72,11 @@ bool vectorNav::fetch() {
     }
 
     _yaw.data = -yaw;
+    _pitch.data = pitch;
+
     double th=_yaw.data * (3.14159265/180);
+    // double th_pitch = _pitch.data * (3.14159265/180);
+
     _imu.orientation=tf::createQuaternionMsgFromYaw(th);
     _imu.angular_velocity.z=(-1)*(_twist.angular.z);
     _imu.linear_acceleration.x=vn200_acceleration.c0;
@@ -85,6 +91,7 @@ void vectorNav::publish(int frame_id) {
         fix_publisher.publish(_gps);
     }
     yaw_publisher.publish(_yaw);
+    pitch_publisher.publish(_pitch);
     twist_pub.publish(_twist);
     imu_pub.publish(_imu);
 }
@@ -130,6 +137,7 @@ void vectorNav::setupCommunications() {
     yaw_publisher = node_handle->advertise<std_msgs::Float64>(yaw_topic_name.c_str(), message_queue_size);
     twist_pub = node_handle->advertise<geometry_msgs::Twist>(twist_topic_name.c_str(), message_queue_size);
     imu_pub = node_handle->advertise<sensor_msgs::Imu>(imu_topic_name.c_str(), message_queue_size);
+    pitch_publisher = node_handle->advertise<std_msgs::Float64>("/vn_ins/pitch", message_queue_size);
 }
 
 int main(int argc, char** argv) {

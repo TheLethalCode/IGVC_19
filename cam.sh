@@ -1,3 +1,10 @@
+trap cleanup 2
+cleanup()
+{
+  killall -9 nodelet
+  kill -9 $PPID
+  exit 1
+}
 roslaunch pointgrey_camera_driver camera.launch &
 sleep 1
 
@@ -11,12 +18,13 @@ do
       # sudo chmod 777 /dev/tty*
       printf "Relaunching camera -----------------------------------------------------------------------"
       roslaunch pointgrey_camera_driver camera.launch &
-      sleep 2
+      sleep 3
     fi
     printf "%d" $(rosparam get cam)
     if [ $(rosparam get kill) == "1" ]
     then 
       killall -9 nodelet
+      kill -9 $PPID
       exit 1
     fi
     sleep 3
