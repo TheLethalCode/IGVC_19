@@ -417,7 +417,7 @@ int main(int argc, char **argv)
                 sensor_msgs::LaserScan lane;
 
                 Mat hough_published = intersectionImages.clone();
-                medianBlur(hough_published, hough_published, 3);
+                // medianBlur(hough_published, hough_published, 3);
                 lane = laneLaser(top_view(hough_published));
                 lanes2Costmap_publisher.publish(lane);  
 
