@@ -50,6 +50,8 @@ int main(int argc, char** argv)
 
   Subscriber sub = n.subscribe("/gps/filtered", 1, &getgps);
   Publisher use_vision_publisher = n.advertise<std_msgs::Bool>("/use_vision", 1);
+  Publisher pub = n.advertise<move_base_msgs::MoveBaseGoal>("/move_base_simple/goal",2);
+  
 
   //read waypoints
   double start_lat, start_long, mid1_lat ,mid1_long, mid2_lat ,mid2_long, end_lat, end_long;
@@ -91,6 +93,7 @@ int main(int argc, char** argv)
       cout<< "radius3: " << radius3 << endl;
       cout<< "radius4: " << radius4 << endl;
 
+
       if (radius1 < radius) {
         count1++;
       }
@@ -98,10 +101,11 @@ int main(int argc, char** argv)
         count1 = 0;
       }
 
+
       //entering no man's land
       if (!flagstart1 && (radius1 < radius) && count1 >= 10)
       {
-	int gps_status;
+	      move_base_msgs::MoveBaseGoal gps_status;
         flagstart1 = true;
         use_vision_msg.data = false;
 
@@ -113,6 +117,7 @@ int main(int argc, char** argv)
 
 
         //change teb parameters
+        cout << "running no man's land bash file" << endl;
         system("bash teb_params_no_mans_land.sh");
 
         spinOnce();
@@ -121,6 +126,7 @@ int main(int argc, char** argv)
 
         while (radius2 > radius) {
           gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long); 
+          pub.publish(gps_status);
           //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
           radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
           spinOnce();
@@ -132,6 +138,8 @@ int main(int argc, char** argv)
 
         while (radius3 > radius) {
           gps_status = gps_waypoint(mid2_lat, mid2_long, current_lat, current_long); 
+          pub.publish(gps_status);
+
           radius3 = distance(current_lat, current_long, mid2_lat, mid2_long);
           spinOnce();
         }
@@ -142,14 +150,17 @@ int main(int argc, char** argv)
 
         while (radius4 > radius) {
           gps_status = gps_waypoint(end_lat, end_long, current_lat, current_long); 
+          pub.publish(gps_status);
+
           radius4 = distance(current_lat, current_long, end_lat, end_long);
           spinOnce();
         }
 
-        if (gps_status == 0) {
-          use_vision_msg.data = true;
-          system("bash teb_params_vision.sh");
-        }
+        
+        use_vision_msg.data = true;
+        cout << "running vision bash file" << endl;
+        system("bash teb_params_vision.sh");
+        
       }
 
       use_vision_publisher.publish(use_vision_msg);

@@ -291,7 +291,7 @@ int main(int argc, char** argv)
 */
 
 
-int gps_waypoint(double end_lat, double end_long, double current_lat, double current_long)
+move_base_msgs::MoveBaseGoal gps_waypoint(double end_lat, double end_long, double current_lat, double current_long)
 {
 
     MoveBaseClient ac("/move_base", true);
@@ -327,24 +327,7 @@ int gps_waypoint(double end_lat, double end_long, double current_lat, double cur
 
         //Build goal to send to move_base
         move_base_msgs::MoveBaseGoal goal = buildGoal(map_point, map_point_current, map_next, final_point); //initiate a move_base_msg called goal
-        // Send Goal
-        ROS_INFO("Sending goal");
-        ac.sendGoal(goal); //push goal to move_base node
-
-        //Wait for result
-        ac.waitForResult(); //waiting to see if move_base was able to reach goal
-
-        if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-        {
-            ROS_INFO("Eklavya has reached its goal!");
-            return 0; //if safely exiting
-
-        }
-        else
-        {
-            ROS_ERROR("Eklavya was unable to reach its goal. GPS Waypoint unreachable.");
-            return 1; //exiting with error
-        }
+        return goal;
 }
 
 #endif
