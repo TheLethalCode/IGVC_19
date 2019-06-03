@@ -246,7 +246,7 @@ bool IsNearLane1(Parabola2 param1, Point p)
   }
   else
   {
-    cout<<"dist_ : "<<dist_<<" removeDist : "<<removeDist<<endl;
+    //cout<<"dist_ : "<<dist_<<" removeDist : "<<removeDist<<endl;
     return false;
   }
 }
@@ -299,14 +299,14 @@ Parabola2 getRansacModel_2(Mat img,Parabola2 previous)
           ptArray2.push_back(pt);   
     }
   }
-  cout<<"ptArray1.size() : "<<ptArray1.size()<<" \nminPointsForRANSAC_2 : "<<minPointsForRANSAC_2<<endl;
+  //cout<<"ptArray1.size() : "<<ptArray1.size()<<" \nminPointsForRANSAC_2 : "<<minPointsForRANSAC_2<<endl;
   //declare a model vaiable to store the model
   Parabola2 param;
 
   //get parameters of first model form ransac function
   if(ptArray1.size() > minPointsForRANSAC_2)
   {
-    cout<<"Ransac Called\n";
+    //cout<<"Ransac Called\n";
     param = ransac_2_left(ptArray1, param);
   }
 
@@ -321,7 +321,7 @@ Parabola2 getRansacModel_2(Mat img,Parabola2 previous)
 
    if(param.numModel==0)
    {
-     cout<<"Returning previous"<<endl;
+     //cout<<"Returning previous"<<endl;
     //return previous;
    }
 

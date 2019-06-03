@@ -493,23 +493,23 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         // Uncomment the block to add the intersection functionality.
 
         
-        else if( isIntersectingLanes_2(img, tempParam)) {
-            //cout<<" isIntersectingLanes issue."<<endl;
-            if(score_r_loc > score_l_loc)
-            {
-                tempParam.a1 = 0;
-                tempParam.c1 = 0;
-                score_l_loc = 0;
-                tempParam.numModel--;
-            }
-            else
-            {
-                tempParam.a2 = 0;
-                tempParam.c2 = 0;
-                score_r_loc = 0;
-                tempParam.numModel--;
-            }
-        }
+        // else if( isIntersectingLanes_2(img, tempParam)) {
+        //     //cout<<" isIntersectingLanes issue."<<endl;
+        //     if(score_r_loc > score_l_loc)
+        //     {
+        //         tempParam.a1 = 0;
+        //         tempParam.c1 = 0;
+        //         score_l_loc = 0;
+        //         tempParam.numModel--;
+        //     }
+        //     else
+        //     {
+        //         tempParam.a2 = 0;
+        //         tempParam.c2 = 0;
+        //         score_r_loc = 0;
+        //         tempParam.numModel--;
+        //     }
+        // }
 
         //Max. Percentage Common Inliers Thresholding
         else if ((score_common/(score_common + score_l_loc + score_r_loc+1))*100 > common_inliers_thresh) {
@@ -594,7 +594,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
             bestTempParam.numModel = tempParam.numModel;
         }
     } //end of iteration loop
-    //cout  <<"score_l_gl : "<<score_l_gl<<" score_r_gl : "<<score_r_gl<<endl;
+    cout  <<"score_l_gl : "<<score_l_gl<<" score_r_gl : "<<score_r_gl<<endl;
 
     //Checking for imn. no. of inliers
     if(score_l_gl!=0 && (score_l_gl) < minLaneInlier){
@@ -614,9 +614,9 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
     // bestTempParam = no_sudden_change(bestTempParam, img, previous);
     
     if(true){
-        //cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
-        //cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
-        //cout<<"bestTempParam.a2 : "<<bestTempParam.a2<<" bestTempParam.c2 : "<<bestTempParam.c2<<endl;
+        // cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
+        // cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
+        // cout<<"bestTempParam.a2 : "<<bestTempParam.a2<<" bestTempParam.c2 : "<<bestTempParam.c2<<endl;
     }
     return bestTempParam;
 }
