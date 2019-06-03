@@ -6,12 +6,20 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <bits/stdc++.h>
+#include <tf/transform_datatypes.h>
+#include "tf/transform_listener.h"
+
+Point centroid_inliers_r(0,0);
+Point centroid_inliers_l(0,0);
+
+#define dist_between_lanes 3
+
 
 /*
-    * This RANSAC model fits both lane curves simultaneously by taking 4 random points (2 on each lanes).
-    * The parabolas are fit assuming bottom-left as origin: i.e. x towards right and y downwards.
-    * The equation used for parabola is (y^2)= a(x-c).
-    * Both a & c are found by solving simultaneous linear equations.
+ * This RANSAC model fits both lane curves simultaneously by taking 4 random points (2 on each lanes).
+ * The parabolas are fit assuming bottom-left as origin: i.e. x towards right and y downwards.
+ * The equation used for parabola is (y^2)= a(x-c).
+ * Both a & c are found by solving simultaneous linear equations.
  */
 int debug=0;
 int change= 100;    //for sudden change function
@@ -132,6 +140,369 @@ float dist(Point A,Point B)
     return (sqrt(pow(A.x-B.x,2)+pow(A.y-B.y,2)));
 }
 
+geometry_msgs::PointStamped ros_centroid_r; 
+geometry_msgs::PointStamped ros_centroid_l; 
+geometry_msgs::PointStamped ros_centroid_bl_r;
+geometry_msgs::PointStamped ros_centroid_bl_l;
+geometry_msgs::PointStamped ros_centroid_prev_r;
+geometry_msgs::PointStamped ros_centroid_prev_l;
+
+Parabola swap_odom(Parabola param) {
+
+    float temp1, temp3;
+    geometry_msgs::PointStamped temp; 
+    Point temp_tt;
+    temp1=param.a1;
+    // temp2=param.b1;
+    temp3=param.c1;
+
+    param.a1=param.a2;
+    // param.b1=param.b2;
+    param.c1=param.c2;
+
+    param.a2=temp1;
+    // param.b2=temp2;
+    param.c2=temp3;
+
+    temp = ros_centroid_l;
+    ros_centroid_l = ros_centroid_r;
+    ros_centroid_r = temp;
+
+    temp = ros_centroid_bl_l;
+    ros_centroid_bl_l = ros_centroid_bl_r;
+    ros_centroid_bl_r = temp;
+
+    temp_tt = centroid_inliers_l;
+    centroid_inliers_l = centroid_inliers_r;
+    centroid_inliers_r = temp_tt;
+
+    return param;
+}
+
+
+Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<Point> ptArray1)
+{
+
+
+    // ros_centroid_l.header.frame_id = "cam";
+    // ros_centroid_r.header.frame_id = "cam";
+    // ros_centroid_prev_r.header.frame_id = "/imu";
+    // ros_centroid_prev_l.header.frame_id = "/imu";
+    ros_centroid_bl_l.header.frame_id = "/base_link";
+    ros_centroid_bl_r.header.frame_id = "/base_link";
+
+    // ros_centroid_l.header.stamp = ros::Time::now();
+    // ros_centroid_r.header.stamp = ros::Time::now();
+    // ros_centroid_prev_r.header.stamp = ros::Time();
+    // ros_centroid_prev_l.header.stamp = ros::Time();
+    ros_centroid_bl_l.header.stamp = ros::Time();
+    ros_centroid_bl_r.header.stamp = ros::Time();
+
+    float a1=present.a1;
+    float a2=present.a2;
+    float c1=present.c1;
+    float c2=present.c2;
+
+    Point a,b,c;
+
+    int number_of_lanes=present.numModel;
+    int count_l=0;
+    int count_r=0;
+    centroid_inliers_l.x = 0;
+    centroid_inliers_l.y = 0;
+    centroid_inliers_r.x = 0;
+    centroid_inliers_r.y = 0;
+    cout<<"0" <<endl;
+    if(present.numModel == 1)
+    {
+        cout<<"1" <<endl;
+        if(present.a1 == 0  && present.c1 == 0)
+        { 
+            for(int i=0; i<ptArray1.size(); i++)
+            {
+                if(get_del(ptArray1[i],present.a2,present.c2)<maxDist)
+                {
+                    Mat waypt = (Mat_<double>(3,1) << ptArray1[i].x , img.rows - ptArray1[i].y , 1);
+                    Mat waypt_top = h*waypt;
+
+                    double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+                    double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+                    Point top(x_top, y_top);                                
+                    centroid_inliers_r.x += top.x;
+                    centroid_inliers_r.y += top.y;
+                    count_r++;
+                }
+            }
+            centroid_inliers_r.x = centroid_inliers_r.x/count_r;
+            centroid_inliers_r.y = centroid_inliers_r.y/count_r;
+            ros_centroid_bl_r.point.x = (img.rows - centroid_inliers_r.y)/pixelsPerMetre;
+            ros_centroid_bl_r.point.y = (img.cols/2 - centroid_inliers_r.x)/pixelsPerMetre;
+        }   
+
+        else
+        {
+            for(int i=0; i<ptArray1.size(); i++)
+            {
+                if(get_del(ptArray1[i],present.a1,present.c1)<maxDist)
+                {
+                    Mat waypt = (Mat_<double>(3,1) << ptArray1[i].x , img.rows - ptArray1[i].y , 1);
+                    Mat waypt_top = h*waypt;
+
+                    double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+                    double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+                    Point top(x_top, y_top);
+                    centroid_inliers_l.x += top.x;
+                    centroid_inliers_l.y += top.y;
+                    count_l++;
+                }
+            }
+            centroid_inliers_l.x = centroid_inliers_l.x/count_l;
+            centroid_inliers_l.y = centroid_inliers_l.y/count_l; 
+            ros_centroid_bl_l.point.x = (img.rows - centroid_inliers_l.y)/pixelsPerMetre;
+            ros_centroid_bl_l.point.y = (img.cols/2 - centroid_inliers_l.x)/pixelsPerMetre;
+        }
+    }
+
+    if(present.numModel == 2)
+    {
+        cout<<"2" <<endl;
+        for(int i=0; i<ptArray1.size(); i++)
+        {
+            if(get_del(ptArray1[i],present.a2,present.c2)<maxDist)
+            {
+                Mat waypt = (Mat_<double>(3,1) << ptArray1[i].x , img.rows - ptArray1[i].y , 1);
+                Mat waypt_top = h*waypt;
+
+                double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+                double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+                Point top(x_top, y_top);                                
+                centroid_inliers_r.x += top.x;
+                centroid_inliers_r.y += top.y;
+                count_r++;
+            }
+        }
+        centroid_inliers_r.x = centroid_inliers_r.x/count_r;
+        centroid_inliers_r.y = centroid_inliers_r.y/count_r;
+        ros_centroid_bl_r.point.x = (img.rows - centroid_inliers_r.y)/pixelsPerMetre;
+        ros_centroid_bl_r.point.y = (img.cols/2 - centroid_inliers_r.x)/pixelsPerMetre;
+
+        for(int i=0; i<ptArray1.size(); i++)
+        {
+            if(get_del(ptArray1[i],present.a1,present.c1)<maxDist)
+            {
+                Mat waypt = (Mat_<double>(3,1) << ptArray1[i].x , img.rows - ptArray1[i].y , 1);
+                Mat waypt_top = h*waypt;
+
+                double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+                double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+                Point top(x_top, y_top);
+                centroid_inliers_l.x += top.x;
+                centroid_inliers_l.y += top.y;
+                count_l++;
+            }
+        }
+        centroid_inliers_l.x = centroid_inliers_l.x/count_l;
+        centroid_inliers_l.y = centroid_inliers_l.y/count_l;
+        ros_centroid_bl_l.point.x = (img.rows - centroid_inliers_l.y)/pixelsPerMetre;
+        ros_centroid_bl_l.point.y = (img.cols/2 - centroid_inliers_l.x)/pixelsPerMetre;
+
+    }
+    static tf::TransformListener listener;
+    // tf::StampedTransform transform;
+    // try{
+    //   listener.lookupTransform("/imu", "/base_link",  
+    //                            ros::Time(0), transform);
+    // }
+    // catch (tf::TransformException ex){
+    //   ROS_ERROR("%s",ex.what());
+    //   ros::Duration(1.0).sleep();
+    // }
+
+    try{
+        listener.transformPoint("/odom", ros_centroid_bl_l, ros_centroid_l);
+        listener.transformPoint("/odom", ros_centroid_bl_r, ros_centroid_r);
+
+        ROS_INFO("point_base: (%.2f, %.2f. %.2f) -----> point_odom: (%.2f, %.2f, %.2f) at time",
+                ros_centroid_bl_l.point.x, ros_centroid_bl_l.point.y, ros_centroid_bl_l.point.z,
+                ros_centroid_l.point.x, ros_centroid_l.point.y, ros_centroid_l.point.z);
+    }
+    catch(tf::TransformException& ex){
+        ROS_ERROR("%s", ex.what());
+    }
+
+    if(number_of_lanes==2)
+    {
+        if(c2<c1)
+        {
+            present=swap_odom(present);
+            return present;
+        }
+        else 
+            return present;
+    }
+
+    else if(number_of_lanes==1)
+    {
+        if(previous.numModel == 0)
+        {
+            //if intersection on left or right lane possible
+            if(a1*c1<0 && a1*(img.cols-c1)>0)
+            {
+                float y1=sqrt(-1.0*a1*c1);
+                float y2=sqrt(a1*(img.cols-c1));
+
+                if(y1>(2*img.rows)/5 && y1<(3*img.rows)/5 && y2>(2*img.rows)/5 && y2<(3*img.rows)/5)
+                {
+                    return previous;
+                }
+
+            }
+
+            if(a2*c2<0 && a2*(img.cols-c2)>0)
+            {
+                float y1=sqrt(-1.0*a2*c2);
+                float y2=sqrt(a2*(img.cols-c2));
+
+                if(y1>(2*img.rows)/5 && y1<(3*img.rows)/5 && y2>(2*img.rows)/5 && y2<(3*img.rows)/5)
+                {
+                    return previous;
+                }
+            }
+
+            if((c1>(2*img.cols/5) && c1<(3*img.cols/5)) || (c2>(2*img.cols/5) && c2<(3*img.cols/5)))
+            {
+                return previous;
+            }
+
+            if(a1!=0 && c1>(img.cols/2))
+            {
+                present=swap_odom(present);
+                return present;
+            }
+
+            if(a2!=0 && c2<(img.cols/2))
+            {
+                present=swap_odom(present);
+                return present;
+            }
+        }
+
+        if(previous.numModel == 1)
+        {
+            if(present.a1 == 0 && present.c1 == 0)
+            {
+                a.x = ros_centroid_r.point.x;
+                a.y = ros_centroid_r.point.y; 
+                if(previous.a1 == 0 && previous.c1 == 0)
+                {
+                    b.x = ros_centroid_prev_r.point.x;
+                    b.y = ros_centroid_prev_r.point.y;
+                    cout<<"dist(a,b)  : "<<dist(a,b)<<endl;
+                    if(dist(a,b) < dist_between_lanes)
+                        return present;
+                    else
+                    {
+                        present = swap_odom(present);
+                        return present;
+                    } 
+
+                }
+                else
+                {
+                    b.x = ros_centroid_prev_l.point.x;
+                    b.y = ros_centroid_prev_l.point.y;
+                    cout<<"dist(a,b)  : "<<dist(a,b)<<endl;
+                    if(dist(a,b) < dist_between_lanes)
+                    {
+                        present = swap_odom(present);
+                        return present;
+                    }
+                    else
+                        return present;
+                }
+            }
+            else if(present.a2 == 0 && present.c2 == 0)
+            {
+                a.x = ros_centroid_l.point.x;
+                a.y = ros_centroid_l.point.y;
+                if(previous.a2 == 0 && previous.c2 == 0)
+                {
+                    b.x = ros_centroid_prev_l.point.x;
+                    b.y = ros_centroid_prev_l.point.y;
+                    cout<<"dist(a,b)  : "<<dist(a,b)<<endl;
+                    if(dist(a,b) < dist_between_lanes)
+                        return present;
+                    else
+                    {
+                        present = swap_odom(present);
+                        return present;
+                    }
+                }
+                else
+                {
+                    b.x = ros_centroid_prev_r.point.x;
+                    b.y = ros_centroid_prev_r.point.y;
+                    cout<<"dist(a,b)  : "<<dist(a,b)<<endl;
+                    if(dist(a,b) < dist_between_lanes)
+                    {
+                        present = swap_odom(present);
+                        return present;
+                    }
+                    else
+                        return present;
+                }
+            }
+        }
+
+        if(previous.numModel == 2)
+        {
+            // cout<<":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"<<endl;
+            if(present.a1 == 0 && present.c1 == 0)
+            {
+                a.x = ros_centroid_r.point.x;
+                a.y = ros_centroid_r.point.y;
+                b.x = ros_centroid_prev_r.point.x;
+                b.y = ros_centroid_prev_r.point.y;
+                c.x = ros_centroid_prev_l.point.x;
+                c.y = ros_centroid_prev_l.point.y;
+                cout<<"dist(a,b) , dist(a,c) : "<<dist(a,b)<<" , "<<dist(a,c)<<endl;
+                if(dist(a,b) < dist(a,c))
+                    return present;
+                else
+                {
+                    present = swap_odom(present);
+                    return present;
+                }
+
+            }
+            else
+            {
+                a.x = ros_centroid_l.point.x;
+                a.y = ros_centroid_l.point.y;
+                b.x = ros_centroid_prev_r.point.x;
+                b.y = ros_centroid_prev_r.point.y;
+                c.x = ros_centroid_prev_l.point.x;
+                c.y = ros_centroid_prev_l.point.y;
+                cout<<"dist(a,b) , dist(a,c) : "<<dist(a,b)<<" , "<<dist(a,c)<<endl;
+                if(dist(a,c) < dist(a,b))
+                    return present;
+                else
+                {
+                    present = swap_odom(present);
+                    return present;
+                }
+            }
+        }
+    }
+
+    cout<<"ros_centroid_bl_l.point.x, ros_centroid_bl_l.point.y, ros_centroid_bl_l.point.z : "<<ros_centroid_bl_l.point.x<<","<<ros_centroid_bl_l.point.y<<","<<ros_centroid_bl_l.point.z<<endl;
+    cout<<"ros_centroid_bl_r.point.x, ros_centroid_bl_r.point.y, ros_centroid_bl_r.point.z : "<<ros_centroid_bl_r.point.x<<","<<ros_centroid_bl_r.point.y<<","<<ros_centroid_bl_r.point.z<<endl;
+    cout<<"ros_centroid_r.point.x, ros_centroid_r.point.y, ros_centroid_r.point.z : "<<ros_centroid_r.point.x<<","<<ros_centroid_r.point.y<<","<<ros_centroid_r.point.z<<endl;
+    cout<<"ros_centroid_l.point.x, ros_centroid_l.point.y, ros_centroid_l.point.z : "<<ros_centroid_l.point.x<<","<<ros_centroid_l.point.y<<","<<ros_centroid_l.point.z<<endl;
+    ros_centroid_prev_r = ros_centroid_r;
+    ros_centroid_prev_l = ros_centroid_l;
+    return present;
+}
 
 //Getting a (purely mathematical)
 float get_a(Point p1, Point p2)
@@ -159,10 +530,10 @@ float get_c(Point p1, Point p2)
 {
     int x1 = p1.x;
     int y1 = p1.y;
-   
+
     int x2 = p2.x;
     int y2 = p2.y;
-       
+
     float del = (x1 - x2)*y2*y2;
     float del_a = (y1 - y2)*(y1 + y2);
 
@@ -181,14 +552,14 @@ float get_c_2(Point p1, float a)
 
 float min(float a, float b){
     if(a<=b)
-    return a;
+        return a;
     return b;
 }
 
 /*
-Calculate distance of passed point from curve
-    Gives the minimum of the abs diff. in X/Y.
-*/
+   Calculate distance of passed point from curve
+   Gives the minimum of the abs diff. in X/Y.
+ */
 float get_del(Point p, float a, float c)
 {
     float predictedX = ((p.y*p.y)/(a) + c);
@@ -213,7 +584,7 @@ bool isIntersectingLanes(Mat img, Parabola param) {
     if(a1==a2)
         return false;
     float x = (a1*c1 - a2*c2)/(a1-a2);
-   
+
     //checks if intersection is within
 
     float y_2 = a1*(x-c1);
@@ -243,7 +614,6 @@ bool isIntersectingLanes_2(Mat img, Parabola param){
     return false;
 }
 
-/*
 Parabola no_sudden_change(Parabola bestTempParam, Mat img, Parabola previous)
 {
     if(bestTempParam.numModel==2 && previous.numModel == 2)
@@ -333,17 +703,16 @@ Parabola no_sudden_change(Parabola bestTempParam, Mat img, Parabola previous)
     }
     return bestTempParam;
 }
-*/
 
 //choose Parabola parameters of best fit curve basis on randomly selected 4 points
 Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previous)
 {
     int numDataPts = ptArray.size();
-   
+
     Parabola bestTempParam;
 
     bestTempParam.numModel=2;
- 
+
     int score_gl = 0;
     int score_l_gl = 0, score_r_gl = 0;
 
@@ -352,13 +721,13 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
     {
         //Taking 4 random points
         int p1 = random()%ptArray.size(), p2 = random()%ptArray.size(), p3 = random()%ptArray.size(), p4 = random()%ptArray.size();
-       
+
         // Checking if all the points are equal
         if(p1==p2 || p1==p3 || p1==p4 || p3==p2 || p4==p2 || p3==p4){
             i--;
             continue;
         }
-       
+
         Point ran_points[4];
         ran_points[0] = ptArray[p1];
         ran_points[1] = ptArray[p2];
@@ -383,10 +752,10 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         }
 
         /*
-        Checking if points for the lane have the same x or y co-ordinates
-            * Same x co-ordinates => infinite no. of parabolas.
-            * Same y co-ordinates isn't possible due to a fixed axis(bottom row).
-        */  
+           Checking if points for the lane have the same x or y co-ordinates
+         * Same x co-ordinates => infinite no. of parabolas.
+         * Same y co-ordinates isn't possible due to a fixed axis(bottom row).
+         */  
         if(ran_points[0].x == ran_points[1].x || ran_points[2].x==ran_points[3].x || ran_points[0].y == ran_points[1].y || ran_points[2].y==ran_points[3].y){
             i--;
             continue;
@@ -396,7 +765,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         tempParam.numModel = 2;
         tempParam.a1 = get_a(ran_points[0], ran_points[1]);
         tempParam.c1 = get_c(ran_points[0], ran_points[1]);
-        
+
 
         //Just switch for true & false to plot lanes using 3 points(assuming parallel curves)
         if(true){
@@ -407,8 +776,8 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
             tempParam.a2 = tempParam.a1;
             tempParam.c2 = get_c_2(ran_points[2], tempParam.a2);
         }
-        
-        
+
+
         int score_common = 0;
         int score_l_loc = 0, score_r_loc = 0;
 
@@ -492,7 +861,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         //To check if intersection in image has taken place
         // Uncomment the block to add the intersection functionality.
 
-        
+
         // else if( isIntersectingLanes_2(img, tempParam)) {
         //     //cout<<" isIntersectingLanes issue."<<endl;
         //     if(score_r_loc > score_l_loc)
@@ -531,22 +900,22 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         }
 
         /*else if(fabs(tempParam.a1 - tempParam.a2) < 200)
+          {
+        //cout<<"a1 - a2 issue."<<endl;
+        if(score_r_loc > score_l_loc)
         {
-            //cout<<"a1 - a2 issue."<<endl;
-            if(score_r_loc > score_l_loc)
-            {
-                tempParam.a1 = 0;
-                tempParam.c1 = 0;
-                score_l_loc = 0;
-                tempParam.numModel--;
-            }
-            else
-            {
-                tempParam.a2 = 0;
-                tempParam.c2 = 0;
-                score_r_loc = 0;
-                tempParam.numModel--;
-            }
+        tempParam.a1 = 0;
+        tempParam.c1 = 0;
+        score_l_loc = 0;
+        tempParam.numModel--;
+        }
+        else
+        {
+        tempParam.a2 = 0;
+        tempParam.c2 = 0;
+        score_r_loc = 0;
+        tempParam.numModel--;
+        }
         }*/
 
 
@@ -612,9 +981,6 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         bestTempParam.numModel--;
     }
 
-    //Checking for no sudden change
-    // bestTempParam = no_sudden_change(bestTempParam, img, previous);
-    
     if(true){
         // cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
         // cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
@@ -690,14 +1056,14 @@ Parabola getRansacModel(Mat img,Parabola previous)
             if(count>grid_white_thresh) {
                 ptArray1.push_back(Point(j , img.rows - i));
                 plot_grid.at<uchar>(i, j) = 255;
- 
+
             }
         }
     }
 
 
     namedWindow("grid",WINDOW_NORMAL);
-    
+
     imshow("grid",plot_grid);
 
 
@@ -717,49 +1083,13 @@ Parabola getRansacModel(Mat img,Parabola previous)
     else {
         return previous;
     }
-    //Lane classification based on previous frames
-    //if two lanes
-
-    /*if(v.size() < 6)
-    {
-        v.push_back(param);
-    }
-    else
-    {
-        vector<Parabola>::iterator it; 
-        it = v.begin(); 
-        v.erase(it); 
-    }
-    Parabola final;
-    float div=0;
-    for(int i=0; i<v.size(); i++) 
-    {
-        final.a1+= v[i].a1/(pow(2,i));
-        final.c1+= v[i].c1/(pow(2,i));
-        final.a2+= v[i].a2/(pow(2,i));
-        final.c2+= v[i].c2/(pow(2,i));
-        div+= (1/pow(2,i));
-    }
-    final.a1=final.a1/div;
-    final.a2=final.a2/div;
-    final.c1=final.c1/div;
-    final.c2=final.c2/div;
-    final.numModel= final.numModel/div;
-
-    if(final.numModel >= 1.5) final.numModel = 2;
-    else final.numModel = 1;*/
-    // for(int i=0; i<ptArray1.size(); i++)
-    // {
-    //     float dist_l = get_del(ptArray1[i], param.a1, param.c1);
-    //     float dist_r = get_del(ptArray1[i], param.a2, param.c2);
-    //     if(dist_l < maxDist || dist_r < maxDist)
-    //     {
-    //         img.at<uchar>(img.rows - ptArray1[i].y, ptArray1[i].x) = 255;
-    //     }       
-    // }
-
     param=classify_lanes(img,param,previous);
 
+    //Uncomment the next line to use the other lane classification approach
+    // param=classify_lanes_odom(img,param,previous,ptArray1);
+
+    //Uncomment the next line to disallow sudden changes in lane params
+    // param = no_sudden_change(param, img, previous);
     return param;
 }
 

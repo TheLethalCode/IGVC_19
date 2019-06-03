@@ -28,12 +28,14 @@ NOTE: For debugging couts:
 #include <lidar_plot.hpp>
 #include <waypoint_generator_new2.hpp>
 #include <ransac_new_2.hpp>
+#include <ransac_second.hpp>
+
 #include <lane_segmentation.hpp>
 #include <lane_laser_scan.hpp>
+
 #include <find_pothole.hpp>
 #include <hough.hpp>
 #include <obstacle_det_vision_lidar.hpp>    //Obstacle Removal
-#include <ransac_second.hpp>
 // #include <bright.hpp>    //For brightest pixel first approach
 
 // #include <White_obstacle_updated.hpp>

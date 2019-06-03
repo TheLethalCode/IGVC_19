@@ -1,2 +1,0 @@
-global publisher for lanes to lidar (to be put on costmap): master:36
-region of interest of lanes:master:144
