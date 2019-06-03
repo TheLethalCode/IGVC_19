@@ -19,6 +19,7 @@ NOTE: For debugging couts:
 #include <vision/TutorialsConfig.h>
 #include <time.h>
 #include <std_msgs/Bool.h>
+#include<std_msgs/Float64.h>
 
 
 //Custom Header files
@@ -40,6 +41,12 @@ NOTE: For debugging couts:
 using namespace std;
 using namespace cv;
 using namespace ros;
+
+bool ramp_detected = false;
+int const_frames = 0;
+float pitch;
+
+#include <rampdetector.hpp>
 
 //Dynamic Reconfigure callback function
 // Link: http://wiki.ros.org/dynamic_reconfigure
@@ -127,6 +134,11 @@ void use_vision_callback(const std_msgs::Bool::ConstPtr& msg) {
 	use_vision_global = msg->data;
 }
 
+void odomCallBack(const std_msgs::Float64::ConstPtr& msg)
+{
+    pitch = msg->data;
+}
+
 int main(int argc, char **argv)
 { 
     init(argc,argv,"master");
@@ -139,13 +151,14 @@ int main(int argc, char **argv)
     f = boost::bind(&callback, _1, _2);
     server.setCallback(f);
 
-    Subscriber lidar_subsriber;
+    Subscriber lidar_subsriber, orientation;
     lidar_subsriber = n.subscribe("/scan", 2, &laserscan);
     image_transport::Subscriber sub = it.subscribe("/camera/image_color", 2, imageCb);  //NOTE Topic
     Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
     lanes2Costmap_publisher = n.advertise<sensor_msgs::LaserScan>("/lanes", 2);       //declared globally
     pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
 	Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
+    orientation = n.subscribe("/vn_ins/pitch",100,odomCallBack);
 
     int waypoint_count = 0;
 
@@ -234,10 +247,25 @@ int main(int argc, char **argv)
             imshow("intersectionImages", intersectionImages);
         }
 
+
+
         /* Plotting obstacles by Lidar */
         Mat remove_obstacles_image = frame_orig.clone();
         vector<Point> obs_by_lidar = lidar_plot(lidar_scan, h, frame_orig.rows, frame_orig.cols);
-        intersectionImages = remove_obstacles(remove_obstacles_image, intersectionImages, obs_by_lidar);
+
+        Mat chan[3];
+        Mat green_grass(remove_obstacles_image.rows, remove_obstacles_image.cols, CV_8UC1, Scalar(255));
+        split(remove_obstacles_image, chan);
+        chan[0] = chan[0] - 70*(green_grass-chan[0])/255;
+        chan[1] = chan[1] + 30*(chan[1])/255;
+        merge(chan, 3, remove_obstacles_image);
+        // Ramp detection
+        rampdetector(remove_obstacles_image, intersectionImages, obs_by_lidar);
+        ramp_chad_gaya();
+
+
+        // The first bool entry(!ramp_detected) is for vision based obstacle removal and second bool is for lidar based obstacle removal 
+        intersectionImages = remove_obstacles(remove_obstacles_image, intersectionImages, obs_by_lidar, !ramp_detected, true);
 
         if(is_debug || is_important){
         	namedWindow("Obs_removed", WINDOW_NORMAL);
