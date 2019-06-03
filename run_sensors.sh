@@ -22,6 +22,7 @@ cleanup()
 
 python bash_edit.py
 rosparam set kill 0
+
 sudo chmod 777 /dev/serial/by-id/*
 sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576
 
@@ -40,22 +41,22 @@ while [ 1 ]
 do
     if [ $(rosparam get imu) == "0" ]
     then
-        printf "!!!!!!!\nKilling IMU\n!!!!!!!"
+        printf "\n!!!!!!!\nKilling IMU\n!!!!!!!\n"
         killall -9 vn_ins
         sleep 1
         sudo chmod 777 /dev/serial/by-id/*
-        printf "--------Relaunching IMU ---------"
+        printf "\n--------\nRelaunching IMU\n---------\n"
         roslaunch vn_ins module.launch &
         sleep 1
     fi
     
     if [ $(rosparam get lid) == "0" ]
     then
-      printf "!!!!!!!!\nKilling Lidar\n!!!!!!!!!"
+      printf "\n!!!!!!!!\nKilling Lidar\n!!!!!!!!!\n"
       killall -9 hokuyo_node
       sleep 1
       sudo chmod 777 /dev/serial/by-id/*
-      printf "--------\nRelaunching Lidar\n--------"
+      printf "\n--------\nRelaunching Lidar\n--------\n"
       roslaunch hokuyo_node hokuyo_test.launch &  
       sleep 1
     fi
@@ -72,7 +73,7 @@ do
 
     if [ $(rosparam get imu) == "1" ] && [ $(rosparam get cam) == "1" ] && [ $(rosparam get lid) == "1" ] 
     then
-        printf "........\nALL CONNECTED\n........."
+        printf "\n........\nALL CONNECTED\n.........\n"
     fi
     sleep 3
 done
