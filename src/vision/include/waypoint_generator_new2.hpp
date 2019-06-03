@@ -284,7 +284,6 @@ NavPoint find_waypoint(Parabola2 lanes,Mat img)
         else
         average_angle_r=-1*CV_PI/2-average_angle_r;
         way_point.angle=(average_angle_l+ average_angle_r)/2;
-        co
         return way_point;
 
     }
@@ -302,8 +301,8 @@ Mat plotWaypoint(Mat costmap, NavPoint waypoint_image)
     Point dest = Point(x,y);
     
     //Drawing waypoint accordingly in the costmap image 
-    circle(costmap, origin, 10, Scalar(255), -1, 8, 0);
-    arrowedLine(costmap, origin, dest, Scalar(255), 3, 8, 0, 0.1);
+    circle(costmap, origin, 10, Scalar(0,0,255), -1, 8, 0);
+    arrowedLine(costmap, origin, dest, Scalar(0,255,0), 3, 8, 0, 0.1);
 
     return costmap;
 }

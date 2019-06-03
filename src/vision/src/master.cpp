@@ -373,13 +373,6 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
-
-        sensor_msgs::LaserScan lane;
-        lane = laneLaser(intersectionImages);
-        lanes2Costmap_publisher.publish(lane);
-
-
-
  		//Creating a Mat for hough.hpp
         Mat hough_image(intersectionImages.rows,intersectionImages.cols, CV_8UC1, Scalar(0));
 
@@ -421,6 +414,10 @@ int main(int argc, char **argv)
                 waypoint_image.x=x_top;
                 waypoint_image.y=y_top;
 
+                sensor_msgs::LaserScan lane;
+                lane = laneLaser(top_view(intersectionImages));
+                lanes2Costmap_publisher.publish(lane);  
+
 
                 //transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
                 geometry_msgs::PoseStamped waypoint_bot;
@@ -459,21 +456,17 @@ int main(int argc, char **argv)
         // Brightest Pixel per Row approach
         // intersectionImages = brightest(intersectionImages);
 
+
         Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
 
-        Mat intersectionImages_top=top_view(intersectionImages);
-
-        if(true)
-        {
-        	namedWindow("intersectionImages_top",0);
-        	imshow("intersectionImages_top",intersectionImages_top);
-        }
-
-        costmap=intersectionImages_top.clone();
-
+        costmap=top_view(intersectionImages);
         costmap=find_pothole(top_view(bw),costmap);
 
-        if(false)
+        sensor_msgs::LaserScan lane;
+        lane = laneLaser(costmap);
+        lanes2Costmap_publisher.publish(lane);
+
+        if(true)
         {
         	namedWindow("final_costmap",0);
         	imshow("final_costmap",costmap);
@@ -483,6 +476,7 @@ int main(int argc, char **argv)
 
         Mat fitLanes=frame_orig.clone();
         fitLanes=drawLanes(fitLanes,lanes);
+        
         Mat lanes_front_view(frame_orig.rows, frame_orig.cols, CV_8UC3, Scalar(0,0,0));
         lanes_front_view = drawLanes(lanes_front_view, lanes);
         if(true)
@@ -523,14 +517,13 @@ int main(int argc, char **argv)
         NavPoint waypoint_image = find_waypoint(lanes_2,costmap); 
 ///=============================================================================================================
 
-        Mat waypts = costmap.clone();
         if(is_debug) {cout << "Plotting Waypoint" << endl;}
-        waypts = plotWaypoint(frame_topview, waypoint_image);
+        frame_topview = plotWaypoint(frame_topview, waypoint_image);
 
 
 
         namedWindow("waypoint", WINDOW_NORMAL);
-        imshow("waypoint", waypts);
+        imshow("waypoint", frame_topview);
         
         //lidar plot for waypoint obstacle
         /*
