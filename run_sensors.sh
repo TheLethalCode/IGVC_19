@@ -26,6 +26,8 @@ rosparam set kill 0
 sudo chmod 777 /dev/serial/by-id/*
 sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576
 
+rosrun rosserial_python serial_node.py /dev/serial/by-id/usb-1a86_USB2.0-Serial-if00-port0
+
 rosrun sensor_status error &
 
 roslaunch vn_ins module.launch &
@@ -77,5 +79,6 @@ do
     fi
     sleep 3
 done
+
 
 
