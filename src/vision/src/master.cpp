@@ -26,7 +26,7 @@ NOTE: For debugging couts:
 #include <matrixTransformation.hpp>
 #include <lidar_new.hpp>
 #include <lidar_plot.hpp>
-#include <waypoint_generator_new.hpp>
+#include <waypoint_generator_new2.hpp>
 #include <ransac_new_2.hpp>
 #include <lane_segmentation.hpp>
 #include <lane_laser_scan.hpp>
@@ -520,12 +520,12 @@ int main(int argc, char **argv)
 // Not yet commented.       
         /* Returns waypoint assuming origin at bottom left of image (in pixel coordinates)
         & orientation in radians. */ 
-        NavPoint waypoint_image = find_waypoint(lanes,costmap); 
+        NavPoint waypoint_image = find_waypoint(lanes_2,costmap); 
 ///=============================================================================================================
 
         Mat waypts = costmap.clone();
         if(is_debug) {cout << "Plotting Waypoint" << endl;}
-        waypts = plotWaypoint(waypts, waypoint_image);
+        waypts = plotWaypoint(frame_topview, waypoint_image);
 
 
 
