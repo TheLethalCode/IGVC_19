@@ -13,12 +13,13 @@ do
       roslaunch pointgrey_camera_driver camera.launch &
       sleep 2
     fi
+    printf "%d" $(rosparam get cam)
     if [ $(rosparam get kill) == "1" ]
     then 
       killall -9 nodelet
       exit 1
     fi
-    sleep 1
+    sleep 3
 done
 
 

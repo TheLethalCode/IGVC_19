@@ -66,11 +66,11 @@ bool check_whether_hough(Mat hough_img,Mat img)
   vector<Vec4i> lines;  //NOTE the vector type
   
   //Hough Lines Probabilistic
-  HoughLinesP(img, lines, 1, CV_PI/180, 50, img.cols/3, 30); 
+  HoughLinesP(img, lines, 1, CV_PI/180, hough_min_points, hough_min_line_length, hough_max_line_gap); 
   /*
   Params: dest_img, vector to store pts, resolution of r,
-         resolution of theta, minimum no. of intersections for detection, 
-         min. pts in line, maxlineGap 
+         resolution of theta, minimum no. points, 
+         min. line length, maxlineGap 
   */ 
 
   Point p1(0,0), p2(0,0);

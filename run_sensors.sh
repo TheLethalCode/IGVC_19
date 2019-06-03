@@ -34,6 +34,8 @@ switch_port () {
 
 rosparam set kill 0
 sudo chmod 777 /dev/tty*
+sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576
+
 rosrun sensor_status error &
 
 roslaunch vn_ins module.launch &
@@ -43,7 +45,7 @@ roslaunch hokuyo_node hokuyo_test.launch &
 sleep 1
 
 #parallel launch of camera node
-terminator -e "env INIT_CMD='bash cam.sh' bash " &
+# terminator -e "env INIT_CMD='bash cam.sh' bash " &
 
 while [ 1 ]
 do
@@ -69,12 +71,21 @@ do
       roslaunch hokuyo_node hokuyo_test.launch &  
       sleep 1
     fi
-        
+    if [ $(rosparam get cam) == "0" ]
+    then
+      printf "Killing camera !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+      killall -9 nodelet
+      sleep 1
+      # sudo chmod 777 /dev/tty*
+      printf "Relaunching camera -----------------------------------------------------------------------"
+      roslaunch pointgrey_camera_driver camera.launch &
+      sleep 2
+    fi
     if [ $(rosparam get imu) == "1" ] && [ $(rosparam get cam) == "1" ] && [ $(rosparam get lid) == "1" ] 
     then
         printf "ALL connected\n"
     fi
-    sleep 5
+    sleep 3
 done
 
 

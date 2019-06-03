@@ -33,6 +33,7 @@ NOTE: For debugging couts:
 #include <find_pothole.hpp>
 #include <hough.hpp>
 #include <obstacle_det_vision_lidar.hpp>    //Obstacle Removal
+#include <ransac_second.hpp>
 // #include <bright.hpp>    //For brightest pixel first approach
 
 // #include <White_obstacle_updated.hpp>
@@ -84,6 +85,10 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     brightestPixelThreshold = config.brightestPixelThreshold;
 
     rscale = config.rscale;
+
+    hough_min_points = config.hough_min_points; 
+    hough_min_line_length = config.hough_min_line_length;
+    hough_max_line_gap = config.hough_max_line_gap;
 }
 
 Publisher lanes2Costmap_publisher;  //For putting lanes in costmap
@@ -162,6 +167,15 @@ int main(int argc, char **argv)
     lanes.c2=0;
     lanes.numModel=0;
 
+    Parabola2 lanes_2;
+    lanes_2.a1=0;
+    lanes_2.b1=0;
+    lanes_2.c1=0;
+    lanes_2.a2=0;
+    lanes_2.b2=0;
+    lanes_2.c2=0;
+    lanes_2.numModel=0;
+
     while(ros::ok())
     {
 
@@ -182,7 +196,6 @@ int main(int argc, char **argv)
             continue;
         }
 
-
         //If lidar has not been retrieved, skip
         if(!is_laserscan_retrieved && !use_video)
         {
@@ -190,6 +203,8 @@ int main(int argc, char **argv)
             spinOnce();
             continue;
         }
+
+        Mat frame_topview = top_view(frame_orig);
 
         //Used for finding FPS
         clock_t tic,toc;
@@ -205,6 +220,8 @@ int main(int argc, char **argv)
 	        namedWindow("bw",0);
 	        imshow("bw",bw);
         }
+
+        Mat intersectionImages;
 
         // namedWindow("original",WINDOW_NORMAL);
         // imshow("original", frame_orig);
@@ -281,7 +298,6 @@ int main(int argc, char **argv)
 
         //Taking intersection of all lane filters
         if(is_debug) {cout << "Taking intersection of lane filters= ";}
-        Mat intersectionImages;
         // if(is_debug) cout << "2b-r : 2b-g : ";
         bitwise_and(twob_r, twob_g, intersectionImages);
         // if(is_debug) cout << "b" << endl;
@@ -357,32 +373,33 @@ int main(int argc, char **argv)
             waitKey(10);
         }
 
+
+        sensor_msgs::LaserScan lane;
+        lane = laneLaser(intersectionImages);
+        lanes2Costmap_publisher.publish(lane);
+
+
+
  		//Creating a Mat for hough.hpp
         Mat hough_image(intersectionImages.rows,intersectionImages.cols, CV_8UC1, Scalar(0));
 
         namedWindow("hough", 0);
 
-        if(lanes.numModel == 1)
+        if(lanes_2.numModel == 1)
         {
             // if(is_debug){cout << "----------------------\nOne Lane\n--------------------...." <<endl;}
             
             //Checking if lane is left or right
-            if(lanes.a1 == 0 && lanes.c1 == 0)
+            if(lanes_2.a1 == 0 && lanes.c1 == 0 && lanes_2.b1==0)
                 side = 'r';
-            else if(lanes.a2 == 0 && lanes.c2 == 0)
+            else if(lanes_2.a2 == 0 && lanes_2.c2 == 0 && lanes_2.b2==0)
                 side = 'l';
 
             if(check_whether_hough(hough_image,intersectionImages))
             {
                 if(is_debug) {cout << "Hough Code Initiated" << endl;}
                 used_hough = true;
-                Mat hough_lane = top_view(hough_image);
-
-                sensor_msgs::LaserScan hough;
-                hough = laneLaser(hough_lane);
-                lanes2Costmap_publisher.publish(hough);
-
-
+                
                 if(is_debug) {cout << "waypoint generation for hough" << endl;}
                 NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta);
                 //theta is globally declared in hough.hpp
@@ -442,21 +459,63 @@ int main(int argc, char **argv)
         // Brightest Pixel per Row approach
         // intersectionImages = brightest(intersectionImages);
 
-        if(false)
+        Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
+
+        Mat intersectionImages_top=top_view(intersectionImages);
+
+        if(true)
         {
-            namedWindow("brightest_pixel",0);
-            imshow("brightest_pixel",intersectionImages);
+        	namedWindow("intersectionImages_top",0);
+        	imshow("intersectionImages_top",intersectionImages_top);
         }
 
-        intersectionImages = top_view(intersectionImages);
+        costmap=intersectionImages_top.clone();
 
-        if(is_debug) {cout << "RANSAC started" << endl;}
+        costmap=find_pothole(top_view(bw),costmap);
+
+        if(false)
+        {
+        	namedWindow("final_costmap",0);
+        	imshow("final_costmap",costmap);
+        }
+
         lanes = getRansacModel(intersectionImages, lanes);
-        // if(is_debug) {cout << "Lanes drawn on original image" << endl;}
-        Mat fitLanes = drawLanes(frame_orig, lanes);
-        //if(is_debug) {cout << "Lanes drawn on blank image" << endl;}
-        Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
-        costmap = drawLanes_white(costmap,lanes);
+
+        Mat fitLanes=frame_orig.clone();
+        fitLanes=drawLanes(fitLanes,lanes);
+        Mat lanes_front_view(frame_orig.rows, frame_orig.cols, CV_8UC3, Scalar(0,0,0));
+        lanes_front_view = drawLanes(lanes_front_view, lanes);
+        if(true)
+        {
+        	namedWindow("front_view_ransac",0);
+        	imshow("front_view_ransac",fitLanes);
+        }
+
+        Mat top_ransac = top_view(lanes_front_view);
+
+        if(true)
+        {
+        	namedWindow("top_ransac",0);
+        	imshow("top_ransac",top_ransac);
+        }
+
+        lanes_2 = getRansacModel_2(top_ransac,lanes_2);
+
+
+
+        cout<<"lanes_2 a1 = "<<lanes_2.a1<<" lanes_2 a2 = "<<lanes_2.a2<<endl;
+        cout<<"lanes_2 b1 = "<<lanes_2.b1<<" lanes_2 b2 = "<<lanes_2.b2<<endl;
+        cout<<"lanes_2 c1 = "<<lanes_2.c1<<" lanes_2 c2 = "<<lanes_2.c2<<endl;
+        cout<<"number of lanes::"<<lanes_2.numModel<<endl;
+
+        frame_topview = drawLanes_top(frame_topview,lanes_2);
+
+        if(true)
+        {
+        	namedWindow("ransac_topview",0);
+        	imshow("ransac_topview",frame_topview);
+        }
+
 ///=============================================================================================================
 // Not yet commented.       
         /* Returns waypoint assuming origin at bottom left of image (in pixel coordinates)
@@ -469,42 +528,9 @@ int main(int argc, char **argv)
         waypts = plotWaypoint(waypts, waypoint_image);
 
 
-        //the Mat costmap is now a top view of lanes with the waypoint drawn on it
 
         namedWindow("waypoint", WINDOW_NORMAL);
         imshow("waypoint", waypts);
-
-        costmap=top_view(costmap);
-
-        if(false)
-        {
-        	namedWindow("lanes_top_view",0);
-        	imshow("lanes_top_view",costmap);
-        }
-
-        costmap=find_pothole(top_view(bw),costmap);
-
-        if(true)
-        {
-        	namedWindow("final_costmap_to_publish",0);
-        	imshow("final_costmap_to_publish",costmap);
-        }
-
-
-        if (true) {
-            //cout << "Ransac lanes drawn" << endl;
-            namedWindow("lanes fitting", WINDOW_NORMAL);
-            imshow("lanes fitting", fitLanes);
-        }
-
-
-
-
-        //plot obstacles on fitLanes and then pass fitLanes to find_waypoint 
-        sensor_msgs::LaserScan lane;
-        // if(is_debug) {cout << "Plotting obstacles on fit lanes" <<endl;}
-        lane = laneLaser(costmap);
-        lanes2Costmap_publisher.publish(lane);
         
         //lidar plot for waypoint obstacle
         /*
@@ -518,31 +544,31 @@ int main(int argc, char **argv)
 		*/
 
         // Giving waypt.'s x, y & z co-ordinates(here z= 1)
-        Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
-        //Converting waypt. in top view
-        Mat waypt_top = h*waypt; //NOTE that the h is PRE-multiplied 
-		// & it takes a 3-D pt.
+  //       Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
+  //       //Converting waypt. in top view
+  //       Mat waypt_top = h*waypt; //NOTE that the h is PRE-multiplied 
+		// // & it takes a 3-D pt.
 
-		//Actual 2-D x= x/z & y= y/z       
-        double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
-        double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+		// //Actual 2-D x= x/z & y= y/z       
+  //       double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+  //       double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
 
-        cout << "------------------------------------Waypoint------------------------------------" << endl;
-        cout <<"z:"<<waypt_top.at<double>(0,0)<<endl;
+        // cout << "------------------------------------Waypoint------------------------------------" << endl;
+        // cout <<"z:"<<waypt_top.at<double>(0,0)<<endl;
 
-        cout << "waypt_top: " << waypt_top << endl;
+        // cout << "waypt_top: " << waypt_top << endl;
 
-        cout << "x: " << x_top << " y:" << y_top << endl;
+        // cout << "x: " << x_top << " y:" << y_top << endl;
 
-        cout << "waypoint3,1 image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
+        // cout << "waypoint3,1 image x: " << waypoint_image.x << " y " << waypoint_image.y << " angle: " << waypoint_image.angle*180/CV_PI << endl;
         //cout << "Waypoint found" << endl;
        
-        waypoint_image.x=x_top;
-        waypoint_image.y=y_top;
+        // waypoint_image.x=x_top;
+        // waypoint_image.y=y_top;
 
 
-        waypoint_image.x-=40*sin(waypoint_image.angle);
-        waypoint_image.y-=40*cos(waypoint_image.angle);
+        // waypoint_image.x-=40*sin(waypoint_image.angle);
+        // waypoint_image.y-=40*cos(waypoint_image.angle);
 
 
 
