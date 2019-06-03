@@ -19,7 +19,6 @@
 using namespace std;
 
 
-
 // initialize variables
 
 typedef actionlib::SimpleActionClient <move_base_msgs::MoveBaseAction>
@@ -125,7 +124,6 @@ move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, ge
     }
     return goal;
 }
-
 
 move_base_msgs::MoveBaseGoal gps_waypoint(double end_lat, double end_long, double current_lat, double current_long)
 {

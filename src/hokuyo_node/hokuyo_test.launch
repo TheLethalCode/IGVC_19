@@ -20,7 +20,7 @@ rostopic echo /scan
     <param name="calibrate_time" type="bool" value="false"/> 
     
     <!-- Set the port to connect to here -->
-    <param name="port" type="string" value="/dev/ttyACM1"/>
+    <param name="port" type="string" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00">
      <param name="min_ang"  value="-1.5" />
     <param name="max_ang"  value="1.5" />
   
