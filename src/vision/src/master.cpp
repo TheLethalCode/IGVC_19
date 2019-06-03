@@ -101,6 +101,7 @@ Mat frame_orig;
 
 //Parameter for GPS switching. Set to false when GPS waypoint starts
 bool use_vision_global = true;
+bool is_debug_used = false;
 
 //For converting & resizing pointgrey camera node data to image
 void imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -204,6 +205,7 @@ int main(int argc, char **argv)
     	/* 2b-r preprocessing */
         Mat twob_r = twob_rChannelProcessing(frame_orig);
         if (is_debug) {
+        	is_debug_used = true;
             namedWindow("2b-r", WINDOW_NORMAL);
             imshow("2b-r", twob_r);
         }
@@ -429,7 +431,7 @@ int main(int argc, char **argv)
 	        namedWindow("waypoint", WINDOW_NORMAL);
 	        imshow("waypoint", frame_topview);
     	}
-        
+
         /* Publishing waypoint */
         //changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
         geometry_msgs::PoseStamped waypoint_bot;
@@ -454,9 +456,21 @@ int main(int argc, char **argv)
         }
         waypoint_count++;
 
+
+    	if (is_debug == false && is_debug_used == true) {
+    		destroyWindow("2b-g");
+    		destroyWindow("2b-r");
+    		destroyWindow("b");
+    		destroyWindow("costmap_orig");
+    		destroyWindow("intersectionImages");
+    		is_debug_used = false;
+    	}
+        
+
         if (is_debug == false &&  is_important == false) {
             destroyAllWindows();
         }
+
 
         waitKey(400);
         is_image_retrieved = false;
