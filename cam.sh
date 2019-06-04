@@ -17,7 +17,7 @@ do
       sleep 1
       printf "\n--------\nRelaunching Camera\n---------\n"
       roslaunch pointgrey_camera_driver camera.launch &
-      sleep 3
+      sleep 5
     fi
     # printf "%d" $(rosparam get cam)
     if [ $(rosparam get kill) == "1" ]
