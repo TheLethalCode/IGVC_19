@@ -100,7 +100,7 @@ Mat remove_white_obstacles(Mat output, Mat input) {
 Mat remove_obstacles(Mat img, Mat processed, vector<Point> obs_lidar, bool vision, bool lidar) {
 
   //obstacles.clear();
-  // Mat img1 = img.clone();
+  Mat img1 = img.clone();
   // Mat chan[3];
   // Mat Simg17(img1.rows, img1.cols, CV_8UC1, Scalar(255));
   // split(img1, chan);

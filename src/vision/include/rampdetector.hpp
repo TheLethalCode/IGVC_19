@@ -55,7 +55,7 @@ int val(int x)
 Mat rampdetector(Mat img1, Mat out, vector<Point> lidar_points)
 {
 	
-	// Mat in = img1.clone();
+	Mat in = img1.clone();
 	//   Mat chan[3];
 	//   Mat Simg17(in.rows, in.cols, CV_8UC1, Scalar(255));
 	//   split(in, chan);

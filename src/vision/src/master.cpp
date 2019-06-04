@@ -259,9 +259,12 @@ int main(int argc, char **argv)
         chan[0] = chan[0] - 70*(green_grass-chan[0])/255;
         chan[1] = chan[1] + 30*(chan[1])/255;
         merge(chan, 3, remove_obstacles_image);
-        // Ramp detection
-        rampdetector(remove_obstacles_image, intersectionImages, obs_by_lidar);
-        ramp_chad_gaya();
+
+        /* Ramp detection */
+        if (use_ramp) {
+            rampdetector(remove_obstacles_image, intersectionImages, obs_by_lidar);
+            ramp_chad_gaya();
+        }
 
 
         // The first bool entry(!ramp_detected) is for vision based obstacle removal and second bool is for lidar based obstacle removal 
