@@ -429,9 +429,9 @@ int main(int argc, char **argv)
         }
 
         /* Fitting Ransac in top view */
-  //       Mat lanes_front_view(frame_orig.rows, frame_orig.cols, CV_8UC3, Scalar(0,0,0));
-		// lanes_front_view = drawLanes(lanes_front_view, lanes);
-        Mat top_ransac = top_view(frame_orig);
+	Mat lanes_front_view(frame_orig.rows, frame_orig.cols, CV_8UC3, Scalar(0,0,0));
+	lanes_front_view = drawLanes(lanes_front_view, lanes);
+        Mat top_ransac = top_view(lanes_front_view);
         lanes_2 = getRansacModel_2(top_ransac,lanes_2);
 
         /* Drawing lanes in top view */

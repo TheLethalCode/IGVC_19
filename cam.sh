@@ -6,7 +6,7 @@ cleanup()
   exit 1
 }
 roslaunch pointgrey_camera_driver camera.launch &
-sleep 1
+sleep 5
 
 while [ 1 ]
 do

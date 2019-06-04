@@ -77,7 +77,7 @@ do
     then
         printf "\n........\nALL CONNECTED\n.........\n"
     fi
-    sleep 3
+    sleep 5
 done
 
 
