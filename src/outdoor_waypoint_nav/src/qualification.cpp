@@ -71,6 +71,7 @@ int main(int argc, char** argv)
         if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
         {
             ROS_INFO("Eklavya has reached its goal!");
+            return 1;
 
         }
         else
