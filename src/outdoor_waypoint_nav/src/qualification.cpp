@@ -45,40 +45,44 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    Rate loop_rate(10);
-    MoveBaseClient ac("/move_base", true);
+    MoveBaseClient ac("move_base", true);
 
-
-    while(ok())
-    {
-        move_base_msgs::MoveBaseGoal goal;
-        goal.target_pose.header.frame_id = "odom";
-        goal.target_pose.header.stamp = ros::Time::now();
-        cout << "time: " << goal.target_pose.header.stamp << endl;
-
-        cout << "x_goal: " << x_goal << " y_goal: " << y_goal << endl;
-        goal.target_pose.pose.position.x = x_goal;
-        goal.target_pose.pose.position.y = y_goal;
-
- 
-        //Build goal to send to move_base
-        ROS_INFO("Sending goal");
-        ac.sendGoal(goal); //push goal to move_base node
-
-        //Wait for result
-        ac.waitForResult(); //waiting to see if move_base was able to reach goal
-
-        if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-        {
-            ROS_INFO("Eklavya has reached its goal!");
-
-        }
-        else
-        {
-            ROS_ERROR("Eklavya was unable to reach its goal. GPS Waypoint unreachable.");
-        }
-        loop_rate.sleep();
+    //wait for the action server to come up
+    while(!ac.waitForServer(ros::Duration(5.0))){
+        ROS_INFO("Waiting for the move_base action server to come up");
     }
+
+    move_base_msgs::MoveBaseGoal goal;
+
+    goal.target_pose.header.frame_id = "odom";
+    goal.target_pose.header.stamp = ros::Time::now();
+    cout << "time: " << goal.target_pose.header.stamp << endl;
+
+    cout << "x_goal: " << x_goal << " y_goal: " << y_goal << endl;
+    goal.target_pose.pose.position.x = x_goal;
+    goal.target_pose.pose.position.y = y_goal;
+
+    goal.target_pose.pose.orientation.w = 1.0;
+
+
+    //Build goal to send to move_base
+    ROS_INFO("Sending goal");
+    ac.sendGoal(goal); //push goal to move_base node
+
+    //Wait for result
+    ac.waitForResult(); //waiting to see if move_base was able to reach goal
+
+    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    {
+        ROS_INFO("Eklavya has reached its goal!");
+        return 1;
+
+    }
+    else
+    {
+        ROS_ERROR("Eklavya was unable to reach its goal. GPS Waypoint unreachable.");
+    }
+
 
     return 1;
 }
