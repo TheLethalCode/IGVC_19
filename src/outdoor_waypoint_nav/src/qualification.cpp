@@ -61,9 +61,7 @@ int main(int argc, char** argv)
     cout << "x_goal: " << x_goal << " y_goal: " << y_goal << endl;
     goal.target_pose.pose.position.x = x_goal;
     goal.target_pose.pose.position.y = y_goal;
-
     goal.target_pose.pose.orientation.w = 1.0;
-
 
     //Build goal to send to move_base
     ROS_INFO("Sending goal");
@@ -81,6 +79,7 @@ int main(int argc, char** argv)
     else
     {
         ROS_ERROR("Eklavya was unable to reach its goal. GPS Waypoint unreachable.");
+        return 0;
     }
 
 
