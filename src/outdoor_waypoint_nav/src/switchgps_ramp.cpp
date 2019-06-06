@@ -3,11 +3,15 @@
 #include <bits/stdc++.h>
 #include "sensor_msgs/NavSatFix.h"
 #include <bits/stdc++.h>
-#include <gps_waypoint.hpp>
+/*Use this header if you want the goal to be generated and wait for the action to complete*/
+// #include <gps_waypoint.hpp>
+/*Use this header if you want the goal to be generated and sent dynamically*/
+#include <gps_waypoint_live.hpp>
+
 
 using namespace std;
 using namespace ros;
-#define radius 3
+#define radius 1
 #define pi 3.14159265359
 
 

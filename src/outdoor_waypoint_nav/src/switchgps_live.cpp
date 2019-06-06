@@ -3,7 +3,7 @@
 #include <bits/stdc++.h>
 #include "sensor_msgs/NavSatFix.h"
 #include <bits/stdc++.h>
-#include <gps_waypoint.hpp>
+#include <gps_waypoint_live.hpp>
 
 using namespace std;
 using namespace ros;
@@ -137,7 +137,6 @@ int main(int argc, char** argv)
 	            		cout << "Still searching for 2nd waypoint, radius2: " << radius2 << endl;
             		}
                     gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long); 
-                    //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
                     radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
                     if (radius2 < radius) {
                     	count2++;

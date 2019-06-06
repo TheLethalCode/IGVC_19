@@ -26,8 +26,8 @@ include_directories(
 add_executable(switchgps src/switchgps.cpp)
 target_link_libraries(switchgps ${catkin_LIBRARIES})
 
-add_executable(switchgps_move_base src/switchgps_move_base.cpp)
-target_link_libraries(switchgps_move_base ${catkin_LIBRARIES})
+add_executable(switchgps_live src/switchgps_live.cpp)
+target_link_libraries(switchgps_live ${catkin_LIBRARIES})
 
 add_executable(switchgps_ramp src/switchgps_ramp.cpp)
 target_link_libraries(switchgps_ramp ${catkin_LIBRARIES})
