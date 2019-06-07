@@ -63,7 +63,7 @@ geometry_msgs::PointStamped UTMtoMapPoint(geometry_msgs::PointStamped UTM_input)
         try
         {
             UTM_point.header.stamp = ros::Time::now();
-            listener.waitForTransform("odom", "utm", time_now, ros::Duration(3.0));
+            listener.waitForTransform("odom", "utm", time_now, ros::Duration(0.5));
             listener.transformPoint("odom", UTM_input, map_point_output);
             notDone = false;
         }

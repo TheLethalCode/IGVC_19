@@ -63,7 +63,7 @@ geometry_msgs::PointStamped UTMtoMapPoint(geometry_msgs::PointStamped UTM_input)
         try
         {
             UTM_point.header.stamp = ros::Time::now();
-            listener.waitForTransform("odom", "utm", time_now, ros::Duration(3.0));
+            listener.waitForTransform("odom", "utm", time_now, ros::Duration(0.5));
             listener.transformPoint("odom", UTM_input, map_point_output);
             notDone = false;
         }
@@ -125,43 +125,63 @@ move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, ge
     return goal;
 }
 
-move_base_msgs::MoveBaseGoal gps_waypoint(double end_lat, double end_long, double current_lat, double current_long)
+
+int gps_waypoint(double end_lat, double end_long, double current_lat, double current_long)
 {
 
     MoveBaseClient ac("/move_base", true);
-
-
+    
+    
     //construct an action client that we use to communication with the action named move_base.
     //Setting true is telling the constructor to start ros::spin()
 
     //Get Longitude and Latitude goals from text file
 
     //Count number of waypoints
-
+    
 
     // Iterate through vector of waypoints for setting goals
 
-    //Setting goal:
-    latiGoal = end_lat;
-    longiGoal = end_long;
+        //Setting goal:
+        latiGoal = end_lat;
+        longiGoal = end_long;
 
-    ROS_INFO("Received Latitude goal:%.8f", latiGoal);
-    ROS_INFO("Received longitude goal:%.8f", longiGoal);
+        ROS_INFO("Received Latitude goal:%.8f", latiGoal);
+        ROS_INFO("Received longitude goal:%.8f", longiGoal);
 
-    //Convert lat/long to utm:
-    UTM_point = latLongtoUTM(latiGoal, longiGoal);
-    UTM_point_current = latLongtoUTM(current_lat, current_long);
+        //Convert lat/long to utm:
+        UTM_point = latLongtoUTM(latiGoal, longiGoal);
+        UTM_point_current = latLongtoUTM(current_lat, current_long);
 
-    //Transform UTM to map point in odom frame
-    map_point = UTMtoMapPoint(UTM_point);
-    map_point_current = UTMtoMapPoint(UTM_point_current);
+        //Transform UTM to map point in odom frame
+        map_point = UTMtoMapPoint(UTM_point);
+        map_point_current = UTMtoMapPoint(UTM_point_current);
 
-    map_next = map_point;
-    bool final_point = true;
+        map_next = map_point;
+        bool final_point = true;
 
-    //Build goal to send to move_base
-    move_base_msgs::MoveBaseGoal goal = buildGoal(map_point, map_point_current, map_next, final_point); //initiate a move_base_msg called goal
-    return goal;
+        //Build goal to send to move_base
+        move_base_msgs::MoveBaseGoal goal = buildGoal(map_point, map_point_current, map_next, final_point); //initiate a move_base_msg called goal
+        // Send Goal
+        ROS_INFO("Sending goal");
+        ac.sendGoal(goal); //push goal to move_base node
+
+        return 0;
+
+        // //Wait for result
+        // ac.waitForResult(); //waiting to see if move_base was able to reach goal
+
+        // if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+        // {
+        //     ROS_INFO("Eklavya has reached its goal!");
+        //     return 0; //if safely exiting
+
+        // }
+        // else
+        // {
+        //     ROS_ERROR("Eklavya was unable to reach its goal. GPS Waypoint unreachable.");
+        //     return 1; //exiting with error
+        // }
 }
 
 #endif

@@ -15,6 +15,7 @@ char side;
 bool used_hough = false;
 
 int costmap_median_blur = 3;
+int costmap_median_blur_no_mans_land = 7;
 
 double wTh = 50; //set threshold for white color
 

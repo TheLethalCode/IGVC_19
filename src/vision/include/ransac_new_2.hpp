@@ -75,24 +75,27 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
     else if(number_of_lanes==1)
     {
         //if intersection on left or right lane possible
-        if(a1*c1<0 && a1*(img.cols-c1)>0)
+        if( (a1*c1)<0 && ((a1*(img.cols-c1))>0) )
         {
             float y1=sqrt(-1.0*a1*c1);
             float y2=sqrt(a1*(img.cols-c1));
 
-            if(y1>(2*img.rows)/5 && y1<(3*img.rows)/5 && y2>(2*img.rows)/5 && y2<(3*img.rows)/5)
+            // if(y1>(2*img.rows)/5 && y1<(3*img.rows)/5 && y2>(2*img.rows)/5 && y2<(3*img.rows)/5)
+            if(y1>(2*img.rows)/5 && y2>(2*img.rows)/5)
             {
                 return previous;
             }
 
         }
 
-        if(a2*c2<0 && a2*(img.cols-c2)>0)
+        if( (a2*c2)<0 && ((a2*(img.cols-c2))>0) )
         {
+
             float y1=sqrt(-1.0*a2*c2);
             float y2=sqrt(a2*(img.cols-c2));
 
-            if(y1>(2*img.rows)/5 && y1<(3*img.rows)/5 && y2>(2*img.rows)/5 && y2<(3*img.rows)/5)
+            // if(y1>(2*img.rows)/5 && y1<(3*img.rows)/5 && y2>(2*img.rows)/5 && y2<(3*img.rows)/5)
+            if(y1>(2*img.rows)/5 && y2>(2*img.rows)/5)
             {
                 return previous;
             }
@@ -1084,9 +1087,9 @@ Parabola getRansacModel(Mat img,Parabola previous, std::vector<Point> &ptArray1)
 
 Mat drawLanes(Mat output, Parabola lanes) 
 {
+
     vector<Point2f> left_lane, right_lane;
     float a1 = lanes.a1, a2 = lanes.a2, c1 = lanes.c1, c2 = lanes.c2;
-
     for (int j = 0; j < output.rows; j++){
 
         float x, y;
