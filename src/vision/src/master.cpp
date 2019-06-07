@@ -278,7 +278,7 @@ int main(int argc, char **argv)
 	if(lanes_2.numModel == 1 && use_vision_global == true)
 	{
 
-	    cout << "Hough line detected" << endl;
+	    // cout << "Hough line detected" << endl;
 
 	    //Checking if lane is left or right
 	    if(lanes_2.a1 == 0 && lanes.c1 == 0 && lanes_2.b1==0) {
