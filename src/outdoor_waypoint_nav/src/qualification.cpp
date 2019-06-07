@@ -8,10 +8,10 @@
 
 using namespace std;
 using namespace ros;
-#define radius 1
+#define radius 0.5
 #define pi 3.14159265359
 
-
+int count_no_gps=0;
 sensor_msgs::NavSatFix coordinates;
 
 double current_lat, current_long;
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
 
       int gps_status;
 
-      radius1 = distance(current_lat, current_long, mid1_lat, mid1_long);
+      radius1 = distance(current_lat, current_long, goal_lat, goal_long);
       cout<< "radius1: " << radius1 << endl;
 
       spinOnce();
@@ -90,9 +90,9 @@ int main(int argc, char** argv)
         for (int j = 0; j <= 10; j++) {
           cout << "Still searching for waypoint, radius1: " << radius1 << endl;
         }
-        gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long); 
+        gps_status = gps_waypoint(goal_lat, goal_long, current_lat, current_long); 
         //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
-        radius1 = distance(current_lat, current_long, mid1_lat, mid1_long);
+        radius1 = distance(current_lat, current_long, goal_lat, goal_long);
         if (radius1 < radius) {
           count2++;
         }
@@ -100,6 +100,10 @@ int main(int argc, char** argv)
           count2 = 0;
         }
         spinOnce();
+      }
+      radius1 = distance(current_lat, current_long, goal_lat, goal_long);
+      for (int j = 0; j <= 10; j++) {
+          cout << "Reached waypoint, radius1: " << radius1 << endl;
       }
       return 0;
     }
