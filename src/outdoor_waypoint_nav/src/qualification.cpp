@@ -3,19 +3,14 @@
 #include <bits/stdc++.h>
 #include "sensor_msgs/NavSatFix.h"
 #include <bits/stdc++.h>
-#include <ros/package.h>
-#include <fstream>
-#include <utility>
-#include <vector>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <actionlib/client/simple_action_client.h>
-#include "robot_localization/navsat_conversions.h"
-#include <geometry_msgs/PointStamped.h>
-#include <math.h>
-#include <stdio.h>
+#include <switchgps.hpp>
+
 
 using namespace std;
 using namespace ros;
+#define radius 1
+#define pi 3.14159265359
+
 
 sensor_msgs::NavSatFix coordinates;
 
@@ -23,65 +18,105 @@ double current_lat, current_long;
 int seq;
 bool gps_data = 0;
 
-typedef actionlib::SimpleActionClient <move_base_msgs::MoveBaseAction> MoveBaseClient; //create a type definition for a client called MoveBaseClient
+void getgps(sensor_msgs::NavSatFix msg)
+{
+  gps_data = 1;
+  coordinates = msg;
+  current_lat = coordinates.latitude;
+  current_long = coordinates.longitude;
+  seq = coordinates.header.seq;
+}
+
+double distance(double x1,double y1,double x2,double y2)
+{
+  double R = 6371e3;
+  double angle1 = x1 * pi / 180;
+  double angle2 = x2 * pi / 180;
+  double lat_diff = angle2 - angle1;
+  double lon_diff = (y2 - y1) * pi / 180;
+
+  double a = sin(lat_diff/2) * sin(lat_diff/2) + cos(angle1) * cos(angle1) * sin(lon_diff/2) * sin(lon_diff/2);
+
+  double c = 2 * atan2(sqrt(a),sqrt(1-a));
+
+  double d = R * c;
+
+  return d;
+}
 
 int main(int argc, char** argv)
 {
-    init (argc, argv, "switchgps");
-    NodeHandle n;
+  init (argc, argv, "qualification");
+  NodeHandle n;
 
-    //read waypoints
-    FILE* odom_pts;
-    double x_goal, y_goal;
-    try {
-        odom_pts=fopen("odom_points.txt","r");
-        if (odom_pts == NULL) {
-            throw -1;
-        }
-        fscanf(odom_pts,"%lf %lf",&x_goal, &y_goal);
+  Subscriber sub = n.subscribe("/gps/filtered", 1, &getgps);
+
+  //read waypoints
+  double goal_lat, goal_long;
+  FILE* gps_pts;
+  try {
+    gps_pts=fopen("gps_qualification_point.txt","r");
+    if (gps_pts == NULL) {
+      throw -1;
     }
-    catch (int e) {
-        ROS_INFO("Try running the gps switching code from the root of the IGVC workspace\n");
-        return 0;
-    }
+    fscanf(gps_pts,"%lf %lf",&goal_lat, &goal_long);
+  }
+  catch (int e) {
+    ROS_INFO("Try running the gps switching code from the root of the IGVC workspace\n");
+    return 0;
+  }
 
-    MoveBaseClient ac("move_base", true);
+  double radius1;
 
-    //wait for the action server to come up
-    while(!ac.waitForServer(ros::Duration(5.0))){
-        ROS_INFO("Waiting for the move_base action server to come up");
-    }
+  Rate loop_rate(10);
 
-    move_base_msgs::MoveBaseGoal goal;
-
-    goal.target_pose.header.frame_id = "odom";
-    goal.target_pose.header.stamp = ros::Time::now();
-    cout << "time: " << goal.target_pose.header.stamp << endl;
-
-    cout << "x_goal: " << x_goal << " y_goal: " << y_goal << endl;
-    goal.target_pose.pose.position.x = x_goal;
-    goal.target_pose.pose.position.y = y_goal;
-    goal.target_pose.pose.orientation.w = 1.0;
-
-    //Build goal to send to move_base
-    ROS_INFO("Sending goal");
-    ac.sendGoal(goal); //push goal to move_base node
-
-    //Wait for result
-    ac.waitForResult(); //waiting to see if move_base was able to reach goal
-
-    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+  int count1 = 0;
+  while(ok())
+  {
+    if(gps_data == 1)
     {
-        ROS_INFO("Eklavya has reached its goal!");
-        return 1;
 
+      int gps_status;
+
+      radius1 = distance(current_lat, current_long, mid1_lat, mid1_long);
+      cout<< "radius1: " << radius1 << endl;
+
+      spinOnce();
+      int count2 = 0;
+
+      while ((radius1 > radius && count2 <= 10)&& ros::ok()) {
+
+
+        for (int j = 0; j <= 10; j++) {
+          cout << "Still searching for waypoint, radius1: " << radius1 << endl;
+        }
+        gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long); 
+        //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
+        radius1 = distance(current_lat, current_long, mid1_lat, mid1_long);
+        if (radius1 < radius) {
+          count2++;
+        }
+        else {
+          count2 = 0;
+        }
+        spinOnce();
+      }
+      return 0;
     }
+
     else
     {
-        ROS_ERROR("Eklavya was unable to reach its goal. GPS Waypoint unreachable.");
-        return 0;
+      count_no_gps++;
+      if(count_no_gps>10) 
+      {
+        cout << "No GPS Input" << endl;
+        count_no_gps=0;
+      }
+      spinOnce();
+
     }
+    loop_rate.sleep();
+  }
 
-
-    return 1;
+  return 1;
 }
