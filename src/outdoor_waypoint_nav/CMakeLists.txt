@@ -29,11 +29,11 @@ target_link_libraries(switchgps ${catkin_LIBRARIES})
 add_executable(switchgps_old src/switchgps_old.cpp)
 target_link_libraries(switchgps_old ${catkin_LIBRARIES})
 
-add_executable(qualification_odom src/qualification_odom.cpp)
-target_link_libraries(qualification_odom ${catkin_LIBRARIES})
+#add_executable(qualification_odom src/qualification_odom.cpp)
+#target_link_libraries(qualification_odom ${catkin_LIBRARIES})
 
-add_executable(qualification src/qualification.cpp)
-target_link_libraries(qualification ${catkin_LIBRARIES})
+#add_executable(qualification src/qualification.cpp)
+#target_link_libraries(qualification ${catkin_LIBRARIES})
 
 install(DIRECTORY  launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}

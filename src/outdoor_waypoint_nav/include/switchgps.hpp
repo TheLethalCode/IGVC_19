@@ -19,6 +19,7 @@
 using namespace std;
 
 
+double orientation_init = 0;
 // initialize variables
 
 typedef actionlib::SimpleActionClient <move_base_msgs::MoveBaseAction>
@@ -77,7 +78,7 @@ geometry_msgs::PointStamped UTMtoMapPoint(geometry_msgs::PointStamped UTM_input)
     return map_point_output;
 }
 
-move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, geometry_msgs::PointStamped map_point_current, geometry_msgs::PointStamped map_next, bool last_point)
+move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, geometry_msgs::PointStamped map_point_current, geometry_msgs::PointStamped map_next, bool last_point, double yaw)
 {
     move_base_msgs::MoveBaseGoal goal;
 
@@ -89,44 +90,22 @@ move_base_msgs::MoveBaseGoal buildGoal(geometry_msgs::PointStamped map_point, ge
     goal.target_pose.pose.position.x = map_point.point.x; //specify x goal
     goal.target_pose.pose.position.y = map_point.point.y; //specify y goal
     // Specify heading goal using current goal and next goal (point robot towards its next goal once it has achieved its current goal)
-    if(last_point == false)
-    {
-        tf::Matrix3x3 rot_euler;
-        tf::Quaternion rot_quat;
 
-        // Calculate quaternion
-        float x_curr = map_point.point.x, y_curr = map_point.point.y; // set current coords.
-        float x_next = map_next.point.x, y_next = map_next.point.y; // set coords. of next waypoint
-        float delta_x = x_next - x_curr, delta_y = y_next - y_curr;   // change in coords.
-        float yaw_curr = 0, pitch_curr = 0, roll_curr = 0;
-        yaw_curr = atan2(delta_y, delta_x);
-
-        // Specify quaternions
-        rot_euler.setEulerYPR(yaw_curr, pitch_curr, roll_curr);
-        rot_euler.getRotation(rot_quat);
-
-        goal.target_pose.pose.orientation.x = rot_quat.getX();
-        goal.target_pose.pose.orientation.y = rot_quat.getY();
-        goal.target_pose.pose.orientation.z = rot_quat.getZ();
-        goal.target_pose.pose.orientation.w = rot_quat.getW();
-    }
-    else
-    {
-        double pitch=0, roll=0, yaw;
-        yaw = atan2(map_point.point.y - map_point_current.point.y, map_point.point.x - map_point_current.point.x);
-        ROS_INFO("Yaw:%.8f", yaw);
-        tf::Quaternion q;
-        q.setRPY(tfScalar(roll), tfScalar(pitch), tfScalar(yaw));
-        goal.target_pose.pose.orientation.x = q.getX();
-        goal.target_pose.pose.orientation.y = q.getY();
-        goal.target_pose.pose.orientation.z = q.getZ();
-        goal.target_pose.pose.orientation.w = q.getW();
-    }
+    double pitch=0, roll=0, yaw_odom = 0;
+    //yaw = atan2(map_point.point.y - map_point_current.point.y, map_point.point.x - map_point_current.point.x);
+    yaw_odom = yaw - orientation_init;
+    //ROS_INFO("Yaw:%.8f", yaw);
+    tf::Quaternion q;
+    q.setRPY(tfScalar(roll), tfScalar(pitch), tfScalar(yaw));
+    goal.target_pose.pose.orientation.x = q.getX();
+    goal.target_pose.pose.orientation.y = q.getY();
+    goal.target_pose.pose.orientation.z = q.getZ();
+    goal.target_pose.pose.orientation.w = q.getW();
     return goal;
 }
 
 
-int gps_waypoint(double end_lat, double end_long, double current_lat, double current_long)
+int gps_waypoint(double end_lat, double end_long, double current_lat, double current_long, double yaw)
 {
 
     MoveBaseClient ac("/move_base", true);
@@ -161,7 +140,7 @@ int gps_waypoint(double end_lat, double end_long, double current_lat, double cur
         bool final_point = true;
 
         //Build goal to send to move_base
-        move_base_msgs::MoveBaseGoal goal = buildGoal(map_point, map_point_current, map_next, final_point); //initiate a move_base_msg called goal
+        move_base_msgs::MoveBaseGoal goal = buildGoal(map_point, map_point_current, map_next, final_point, yaw); //initiate a move_base_msg called goal
         // Send Goal
         ROS_INFO("Sending goal");
         ac.sendGoal(goal); //push goal to move_base node

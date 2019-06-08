@@ -1,4 +1,4 @@
-#include "ros/ros.h"
+/*#include "ros/ros.h"
 #include "std_msgs/Bool.h"
 #include <bits/stdc++.h>
 #include "sensor_msgs/NavSatFix.h"
@@ -124,3 +124,4 @@ int main(int argc, char** argv)
 
   return 1;
 }
+*/

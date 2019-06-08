@@ -2,9 +2,11 @@
 #include "std_msgs/Bool.h"
 #include <bits/stdc++.h>
 #include "sensor_msgs/NavSatFix.h"
+#include "sensor_msgs/Imu.h"
 #include <bits/stdc++.h>
 #include <switchgps.hpp>
-
+#include <tf/transform_datatypes.h>
+#include <tf/transform_broadcaster.h>
 
 using namespace std;
 using namespace ros;
@@ -26,6 +28,23 @@ void getgps(sensor_msgs::NavSatFix msg)
     current_long = coordinates.longitude;
     seq = coordinates.header.seq;
 }
+
+int count_odom = 0;
+
+void getodom(sensor_msgs::Imu msg)
+{
+  tf::Quaternion quat;
+  tf::quaternionMsgToTF(msg.orientation, quat);
+
+  double roll, pitch, yaw;
+  tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+
+  if (count_odom < 50) {
+    count_odom++;
+    orientation_init += yaw;
+  }
+}
+
 
 double distance(double x1,double y1,double x2,double y2)
 {
@@ -50,6 +69,7 @@ int main(int argc, char** argv)
     NodeHandle n;
 
     Subscriber sub = n.subscribe("/gps/filtered", 1, &getgps);
+    Subscriber sub_odom = n.subscribe("/imu", 1, &getodom);
     Publisher use_vision_publisher = n.advertise<std_msgs::Bool>("/use_vision", 1);
 
     //read waypoints
@@ -68,9 +88,31 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    FILE* enu_points;
+    double two_orient = 0, four_orient = 0; //in ENU
+    try {
+        enu_points=fopen("enu_points.txt","r");
+        if (enu_points == NULL) {
+            throw -1;
+        }
+        fscanf(enu_points,"%lf %lf",&two_orient, &four_orient);
+    }
+    catch (int e) {
+        ROS_INFO("Try running the gps switching code from the root of the IGVC workspace\n");
+        return 0;
+    }
+
+
+
     double radius1,radius2, radius3, radius4;
 
     bool flagstart1 = false, flagstart2 = false;
+
+    while (count_odom < 50) {
+      spinOnce();
+    }
+
+    orientation_init /= 50;
 
     std_msgs::Bool use_vision_msg;
     use_vision_msg.data = true;
@@ -139,7 +181,7 @@ int main(int argc, char** argv)
                     for (int j = 0; j <= 10; j++) {
                         cout << "Still searching for 2nd waypoint, radius2: " << radius2 << endl;
                     }
-                    gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long); 
+                    gps_status = gps_waypoint(mid1_lat, mid1_long, current_lat, current_long, two_orient); 
                     //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
                     radius2 = distance(current_lat, current_long, mid1_lat, mid1_long);
                     if (radius2 < radius) {
@@ -192,7 +234,7 @@ int main(int argc, char** argv)
                     for (int j = 0; j <= 10; j++) {
                         cout << "Still searching for 4th waypoint, radius4: " << radius4 << endl;
                     }
-                    gps_status = gps_waypoint(end_lat, end_long, current_lat, current_long); 
+                    gps_status = gps_waypoint(end_lat, end_long, current_lat, current_long, four_orient); 
                     radius4 = distance(current_lat, current_long, end_lat, end_long);
                     if (radius4 < radius) {
                         count4++;
