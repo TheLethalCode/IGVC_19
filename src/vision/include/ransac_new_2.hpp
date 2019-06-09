@@ -166,7 +166,7 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
     else if(number_of_lanes==1)
     {
         //if a1 lane is detected and cuts to right, then make it right lane
-        if(a1!=0 && c1!=0 && (c1>(0.58 * img.cols)))
+        if(a1!=0 && c1!=0 && (c1>(0.85 * img.cols)))
         {
             is_current_single_left = false;
             cout << "cutting to right, making it right" << endl;
@@ -175,12 +175,12 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
             return present;
         }
 
-        else if (a1 != 0 && c1 != 0 && (c1 < 0.42*img.cols)) {
+        else if (a1 != 0 && c1 != 0 && (c1 < 0.15*img.cols)) {
             return present;
         }
 
         //if a2 lane is detected and cuts to left, then make it left lane
-        if (a2!=0 && c2!=0 && (c2<(0.42 * img.cols)))
+        if (a2!=0 && c2!=0 && (c2<(0.15 * img.cols)))
         {
             is_current_single_left = true;
             cout << "cutting to left, making it left" << endl;
@@ -189,7 +189,7 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
             return present;
         }
 
-        else if (a2 != 0 && c2 != 0 && (c2 > 0.58*img.cols)) {
+        else if (a2 != 0 && c2 != 0 && (c2 > 0.85*img.cols)) {
             return present;
         }
 
@@ -995,25 +995,25 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         //     }
         // }
 
-        //Checking if the curves are too close at the bottom
-        // if (fabs(tempParam.c1 - tempParam.c2) < 40.0){
-        //     cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
-        //     if(score_r_loc > score_l_loc)
-        //     {
-        //         tempParam.a1 = 0;
-        //         tempParam.c1 = 0;
-        //         score_l_loc = 0;
-        //         tempParam.numModel--;
-        //     }
+        // Checking if the curves are too close at the bottom
+        if (fabs(tempParam.c1 - tempParam.c2) < 40.0){
+            cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
+            if(score_r_loc > score_l_loc)
+            {
+                tempParam.a1 = 0;
+                tempParam.c1 = 0;
+                score_l_loc = 0;
+                tempParam.numModel--;
+            }
 
-        //     else
-        //     {
-        //         tempParam.a2 = 0;
-        //         tempParam.c2 = 0;
-        //         score_r_loc = 0;
-        //         tempParam.numModel--;
-        //     }
-        // }
+            else
+            {
+                tempParam.a2 = 0;
+                tempParam.c2 = 0;
+                score_r_loc = 0;
+                tempParam.numModel--;
+            }
+        }
 
         //To check if intersection in image has taken place
         // Uncomment the block to add the intersection functionality.
