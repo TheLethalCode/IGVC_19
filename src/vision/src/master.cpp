@@ -28,6 +28,11 @@ using namespace ros;
 
 Mat frame_orig;
 
+bool is_current_single = false;
+bool is_current_single_left = false;
+bool is_previous_single = false;
+bool is_previous_single_left = false;
+
 //Custom Header files
 #include <params.hpp>
 #include <matrixTransformation.hpp>
@@ -207,6 +212,8 @@ int main(int argc, char **argv)
 	}
 	/* Converting frame to top view */
 	Mat frame_topview = top_view(frame_orig);
+
+	previous = lanes;
 
 	/* For detecting potholes */
 	Mat bw;    
@@ -403,7 +410,6 @@ int main(int argc, char **argv)
 	/* Fitting Ransac */
 	// ptArray1 is the array of all points on which ransac will be fit (contents of grid image)
 	std::vector<Point> ptArray1;
-	previous = lanes;
 	lanes = getRansacModel(intersectionImages, previous, ptArray1);
 
 	/* Classification of left and right lanes */
