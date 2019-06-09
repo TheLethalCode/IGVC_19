@@ -53,6 +53,13 @@ Parabola swap(Parabola param) {
     return param;
 }
 
+void printParabola(Parabola p) {
+    cout << "numModel: " << p.numModel << endl;
+    cout << "a1: " << p.a1 << "\tc1: " << p.c1 << endl;
+    cout << "a2: " << p.a2 << "\tc2: " << p.c2 << endl;
+}
+
+/*
 Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
 {
     float a1=present.a1;
@@ -123,6 +130,154 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
     return present;
 
 }
+*/
+
+
+Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
+{
+
+    /*
+    cout << "-----------\nPrevious: " << endl;
+    printParabola(previous);
+    */
+
+    float a1=present.a1;
+    float a2=present.a2;
+    float c1=present.c1;
+    float c2=present.c2;
+    int number_of_lanes=present.numModel;
+
+    if (number_of_lanes == 1) {
+        is_current_single = true;
+    }
+
+    if(number_of_lanes==2)
+    {
+        if(c2<c1)
+        {
+            present=swap(present);
+            return present;
+        }
+        else 
+            return present;
+    }
+
+    //if single lane is detected 
+    else if(number_of_lanes==1)
+    {
+        //if a1 lane is detected and cuts to right, then make it right lane
+        if(a1!=0 && c1!=0 && (c1>(0.58 * img.cols)))
+        {
+            is_current_single_left = false;
+            cout << "cutting to right, making it right" << endl;
+            present=swap(present);
+            printParabola(present);
+            return present;
+        }
+
+        else if (a1 != 0 && c1 != 0 && (c1 < 0.42*img.cols)) {
+            return present;
+        }
+
+        //if a2 lane is detected and cuts to left, then make it left lane
+        if (a2!=0 && c2!=0 && (c2<(0.42 * img.cols)))
+        {
+            is_current_single_left = true;
+            cout << "cutting to left, making it left" << endl;
+            present=swap(present);
+            printParabola(present);
+            return present;
+        }
+
+        else if (a2 != 0 && c2 != 0 && (c2 > 0.58*img.cols)) {
+            return present;
+        }
+
+        //if the current single lane is ambiguous, and previous frame had one lane
+        else if (previous.numModel == 1) {
+
+            //if the previous frame had right single lane, and current lane is a1 then make it right
+            if (a2 == 0 && c2 == 0 && previous.a1 == 0 && previous.c1 == 0) {
+                is_current_single_left = false;
+                cout << "prev frame 1 lane, current frame detected right" << endl;
+                present=swap(present);
+                printParabola(present);
+                return present;
+            }
+
+            //if the previous frame had left single lane, and current lane is a2 then make it left
+            else if (a1 == 0 && c1 == 0 && previous.a2 == 0 && previous.c2 == 0) {
+                is_current_single_left = true;
+                cout << "prev frame 1 lane, current frame detected left" << endl;
+                present=swap(present);
+                printParabola(present);
+                return present;
+            }
+
+            if (a1 == 0 && previous.a1 == 0) {
+                is_current_single_left = false;
+            }
+            else {
+                is_current_single_left = true;
+            }
+            return present;
+
+        }
+
+        //previous had 2 lanes
+        else {
+
+            cout << "previous had 2 lanes" << endl;
+            int current_bottom;
+            if (a1 != 0) {
+                current_bottom = c1;
+            }
+            else {
+                current_bottom = c1;
+            }
+
+            int prev_left = previous.c1;
+            int prev_right = previous.c2;
+
+            //current single lane is closer to prev left
+            if (abs(current_bottom - prev_left) < abs(current_bottom-prev_right)) {
+
+                //current is right, make it left
+                if (a2 != 0 && c2 != 0) {
+                    is_current_single_left = true;
+                    cout << "bottom nearer to right lane" << endl;
+                    present=swap(present);
+                    printParabola(present);
+                }
+
+                return present;
+            }
+
+            //current single lane is closer to prev right
+            else {
+                //current is left, make it right
+                if (a1 != 0 && c1 != 0) {
+                    is_current_single_left = false;
+                    cout << "bottom nearer to right lane" << endl;
+                    present=swap(present);
+                    printParabola(present);
+                }
+
+                return present;
+
+            }
+        }
+
+    }
+
+    else {
+        printParabola(present);
+        return present;
+    }
+
+
+}
+
 
 vector<Parabola> v;
 // Parabola operator+(const Parabola &x)
@@ -196,6 +351,7 @@ float get_del(Point p, float a, float c)
 
     return min(errorx, errory);
 }
+
 
 Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<Point> ptArray1)
 {
@@ -820,44 +976,44 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
             }
         } //end of loop over image
 
-        // check if the centroids of the 2 parabolas are too close.
-        if (dist(centroid(tempParam.a1,tempParam.c1,img),centroid(tempParam.a2,tempParam.c2,img)) < 20.0){
-            //cout<<"centroid issue."<<endl;
-            if(score_r_loc > score_l_loc)
-            {
-                tempParam.a1 = 0;
-                tempParam.c1 = 0;
-                score_l_loc = 0;
-                tempParam.numModel--;
-            }
-            else
-            {
-                tempParam.a2 = 0;
-                tempParam.c2 = 0;
-                score_r_loc = 0;
-                tempParam.numModel--;
-            }
-        }
+        // // check if the centroids of the 2 parabolas are too close.
+        // if (dist(centroid(tempParam.a1,tempParam.c1,img),centroid(tempParam.a2,tempParam.c2,img)) < 20.0){
+        //     //cout<<"centroid issue."<<endl;
+        //     if(score_r_loc > score_l_loc)
+        //     {
+        //         tempParam.a1 = 0;
+        //         tempParam.c1 = 0;
+        //         score_l_loc = 0;
+        //         tempParam.numModel--;
+        //     }
+        //     else
+        //     {
+        //         tempParam.a2 = 0;
+        //         tempParam.c2 = 0;
+        //         score_r_loc = 0;
+        //         tempParam.numModel--;
+        //     }
+        // }
 
         //Checking if the curves are too close at the bottom
-        else if(fabs(tempParam.c1 - tempParam.c2) < 40.0){
-            //cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
-            if(score_r_loc > score_l_loc)
-            {
-                tempParam.a1 = 0;
-                tempParam.c1 = 0;
-                score_l_loc = 0;
-                tempParam.numModel--;
-            }
+        // if (fabs(tempParam.c1 - tempParam.c2) < 40.0){
+        //     cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
+        //     if(score_r_loc > score_l_loc)
+        //     {
+        //         tempParam.a1 = 0;
+        //         tempParam.c1 = 0;
+        //         score_l_loc = 0;
+        //         tempParam.numModel--;
+        //     }
 
-            else
-            {
-                tempParam.a2 = 0;
-                tempParam.c2 = 0;
-                score_r_loc = 0;
-                tempParam.numModel--;
-            }
-        }
+        //     else
+        //     {
+        //         tempParam.a2 = 0;
+        //         tempParam.c2 = 0;
+        //         score_r_loc = 0;
+        //         tempParam.numModel--;
+        //     }
+        // }
 
         //To check if intersection in image has taken place
         // Uncomment the block to add the intersection functionality.
@@ -882,8 +1038,8 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         // }
 
         //Max. Percentage Common Inliers Thresholding
-        else if ((score_common/(score_common + score_l_loc + score_r_loc+1))*100 > common_inliers_thresh) {
-            //cout<<"common points issue."<<endl;
+        if ((score_common/(score_common + score_l_loc + score_r_loc+1))*100 > common_inliers_thresh) {
+            cout<<"common points issue."<<endl;
             if(score_r_loc > score_l_loc)
             {
                 tempParam.a1 = 0;
@@ -966,8 +1122,6 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
     } //end of iteration loop
 
 
-    cout  <<"score_l_gl : "<< score_l_gl <<" score_r_gl : "<< score_r_gl <<endl;
-
     //Checking for imn. no. of inliers
     if(score_l_gl!=0 && (score_l_gl) < minLaneInlier){
         // cout<<"left lane removed"<< endl;
@@ -982,10 +1136,13 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
         bestTempParam.numModel--;
     }
 
+    cout  <<"score_l_gl : "<< score_l_gl <<" score_r_gl : "<< score_r_gl <<endl;
+
+
     if(true){
-        // cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
-        // cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
-        // cout<<"bestTempParam.a2 : "<<bestTempParam.a2<<" bestTempParam.c2 : "<<bestTempParam.c2<<endl;
+        cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
+        cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
+        cout<<"bestTempParam.a2 : "<<bestTempParam.a2<<" bestTempParam.c2 : "<<bestTempParam.c2<<endl;
     }
     return bestTempParam;
 }
