@@ -270,10 +270,19 @@ if(lidar)
   Mat lidar_img1(img1.rows, img1.cols, CV_8UC1, Scalar(0));
   for (int i = 0; i < obs_lidar.size(); ++i)
   {
+    circle(frame_orig, Point(obs_lidar[i].x, obs_lidar[i].y), 3, Scalar(255,0,0), -1, 8, 0);
     lidar_img1.at<uchar>(obs_lidar[i].y, obs_lidar[i].x) = 255;
   }
 
-  float ratio = (float)lidar_stretch_ratio/40; 
+  namedWindow("lidar_img", 0);
+  imshow("lidar_img", lidar_img1);
+
+  namedWindow("frame_orig", 0);
+  imshow("frame_orig", frame_orig);
+
+
+
+  float ratio = (float)lidar_stretch_ratio/40;
 
   findContours(lidar_img1, contours_lidar, hierarchy_lidar, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
   vector<Rect> box_lidar(contours_lidar.size());

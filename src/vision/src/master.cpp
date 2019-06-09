@@ -21,6 +21,12 @@ NOTE: For debugging couts:
 #include <std_msgs/Bool.h>
 #include<std_msgs/Float64.h>
 
+using namespace std;
+using namespace cv;
+using namespace ros;
+
+
+Mat frame_orig;
 
 //Custom Header files
 #include <params.hpp>
@@ -37,10 +43,6 @@ NOTE: For debugging couts:
 #include <find_pothole.hpp>
 #include <hough.hpp>
 #include <obstacle_det_vision_lidar.hpp>    
-
-using namespace std;
-using namespace cv;
-using namespace ros;
 
 bool ramp_detected = false;
 int const_frames = 0;
@@ -105,7 +107,6 @@ void callback(node::TutorialsConfig &config, uint32_t level)
 
 Publisher lanes2Costmap_publisher;  //For putting lanes in costmap
 Publisher pot2staticCostmap_publisher;  //For putting potholes in costmap
-Mat frame_orig;
 
 //Parameter for GPS switching. Set to false when GPS waypoint starts
 bool use_vision_global = true;

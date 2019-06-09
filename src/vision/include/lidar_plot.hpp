@@ -75,9 +75,11 @@ vector<Point> lidar_plot(sensor_msgs::LaserScan scan, Mat h_, int rows, int cols
 				Point2f center(j,i);
 				circle(obstaclePlot, center, inflation_r_waypt, Scalar(255), -1);
 			}
+
 	
 	//Changing to front view (NOTE: WARP_INVERSE_MAP)
 	warpPerspective(img, img, h_, img.size(), WARP_INVERSE_MAP);
+
 	
 	//Pushing inflated obstacles in a vector
 	for (int i=0;i<rows;i++)
