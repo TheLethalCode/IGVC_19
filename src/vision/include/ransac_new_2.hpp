@@ -997,7 +997,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
 
         // Checking if the curves are too close at the bottom
         if (fabs(tempParam.c1 - tempParam.c2) < 40.0){
-            cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
+            // cout<<"c1-c2 issue. "<<fabs(tempParam.c1 - tempParam.c2)<<endl;
             if(score_r_loc > score_l_loc)
             {
                 tempParam.a1 = 0;
@@ -1039,7 +1039,7 @@ Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previou
 
         //Max. Percentage Common Inliers Thresholding
         if ((score_common/(score_common + score_l_loc + score_r_loc+1))*100 > common_inliers_thresh) {
-            cout<<"common points issue."<<endl;
+            // cout<<"common points issue."<<endl;
             if(score_r_loc > score_l_loc)
             {
                 tempParam.a1 = 0;

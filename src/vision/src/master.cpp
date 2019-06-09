@@ -26,6 +26,7 @@ using namespace cv;
 using namespace ros;
 
 Mat frame_orig;
+Mat fitLanes;
 
 bool is_current_single = false;
 bool is_current_single_left = false;
@@ -207,6 +208,9 @@ int main(int argc, char **argv)
 	    }
 	    spinOnce();
 	}
+
+	fitLanes=frame_orig.clone();
+
 	/* Converting frame to top view */
 	Mat frame_topview = top_view(frame_orig);
 
@@ -269,6 +273,7 @@ int main(int argc, char **argv)
 
 	/* Ramp detection */
 	intersectionImages = remove_obstacles(remove_obstacles_image, intersectionImages, obs_by_lidar, !use_ramp, true); 
+	// cout << "Obstacles removed" << endl;
 
 	if(is_debug || is_important){
 	    namedWindow("Obs_removed", WINDOW_NORMAL);
@@ -278,33 +283,41 @@ int main(int argc, char **argv)
 	/* Fitting a hough line for horizontal lanes */
 	Mat hough_image(intersectionImages.rows,intersectionImages.cols, CV_8UC1, Scalar(0));
 
-	if (is_important) {
-	    namedWindow("hough", WINDOW_NORMAL);
+	if(is_important || is_debug)
+	{
+	    namedWindow("front_view_ransac",0);
 	}
-
+	
 	if(lanes_2.numModel == 1 && use_vision_global == true)
 	{
 
 	    // cout << "Hough line detected" << endl;
 
 	    //Checking if lane is left or right
-	    if(lanes_2.a1 == 0 && lanes.c1 == 0 && lanes_2.b1==0) {
+	    if(lanes.a1 == 0 && lanes.c1 == 0) {
 		side = 'r';
 	    }
 
-	    else if(lanes_2.a2 == 0 && lanes_2.c2 == 0 && lanes_2.b2==0) {
+	    else if(lanes.a2 == 0 && lanes.c2 == 0) {
 		side = 'l';
 	    }
+
+		// cout << "Hough started" << endl;
 
 	    if(check_whether_hough(hough_image,intersectionImages))
 	    {
 		if(is_debug) {cout << "Hough Code Initiated" << endl;}
 		used_hough = true;
 
+		// cout << "Waypoint for hough started" << endl;
 		NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta);
-		//theta is globally declared in hough.hpp
+		// cout << "Waypoint for hough ended" << endl;
 
-		intersectionImages = plotWaypoint(hough_image, waypoint_image);
+		//theta is globally declared in hough.hpp
+		
+		// cout << "Plotting waypoint started" << endl;
+		// intersectionImages = plotWaypoint(hough_image, waypoint_image);
+		// cout << "Plotting waypoint ended" << endl;
 
 		// Giving waypt.'s x, y & z co-ordinates(here z= 1)
 		Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
@@ -323,6 +336,8 @@ int main(int argc, char **argv)
 		sensor_msgs::LaserScan lane;
 
 		Mat hough_published = intersectionImages.clone();
+		// imshow("hough_published", hough_published);
+
 		// medianBlur(hough_published, hough_published, 3);
 		lane = laneLaser(top_view(hough_published));
 		lanes2Costmap_publisher.publish(lane);  
@@ -343,7 +358,7 @@ int main(int argc, char **argv)
 		waypoint_bot.pose.position.z = 0;
 		float theta = (waypoint_image.angle);
 
-		imshow("hough", hough_image);
+		imshow("front_view_ransac", fitLanes);
 
 		//converting to Quaternion from Yaw 
 		tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
@@ -361,9 +376,7 @@ int main(int argc, char **argv)
 	    }
 	}
 
-	if (is_important) {
-	    imshow("hough", hough_image);
-	}
+	// cout << "Hough ended" << endl;
 
 	/* Converting costmap (contains intersection images top view) */
 	Mat costmap(intersectionImages.rows,intersectionImages.cols,CV_8UC1,Scalar(0));
@@ -412,8 +425,15 @@ int main(int argc, char **argv)
 
 	/* Fitting Ransac */
 	// ptArray1 is the array of all points on which ransac will be fit (contents of grid image)
+
+	// cout << "Ransac started" << endl;
+
 	std::vector<Point> ptArray1;
 	lanes = getRansacModel(intersectionImages, previous, ptArray1);
+	// cout << "Ransac ended" << endl;
+
+
+	// cout << "Classification started" << endl;
 
 	/* Classification of left and right lanes */
 	if(use_odom_lane_classify == false) {
@@ -423,6 +443,8 @@ int main(int argc, char **argv)
 	{
 	    lanes=classify_lanes_odom(intersectionImages, lanes, previous, ptArray1);
 	}
+	// cout << "Classification ended" << endl;
+
 
 	// cout<<"lanes.numModel : "<<lanes.numModel<<endl;
  //    cout<<"lanes.a1 : "<<lanes.a1<<" lanes.c1 : "<<lanes.c1<<endl;
@@ -432,14 +454,12 @@ int main(int argc, char **argv)
 	// lanes = no_sudden_change(lanes, intersectionImages, previous);
 
 	/* Drawing the lanes of front view on original image */
-	Mat fitLanes=frame_orig.clone();
 
 
 	fitLanes=drawLanes(fitLanes,lanes);
 
 	if(is_important || is_debug)
 	{
-	    namedWindow("front_view_ransac",0);
 	    imshow("front_view_ransac",fitLanes);
 	}
 
