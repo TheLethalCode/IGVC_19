@@ -37,11 +37,11 @@ double Slope(int x0, int y0, int x1, int y1)
 
 }
 
-double fullLine(Mat *img, Point a, Point b, Scalar color)
+double fullLine(Mat img, Point a, Point b, Scalar color)
 {
     double slope = Slope(a.x, a.y, b.x, b.y);
 
-    Point p(0,0), q(img->cols, img->rows); // '->' used since pointer to image is used
+    Point p(0,0), q(img.cols, img.rows); // '->' used since pointer to image is used
 
     //(y1 - y0)= m(x1 - x0)
     p.y = (p.x - a.x) * slope + a.y;
@@ -50,7 +50,7 @@ double fullLine(Mat *img, Point a, Point b, Scalar color)
 
     //Setting slope range for which hough code will initiate
     if((atan(slope)*180/CV_PI) <= 30.00 && (atan(slope)*180/CV_PI) >= -30.00)
-      line(*img,p,q,color,3,CV_AA);
+      //line(img,p,q,color,3,CV_AA);
     theta = atan(slope)*180/CV_PI;
     return slope;
 }
@@ -83,12 +83,15 @@ bool check_whether_hough(Mat hough_img,Mat img)
   for(size_t i = 0; i < lines.size(); i++)
   {
     Vec4i l = lines[i];
+    //line(hough_img,Point(lines[i][0], lines[i][1]),Point(lines[i][2], lines[i][3]),Scalar(255),3,CV_AA);
+
     if(sqrt(pow(l[0]-l[2],2) + pow(l[1]-l[3],2)) > max_dist)
     {
       max_dist = sqrt( pow(l[0]-l[2],2) + pow(l[1]-l[3],2));
       max_index = i;
     }
   }
+  //return false;
 
   if(lines.size() == 0)
   {
@@ -103,12 +106,16 @@ bool check_whether_hough(Mat hough_img,Mat img)
   p2.x = l[2];
   p2.y = l[3];
 
-  
-  double slope = fullLine(&hough_img, p1, p2, Scalar(255));
+
+  double slope = (double)(p2.y*1.0 - p1.y*1.0)/(p2.x-p1.x);
+  double angle = (atan(slope) * 180)/CV_PI;
+  //cout << "angle: " << angle << endl;
   
   //Checking that the line slope is within a certain threshold angle from the x-axis
-  if((atan(slope)*180/CV_PI) <= 20.00 && (atan(slope)*180/CV_PI) >= -20.00)
+  if(angle <= 20.00 && angle >= -20.00) {
+    line(hough_img,Point(lines[max_index][0], lines[max_index][1]),Point(lines[max_index][2], lines[max_index][3]),Scalar(255),3,CV_AA);
     return true;
+  }
 
   return false;
       
@@ -117,47 +124,140 @@ bool check_whether_hough(Mat hough_img,Mat img)
 //Giving waypoint if hough initiated
 NavPoint waypoint_for_hough(Mat img, char c, float theta)
 {
-    int ver_i,ver_j;
-    
-    //Finding lane centre in the image
-    for(int i=img.rows -1;i>=0;i--)
-    {
-        if(img.at<uchar>(i,img.cols/2) == 255)
-        {
-            ver_i = i;
-            ver_j = img.cols/2;
-            break;
-        }
-    }
 
-    int waypoint_i,waypoint_j;
-    //Giving point to shift 2/3rd right & down
-    if(c == 'l')
-    {
-        waypoint_i = (ver_i + 2*img.rows -1)/3;
-        waypoint_j = (ver_j + 2*img.cols -1)/3;  
-        
-        /*changing co-ordinate system
-            Image frame -> co-ordinate frame*/
-        theta = theta*CV_PI/180 - CV_PI/2;
-    }
 
-    //Giving point to shift 2/3rd right & up
-    else if(c == 'r')
+  vector<Vec4i> lines;  //NOTE the vector type
+
+  //Hough Lines Probabilistic
+  HoughLinesP(img, lines, 1, CV_PI/180, hough_min_points, hough_min_line_length, hough_max_line_gap); 
+  /*
+Params: dest_img, vector to store pts, resolution of r,
+resolution of theta, minimum no. points, 
+min. line length, maxlineGap 
+   */ 
+
+  Point p1(0,0), p2(0,0);
+  double slope_avg=0;
+
+  //Finding maximum line length & its index in lines[]
+  //  We assume that the longest line will be the lane
+  float max_dist = 0;
+  int max_index = 0;
+  for(size_t i = 0; i < lines.size(); i++)
+  {
+    Vec4i l = lines[i];
+    //line(hough_img,Point(lines[i][0], lines[i][1]),Point(lines[i][2], lines[i][3]),Scalar(255),3,CV_AA);
+
+    if(sqrt(pow(l[0]-l[2],2) + pow(l[1]-l[3],2)) > max_dist)
     {
-        waypoint_i = (ver_i + 2*img.rows -2)/3;
-        waypoint_j = (ver_j)/3;
-        /*changing co-ordinate system + reverse 
-            i.e. co-ordinate angle + CV_PI*/
-        theta = theta*CV_PI/180 + CV_PI/2;
+      max_dist = sqrt( pow(l[0]-l[2],2) + pow(l[1]-l[3],2));
+      max_index = i;
     }
+  }
+  //return false;
+
+  //Largest line= lane
+  Vec4i l = lines[max_index];
+  p1.x = l[0];
+  p1.y = l[1];
+  p2.x = l[2];
+  p2.y = l[3];
+
+  double slope1 = (double)(p2.y*1.0 - p1.y*1.0)/(p2.x-p1.x);
+  double angle1 = (atan(slope1) * 180)/CV_PI;
+
+  cout << "angle1: " << angle1 << endl;
+  //cout << "angle: " << angle << endl;
+
+  //Setting waypoint position + orientation
+  NavPoint waypoint;
+
+  if (c == 'l') {
+    int upar = p1.y < p2.y ? p1.y:p2.y;
+    waypoint.y = (img.rows + upar)/2;
+    waypoint.x = 3*img.rows/4;
+
+    // waypoint.y = upar;
+    // if (upar == p1.y)
+    //   waypoint.x = p1.x;
+    // else 
+    //   waypoint.x = p2.x;
+
+
+  }
+  else {
+    int upar = p1.y < p2.y ? p1.y:p2.y;
+    waypoint.y = (img.rows + upar)/2;
+    waypoint.x = 1*img.rows/4;
+
+    // waypoint.y = upar;
+    // if (upar == p1.y)
+    //   waypoint.x = p1.x;
+    // else 
+    //   waypoint.x = p2.x;
+  }
+
+  Mat transform(img.rows, img.cols, CV_8UC1, Scalar(0));
+
+  circle(transform, p1, 3, Scalar(100), -1);
+  circle(transform, p2, 3, Scalar(200), -1);
+
+  Point p1_top, p2_top;
+  transform = top_view(transform);
+  for (int i = 0; i < img.rows; i++) {
+    for (int j = 0; j < img.cols; j++) {
+      if (transform.at<uchar>(i,j) == 100) {
+        p1_top.x = j;
+        p1_top.y = i;
+
+      }
+      if (transform.at<uchar>(i,j) == 200) {
+        p2_top.x = j;
+        p2_top.y = i;
+      }
+    }
+  }
+
+  // arrowedLine(costmap, origin, dest, Scalar(0,255,0), 3, 8, 0, 0.1);
+  
+  // line(transform, Point(p1_top.x, p1_top.y), Point(p2_top.x, p2_top.y), Scalar(127) ,3, CV_AA);
+  // Point
+  // arrowedLine(transform, Point(waypoint.x, waypoint.y), Point(p2_top.x, p2_top.y), Scalar(127), 3, 8, 0);
+  // imshow("transformHoughed", transform);
+
+  // Mat waypt1 = (Mat_<double>(3,1) << p1.x , p1.y , 1);
+  // Mat waypt2 = (Mat_<double>(3,1) << p2.x , p2.y , 1);
+  // Mat waypt_top1 = h*waypt1;
+  // Mat waypt_top2 = h*waypt2;   
+
+  // double slope = (double)(waypt_top2.at<double>(1,0)*1.0 - waypt_top1.at<double>(1,0)*1.0)/(waypt_top2.at<double>(0,0)*1.0 - waypt_top1.at<double>(0,0)*1.0);
+  double slope = (double)(p2_top.y*1.0 - p1_top.y)/(p2_top.x - p1_top.x);
+  double angle = atan(slope);
+  
+  cout << "angle: " << angle*180/CV_PI << endl;
+
+
+
+  // printf("1:%lf %lf 2:%lf %lf\n", waypt_top1.at<double>(0,0),  waypt_top1.at<double>(1,0),  waypt_top2.at<double>(0,0),  waypt_top2.at<double>(1,0));
+  // line(img, )
+  angle = -1 * angle;
+
+  if (angle < 0) {
+    angle += CV_PI;
+  }
+
+  angle -= CV_PI/2;
+
+  // angle *= -1;
     
-    //Setting waypoint position + orientation
-    NavPoint way_point;
-    way_point.x = waypoint_j;
-    way_point.y = waypoint_i;
-    way_point.angle = theta;
-    return way_point;
+  // if(c=='l') angle = -(fabs(slope));
+  // if(c=='r') angle = (fabs(slope));
+  
+  waypoint.angle = angle;
+  // waypoint= h*waypoint;
+  return waypoint;
+  
+
 }
 
 #endif

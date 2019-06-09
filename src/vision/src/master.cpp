@@ -102,6 +102,7 @@ void callback(node::TutorialsConfig &config, uint32_t level)
 
     costmap_median_blur = config.costmap_median_blur;
     costmap_median_blur_no_mans_land = config.costmap_median_blur_no_mans_land;
+    r_hough = config.r_hough;
 }
 
 Publisher lanes2Costmap_publisher;  //For putting lanes in costmap
@@ -188,13 +189,10 @@ int main(int argc, char **argv)
 
 
     //Used for finding FPS
-    clock_t tic,toc;
 
     while(ros::ok())
     {
 
-	/* Start time for measuring FPS */
-	tic=clock();
 
 	/* Checking if image has been received */
 	while ((!is_image_retrieved || !is_laserscan_retrieved) && ros::ok())
@@ -216,12 +214,14 @@ int main(int argc, char **argv)
 	}
 
 	/* 2b-r preprocessing */
+        /*
 	Mat twob_r = twob_rChannelProcessing(frame_orig);
 	if (is_debug) {
 	    is_debug_used = true;
 	    namedWindow("2b-r", WINDOW_NORMAL);
 	    imshow("2b-r", twob_r);
 	}
+        */
 
 	/* 2b-g preprocessing */
 	Mat twob_g = twob_gChannelProcessing(frame_orig);
@@ -239,8 +239,8 @@ int main(int argc, char **argv)
 
 	/* Taking intersection of all lane filters */ 
 	Mat intersectionImages;
-	bitwise_and(twob_r, twob_g, intersectionImages);
-	bitwise_and(intersectionImages, b, intersectionImages);
+	//bitwise_and(twob_g, twob_g, intersectionImages);
+	bitwise_and(twob_g, b, intersectionImages);
 
 	if(is_debug){
 	    namedWindow("intersectionImages", WINDOW_NORMAL);
@@ -328,10 +328,14 @@ int main(int argc, char **argv)
 		waypoint_bot.header.stamp = ros::Time::now();   //Important
 
 		//changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
+		waypoint_image.y = waypoint_image.y - r_hough*cos(waypoint_image.angle);
+		waypoint_image.x = waypoint_image.x - r_hough*sin(waypoint_image.angle);
+
 		waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
 		waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
 		waypoint_bot.pose.position.z = 0;
 		float theta = (waypoint_image.angle);
+
 		imshow("hough", hough_image);
 
 		//converting to Quaternion from Yaw 
@@ -414,7 +418,10 @@ int main(int argc, char **argv)
 	    lanes=classify_lanes_odom(intersectionImages, lanes, previous, ptArray1);
 	}
 
-
+	// cout<<"lanes.numModel : "<<lanes.numModel<<endl;
+ //    cout<<"lanes.a1 : "<<lanes.a1<<" lanes.c1 : "<<lanes.c1<<endl;
+ //    cout<<"lanes.a2 : "<<lanes.a2<<" lanes.c2 : "<<lanes.c2<<endl;
+	
 	//Uncomment the next line to disallow sudden changes in lane params
 	// lanes = no_sudden_change(lanes, intersectionImages, previous);
 
@@ -511,9 +518,8 @@ int main(int argc, char **argv)
 	is_laserscan_retrieved = false;
 	used_hough = false;
 
-	toc=clock();
 
-	cout << "FPS: " << CLOCKS_PER_SEC/(toc-tic) << endl;
+        cout << "\n-------------------\n" << endl;
 	spinOnce();
     }
 
