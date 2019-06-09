@@ -42,7 +42,7 @@ float xshift = 1;
 float yshift = 0.33;
 
 // float angleshift = 0.0524; // angle between camera and lidar axis in radians
-float angleshift = 0.1;
+double angleshift = 0.0;
 
 float bins = 1080; // no of bins
 

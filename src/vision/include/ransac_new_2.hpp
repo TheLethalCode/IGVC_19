@@ -1069,6 +1069,12 @@ Parabola getRansacModel(Mat img,Parabola previous, std::vector<Point> &ptArray1)
 
     //declare a Parabola variable to store the Parabola
     Parabola param;
+    param.numModel = 0;
+    param.a1 = 0;
+    param.c1 = 0;
+    param.a2 = 0;
+    param.c2 = 0;
+
     //get parameters of first Parabola form ransac function
 
     //Checking if we have sufficient no. of points to initialise RANSAC
@@ -1079,7 +1085,7 @@ Parabola getRansacModel(Mat img,Parabola previous, std::vector<Point> &ptArray1)
     }
 
     else {
-        return previous;
+        //return previous;
     }
 
     return param;

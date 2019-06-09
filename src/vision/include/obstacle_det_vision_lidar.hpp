@@ -268,9 +268,16 @@ if(lidar)
   vector<Vec4i> hierarchy_lidar;
 
   Mat lidar_img1(img1.rows, img1.cols, CV_8UC1, Scalar(0));
+  Mat lidar_plot_check = frame_orig.clone();
   for (int i = 0; i < obs_lidar.size(); ++i)
   {
+    circle(lidar_plot_check, Point(obs_lidar[i].x, obs_lidar[i].y), 3, Scalar(255,0,0), -1, 8, 0);
     lidar_img1.at<uchar>(obs_lidar[i].y, obs_lidar[i].x) = 255;
+  }
+
+  if (is_debug) {
+    namedWindow("lidar_plot_check", 0);
+    imshow("lidar_plot_check", lidar_plot_check);
   }
 
   float ratio = (float)lidar_stretch_ratio/40; 
