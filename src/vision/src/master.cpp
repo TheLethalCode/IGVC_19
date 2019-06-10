@@ -286,6 +286,7 @@ int main(int argc, char **argv)
 	if(is_important || is_debug)
 	{
 	    namedWindow("front_view_ransac",0);
+	    namedWindow("waypoint", WINDOW_NORMAL);
 	}
 	
 	if(lanes_2.numModel == 1 && use_vision_global == true)
@@ -316,7 +317,6 @@ int main(int argc, char **argv)
 		//theta is globally declared in hough.hpp
 		
 		// cout << "Plotting waypoint started" << endl;
-		// intersectionImages = plotWaypoint(hough_image, waypoint_image);
 		// cout << "Plotting waypoint ended" << endl;
 
 		// Giving waypt.'s x, y & z co-ordinates(here z= 1)
@@ -353,12 +353,15 @@ int main(int argc, char **argv)
 		waypoint_image.y = waypoint_image.y - r_hough*cos(waypoint_image.angle);
 		waypoint_image.x = waypoint_image.x - r_hough*sin(waypoint_image.angle);
 
+		frame_topview = plotWaypoint(frame_topview, waypoint_image);
+
 		waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
 		waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
 		waypoint_bot.pose.position.z = 0;
 		float theta = (waypoint_image.angle);
 
 		imshow("front_view_ransac", fitLanes);
+		imshow("waypoint", frame_topview);
 
 		//converting to Quaternion from Yaw 
 		tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
@@ -494,7 +497,6 @@ int main(int argc, char **argv)
 	frame_topview = plotWaypoint(frame_topview, waypoint_image);
 
 	if (is_important || is_debug) {
-	    namedWindow("waypoint", WINDOW_NORMAL);
 	    imshow("waypoint", frame_topview);
 	}
 
