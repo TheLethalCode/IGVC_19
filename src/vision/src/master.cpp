@@ -346,13 +346,17 @@ int main(int argc, char **argv)
 
 	    // cout << "Hough line detected" << endl;
 
+	    if((lanes.a1 == 0 && lanes.c1 == 0)&&(lanes.a2 == 0 && lanes.c2 == 0))
+	    {
+	    	side = 'n';	
+	    }
 	    //Checking if lane is left or right
-	    if(lanes.a1 == 0 && lanes.c1 == 0) {
-		side = 'r';
+	    else if(lanes.a1 == 0 && lanes.c1 == 0) {
+			side = 'r';
 	    }
 
 	    else if(lanes.a2 == 0 && lanes.c2 == 0) {
-		side = 'l';
+			side = 'l';
 	    }
 
 		// cout << "Hough started" << endl;
