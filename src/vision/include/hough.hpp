@@ -61,17 +61,27 @@ Takes for input:
     * Final output image of pre-processing (img)
     * Blank image for plotting the hough line (hough_img)
 */
+Vec4i l;
 bool check_whether_hough(Mat hough_img,Mat img)
 {
   vector<Vec4i> lines;  //NOTE the vector type
   
   //Hough Lines Probabilistic
+  //cout << "starting houghlinesp" << endl;
   HoughLinesP(img, lines, 1, CV_PI/180, hough_min_points, hough_min_line_length, hough_max_line_gap); 
+  //cout << "ending houghlinesp" << endl;
+
   /*
   Params: dest_img, vector to store pts, resolution of r,
          resolution of theta, minimum no. points, 
          min. line length, maxlineGap 
   */ 
+
+  if(lines.size() == 0)
+  {
+    // cout << "----------------------\nNo hough line could be fit\n----------------------" << endl;
+    return false;
+  }
 
   Point p1(0,0), p2(0,0);
   double slope_avg=0;
@@ -79,7 +89,7 @@ bool check_whether_hough(Mat hough_img,Mat img)
   //Finding maximum line length & its index in lines[]
   //  We assume that the longest line will be the lane
   float max_dist = 0;
-  int max_index = 0;
+  int max_index = -1;
   for(size_t i = 0; i < lines.size(); i++)
   {
     Vec4i l = lines[i];
@@ -93,27 +103,26 @@ bool check_whether_hough(Mat hough_img,Mat img)
   }
   //return false;
 
-  if(lines.size() == 0)
+  if(lines.size() == 0 || max_index == -1)
   {
-    if(false) {cout << "----------------------\nNo hough line could be fit\n----------------------" << endl;}
+    // cout << "----------------------\nNo hough line could be fit\n----------------------" << endl;
     return false;
   }
 
   //Largest line= lane
-  Vec4i l = lines[max_index];
+  l = lines[max_index];
   p1.x = l[0];
   p1.y = l[1];
   p2.x = l[2];
   p2.y = l[3];
 
-
-  double slope = (double)(p2.y*1.0 - p1.y*1.0)/(p2.x-p1.x);
+  double slope = (double)(p2.y*1.0 - p1.y*1.0)/(p2.x-p1.x + 1e-3);
   double angle = (atan(slope) * 180)/CV_PI;
   //cout << "angle: " << angle << endl;
   
+  //cout << "reached till after angle: " << angle << endl;
   //Checking that the line slope is within a certain threshold angle from the x-axis
   if(angle <= 20.00 && angle >= -20.00) {
-    line(hough_img,Point(lines[max_index][0], lines[max_index][1]),Point(lines[max_index][2], lines[max_index][3]),Scalar(255),3,CV_AA);
     return true;
   }
 
@@ -125,48 +134,16 @@ bool check_whether_hough(Mat hough_img,Mat img)
 NavPoint waypoint_for_hough(Mat img, char c, float theta)
 {
 
-
-  vector<Vec4i> lines;  //NOTE the vector type
-
-  //Hough Lines Probabilistic
-  HoughLinesP(img, lines, 1, CV_PI/180, hough_min_points, hough_min_line_length, hough_max_line_gap); 
-  /*
-Params: dest_img, vector to store pts, resolution of r,
-resolution of theta, minimum no. points, 
-min. line length, maxlineGap 
-   */ 
-
-  Point p1(0,0), p2(0,0);
-  double slope_avg=0;
-
-  //Finding maximum line length & its index in lines[]
-  //  We assume that the longest line will be the lane
-  float max_dist = 0;
-  int max_index = 0;
-  for(size_t i = 0; i < lines.size(); i++)
-  {
-    Vec4i l = lines[i];
-    //line(hough_img,Point(lines[i][0], lines[i][1]),Point(lines[i][2], lines[i][3]),Scalar(255),3,CV_AA);
-
-    if(sqrt(pow(l[0]-l[2],2) + pow(l[1]-l[3],2)) > max_dist)
-    {
-      max_dist = sqrt( pow(l[0]-l[2],2) + pow(l[1]-l[3],2));
-      max_index = i;
-    }
-  }
-  //return false;
-
-  //Largest line= lane
-  Vec4i l = lines[max_index];
+  Point p1, p2;
   p1.x = l[0];
   p1.y = l[1];
   p2.x = l[2];
   p2.y = l[3];
 
-  double slope1 = (double)(p2.y*1.0 - p1.y*1.0)/(p2.x-p1.x);
+  double slope1 = (double)(p2.y*1.0 - p1.y*1.0)/(p2.x-p1.x + 1e-3);
   double angle1 = (atan(slope1) * 180)/CV_PI;
 
-  cout << "angle1: " << angle1 << endl;
+  //cout << "angle1: " << angle1 << endl;
   //cout << "angle: " << angle << endl;
 
   //Setting waypoint position + orientation
@@ -176,6 +153,10 @@ min. line length, maxlineGap
     int upar = p1.y < p2.y ? p1.y:p2.y;
     waypoint.y = (img.rows + upar)/2;
     waypoint.x = 3*img.rows/4;
+
+    // cout << "line nahi bani 1" << endl;
+    line(fitLanes,p1,p2,Scalar(255, 0, 0),3,CV_AA);
+    // cout << "line ban gayi 1" << endl;
 
     // waypoint.y = upar;
     // if (upar == p1.y)
@@ -189,6 +170,10 @@ min. line length, maxlineGap
     int upar = p1.y < p2.y ? p1.y:p2.y;
     waypoint.y = (img.rows + upar)/2;
     waypoint.x = 1*img.rows/4;
+
+    //cout << "line nahi bani 2" << endl;
+    line(fitLanes,p1, p2,Scalar(0, 0, 255),3,CV_AA);
+    //cout << "line ban gayi 2" << endl;
 
     // waypoint.y = upar;
     // if (upar == p1.y)
@@ -231,10 +216,10 @@ min. line length, maxlineGap
   // Mat waypt_top2 = h*waypt2;   
 
   // double slope = (double)(waypt_top2.at<double>(1,0)*1.0 - waypt_top1.at<double>(1,0)*1.0)/(waypt_top2.at<double>(0,0)*1.0 - waypt_top1.at<double>(0,0)*1.0);
-  double slope = (double)(p2_top.y*1.0 - p1_top.y)/(p2_top.x - p1_top.x);
+  double slope = (double)(p2_top.y*1.0 - p1_top.y)/(p2_top.x - p1_top.x + 1e-3);
   double angle = atan(slope);
   
-  cout << "angle: " << angle*180/CV_PI << endl;
+  //cout << "angle: " << angle*180/CV_PI << endl;
 
 
 
