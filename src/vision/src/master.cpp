@@ -289,6 +289,8 @@ int main(int argc, char **argv)
 	    namedWindow("front_view_ransac",0);
 	}
 	
+	ros::Time current_time = ros::Time::now();
+
 	if(lanes_2.numModel == 1 && use_vision_global == true)
 	{
 
@@ -303,15 +305,7 @@ int main(int argc, char **argv)
 		side = 'l';
 	    }
 
-    	ros::Time current_time = ros::Time::now();
-	    if ((current_time.sec - start_time.sec) < 75 && (current_time.sec - start_time.sec) > 50) {
-	    	if (side == 'l') {
-	    		side = 'r';
-	    	}
-	    	else {
-	    		side = 'l';
-	    	}
-	    }
+	    
 
 		// cout << "Hough started" << endl;
 
@@ -319,6 +313,15 @@ int main(int argc, char **argv)
 	    {
 		if(is_debug) {cout << "Hough Code Initiated" << endl;}
 		used_hough = true;
+
+		if ((current_time.sec - start_time.sec) < 75 && (current_time.sec - start_time.sec) > 50) {
+	    	if (side == 'l') {
+	    		side = 'r';
+	    	}
+	    	else {
+	    		side = 'l';
+	    	}
+	    }
 
 		// cout << "Waypoint for hough started" << endl;
 		NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta);
