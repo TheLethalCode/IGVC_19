@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 
 
     //Used for finding FPS
-
+ 	Rate loop_rate(10);
     while(ros::ok())
     {
 
@@ -260,6 +260,7 @@ int main(int argc, char **argv)
 		cout << "Image or Lidar data not retrieved" << endl;
 	    }
 	    spinOnce();
+	    loop_rate.sleep();
 	}
 
 	fitLanes=frame_orig.clone();
@@ -666,7 +667,7 @@ int main(int argc, char **argv)
 	}
 
 
-	waitKey(400);
+	waitKey(50);
 	is_image_retrieved = false;
 	is_laserscan_retrieved = false;
 	used_hough = false;

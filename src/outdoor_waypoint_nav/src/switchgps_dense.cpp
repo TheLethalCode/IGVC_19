@@ -13,6 +13,16 @@ using namespace ros;
 #define radius 1
 #define pi 3.14159265359
 
+//for dense obstacles 
+double dense_stop_lat ,dense_stop_long;
+double dense_start_lat=42.6787258416;
+double dense_start_long=-83.1954428839;
+double radius1_dense = 3; //in metres
+double radius2_dense = 3; //in metres
+double angle_enu_dense = 0; //in ENU (degrees)
+double distance_1_and_2_dense = 5;
+
+
 
 sensor_msgs::NavSatFix coordinates;
 
@@ -63,6 +73,8 @@ double distance(double x1,double y1,double x2,double y2)
     return d;
 }
 
+
+
 int main(int argc, char** argv)
 {
     init (argc, argv, "switchgps");
@@ -74,7 +86,6 @@ int main(int argc, char** argv)
 
     //read waypoints
     double start_lat, start_long, mid1_lat ,mid1_long, mid2_lat ,mid2_long, end_lat, end_long;
-    double dense_start_lat, dense_start_long, dense_stop_lat ,dense_stop_long;
 
     FILE* gps_pts;
     try {
@@ -82,7 +93,7 @@ int main(int argc, char** argv)
         if (gps_pts == NULL) {
             throw -1;
         }
-        fscanf(gps_pts,"%lf %lf %lf %lf",&dense_start_lat, &dense_start_long, &dense_stop_lat, &dense_stop_long);
+        // fscanf(gps_pts,"%lf %lf",&dense_start_lat, &dense_start_long;
         fscanf(gps_pts,"%lf %lf %lf %lf",&start_lat, &start_long, &mid1_lat, &mid1_long);
         fscanf(gps_pts,"%lf %lf %lf %lf",&mid2_lat, &mid2_long, &end_lat, &end_long);
     }
@@ -98,20 +109,31 @@ int main(int argc, char** argv)
         if (enu_points == NULL) {
             throw -1;
         }
-        fscanf(enu_points,"%lf %lf %lf",&dense_orient, &two_orient, &four_orient);
+        fscanf(enu_points,"%lf %lf", &two_orient, &four_orient);
     }
     catch (int e) {
         ROS_INFO("Try running the gps switching code from the root of the IGVC workspace\n");
         return 0;
     }
 
+    //get the final dense_stop point
+    double d= distance_1_and_2_dense; //in metres
+    angle_enu_dense = -angle_enu_dense + 90; //convert to NED
+    angle_enu_dense *= (pi/180.0); //in radians
+    double R = 6378100;
 
+    dense_stop_lat = asin( sin(dense_start_lat*(pi/180.0))*cos(d/R) + cos(dense_start_lat*(pi/180.0))*sin(d/R)*cos(angle_enu_dense));
+    dense_stop_long = dense_start_long*(pi/180.0) + atan2(sin(angle_enu_dense)*sin(d/R)*cos(dense_start_lat*(pi/180.0)),cos(d/R)-sin(dense_start_lat*(pi/180.0))*sin(dense_start_lat));
+
+    dense_stop_lat = (dense_stop_lat/pi)*180.0;//in degree
+    dense_stop_long = (dense_stop_long/pi)*180.0;//in degree
+    printf("Dense stop lat: %lf long: %lf \n", dense_stop_lat, dense_stop_long) ;
 
     double radius1,radius2, radius3, radius4, radiusdense1, radiusdense2;
 
     bool flagstart1 = false, flagstart2 = false, flagdense=false;
 
-    while (count_odom < 50) {
+    while (count_odom < 50 && ros::ok()) {
       spinOnce();
     }
 
@@ -119,6 +141,11 @@ int main(int argc, char** argv)
 
     std_msgs::Bool use_vision_msg;
     use_vision_msg.data = true;
+
+
+
+
+
 
     Rate loop_rate(10);
 
@@ -156,7 +183,7 @@ int main(int argc, char** argv)
             else {
                 count2 = 0;
             }
-            if (radiusdense1 < radius) {
+            if (radiusdense1 < radius1_dense) {
                 count3++;
             }
             else {
@@ -173,10 +200,6 @@ int main(int argc, char** argv)
                 for (int j = 0; j <= 10; j++) {
                     cout << "Reached Dense 1st Waypoint" << endl;
                 }
-                use_vision_msg.data = false;
-                for(int j=0; j<100; j++){
-                    use_vision_publisher.publish(use_vision_msg);
-                }
                 //change teb parameters
                 // system("bash teb_params_no_mans_land.sh");
 
@@ -190,14 +213,13 @@ int main(int argc, char** argv)
                 radiusdense2 = distance(current_lat, current_long, dense_stop_lat, dense_stop_long);
                 spinOnce();
                 int count2 = 0;
-                while ((radiusdense2 > radius && count2 <= 10)&& ros::ok()) {
+                while ((radiusdense2 > radius2_dense && count2 <= 10)&& ros::ok()) {
                     for (int j = 0; j <= 10; j++) {
                         cout << "Still searching for Dense 2nd waypoint, radiusdense2: " << radiusdense2 << endl;
                     }
-                    gps_status = gps_waypoint(dense_stop_lat, dense_stop_long, current_lat, current_long, dense_orient); 
-                    //makes bot reach goal. Will retrun 0 if successful or 1 if not. Wont return until something happens
+                    gps_status = gps_waypoint(dense_stop_lat, dense_stop_long, current_lat, current_long, angle_enu_dense); 
                     radiusdense2 = distance(current_lat, current_long, dense_stop_lat, dense_stop_long);
-                    if (radiusdense2 < radius) {
+                    if (radiusdense2 < radius2_dense) {
                         count2++;
                     }
                     else {
