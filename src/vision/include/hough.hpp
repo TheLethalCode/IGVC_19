@@ -59,7 +59,7 @@ Takes for input:
     * Blank image for plotting the hough line (hough_img)
 */
 Vec4i l;
-bool check_whether_hough(Mat hough_img,Mat img)
+bool check_whether_hough(Mat hough_img, Mat img, Parabola lanes)
 {
   vector<Vec4i> lines;  //NOTE the vector type
   
@@ -122,9 +122,15 @@ bool check_whether_hough(Mat hough_img,Mat img)
   if(angle <= 40.00 && angle >= -40.00) {
     if (angle < -10) {
       side = 'l';
+      lanes.numModel = 1;
+      lanes.a2=0;
+      lanes.c2=0;
     }
     if (angle > 10) {
       side = 'r';
+      lanes.numModel = 1;
+      lanes.a1=0;
+      lanes.c1=0;
     }
     return true;
   }
@@ -132,7 +138,7 @@ bool check_whether_hough(Mat hough_img,Mat img)
 }
 
 //Giving waypoint if hough initiated
-NavPoint waypoint_for_hough(Mat img, char c, float theta)
+NavPoint waypoint_for_hough(Mat img, char c, float theta, Parabola lanes)
 {
 
   Point p1, p2;
@@ -153,7 +159,8 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
   if (c == 'l') {
     int upar = p1.y < p2.y ? p1.y:p2.y;
     waypoint.y = (img.rows + upar)/2;
-    waypoint.x = 3*img.rows/4;
+    // cout << "hough_ratio_from_left: " << hough_ratio_from_left << endl;
+    waypoint.x = hough_ratio_from_left * img.cols;
 
     // cout << "line nahi bani 1" << endl;
     // line(fitLanes,p1,p2,Scalar(255, 0, 0),3,CV_AA);
@@ -162,6 +169,11 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
     if (costmap_publish_ransac) {
       fullLine(img, p1, p2, Scalar(255));
     }
+
+    side = 'l';
+    lanes.numModel = 1;
+    lanes.a2=0;
+    lanes.c2=0;
 
     // cout << "line ban gayi 1" << endl;
 
@@ -176,7 +188,8 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
   else {
     int upar = p1.y < p2.y ? p1.y:p2.y;
     waypoint.y = (img.rows + upar)/2;
-    waypoint.x = 1*img.rows/4;
+    // cout << "hough_ratio_from_left: " << hough_ratio_from_left << endl;
+    waypoint.x = (1-hough_ratio_from_left) * img.cols;
 
     //cout << "line nahi bani 2" << endl;
     // line(fitLanes,p1, p2,Scalar(0, 0, 255),3,CV_AA);
@@ -184,6 +197,12 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
     if (costmap_publish_ransac) {
       fullLine(img, p1, p2, Scalar(255));
     }
+
+    side = 'r';
+    lanes.numModel = 1;
+    lanes.a1=0;
+    lanes.c1=0;
+
     //cout << "line ban gayi 2" << endl;
 
     // waypoint.y = upar;

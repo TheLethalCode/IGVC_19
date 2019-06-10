@@ -9,6 +9,8 @@
 #include <tf/transform_datatypes.h>
 #include "tf/transform_listener.h"
 
+using namespace std;
+using namespace cv;
 Point centroid_inliers_r(0,0);
 Point centroid_inliers_l(0,0);
 
@@ -26,8 +28,7 @@ Point centroid_inliers_l(0,0);
 
 int debug=0;
 int change= 100;    //for sudden change function
-using namespace std;
-using namespace cv;
+double imu_orient_prev=0;
 
 bool return_prev_params=0;
 //structure to define the Parabola parameters
@@ -57,9 +58,9 @@ Parabola swap(Parabola param) {
 }
 
 void printParabola(Parabola p) {
-    cout << "numModel: " << p.numModel << endl;
-    cout << "a1: " << p.a1 << "\tc1: " << p.c1 << endl;
-    cout << "a2: " << p.a2 << "\tc2: " << p.c2 << endl;
+    // cout << "numModel: " << p.numModel << endl;
+    // cout << "a1: " << p.a1 << "\tc1: " << p.c1 << endl;
+    // cout << "a2: " << p.a2 << "\tc2: " << p.c2 << endl;
 }
 
 
@@ -171,6 +172,7 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
     //if single lane is detected 
     else if(number_of_lanes==1)
     {
+        imu_orient_prev = imu_orientation;
         //if a1 lane is detected and cuts to right, then make it right lane
         if(a1!=0 && c1!=0 && (c1>(0.85 * img.cols)))
         {
@@ -239,7 +241,7 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
                 current_bottom = c1;
             }
             else {
-                current_bottom = c1;
+                current_bottom = c2;
             }
 
             int prev_left = previous.c1;
@@ -277,8 +279,33 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
     }
 
     else {
-        printParabola(present);
-        return present;
+        //Unbiased Classification in the case of no previous lane and 1 current lane
+        if(a1!=0 && c1!=0 && (c1>(0.5 * img.cols)))
+        {
+            is_current_single_left = false;
+            cout << "cutting to right, making it right" << endl;
+            present=swap(present);
+            printParabola(present);
+            return present;
+        }
+
+        else if (a1 != 0 && c1 != 0 && (c1 < 0.5*img.cols)) {
+            return present;
+        }
+
+        //if a2 lane is detected and cuts to left, then make it left lane
+        if (a2!=0 && c2!=0 && (c2<(0.5 * img.cols)))
+        {
+            is_current_single_left = true;
+            cout << "cutting to left, making it left" << endl;
+            present=swap(present);
+            printParabola(present);
+            return present;
+        }
+
+        else if (a2 != 0 && c2 != 0 && (c2 > 0.5*img.cols)) {
+            return present;
+        }
     }
 
 
