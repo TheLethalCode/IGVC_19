@@ -27,7 +27,8 @@ using namespace ros;
 
 Mat frame_orig;
 Mat fitLanes;
-
+Publisher marker_pub1, marker_pub2;
+visualization_msgs::Marker points1, points2;
 bool is_current_single = false;
 bool is_current_single_left = false;
 bool is_previous_single = false;
@@ -168,6 +169,34 @@ int main(int argc, char **argv)
     pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
     Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
     orientation = n.subscribe("/vn_ins/pitch",100,odomCallBack);
+    marker_pub1= n.advertise<visualization_msgs::Marker>("visualization_marker1", 10);   
+    marker_pub2 = n.advertise<visualization_msgs::Marker>("visualization_marker2", 10);   
+    if(1)
+    {
+        points1.header.frame_id = "/odom";     
+        points1.header.stamp = ros::Time::now();  
+        points1.ns = "points_and_lines";     
+        points1.action =visualization_msgs::Marker::ADD;     
+        points1.pose.orientation.w =  1.0;     
+        points1.type = visualization_msgs::Marker::POINTS;  
+        points1.id = 0;   
+        points1.scale.x = 0.2;     
+        points1.scale.y = 0.2; 
+        points1.color.g = 1.0;     
+        points1.color.a = 1.0;     
+    
+        points2.header.frame_id = "/odom";     
+        points2.header.stamp = ros::Time::now();  
+        points2.ns = "points_and_lines";     
+        points2.action =visualization_msgs::Marker::ADD;     
+        points2.pose.orientation.w =  1.0;     
+        points2.type = visualization_msgs::Marker::POINTS;  
+        points2.id = 0;     
+        points2.scale.x = 0.2;     
+        points2.scale.y = 0.2;   
+        points2.color.b = 1.0;     
+        points2.color.a = 1.0;      
+    }
 
     int waypoint_count = -1;
 

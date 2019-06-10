@@ -503,22 +503,22 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
     }
 
     //markers publishing current centroids
-    // geometry_msgs::Point p1, p2;
-    // p1.x = ros_centroid_l.point.x;   
-    // p1.y = ros_centroid_l.point.y;       
-    // p1.z = 0; 
-    // p2.x = ros_centroid_r.point.x;   
-    // p2.y = ros_centroid_r.point.y;       
-    // p2.z = 0; 
-    // points1.points.clear();
-    // points2.points.clear();
+    geometry_msgs::Point p1, p2;
+    p1.x = ros_centroid_l.point.x;   
+    p1.y = ros_centroid_l.point.y;       
+    p1.z = 0; 
+    p2.x = ros_centroid_r.point.x;   
+    p2.y = ros_centroid_r.point.y;       
+    p2.z = 0; 
+    points1.points.clear();
+    points2.points.clear();
 
-    // points1.points.push_back(p1);
-    // points2.points.push_back(p2);
-    // marker_pub1.publish(points1);
-    // marker_pub2.publish(points2);
+    points1.points.push_back(p1);
+    points2.points.push_back(p2);
+    marker_pub1.publish(points1);
+    marker_pub2.publish(points2);
 
-    //if its the first iteration make previous equal to current to avoid any problems
+    if its the first iteration make previous equal to current to avoid any problems
     //return the output from classify_lanes in the first iteration
     static int count = 0;
     if(count < 10)
