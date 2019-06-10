@@ -164,7 +164,6 @@ int main(int argc, char **argv)
     image_transport::Subscriber sub = it.subscribe("/camera/image_color", 2, imageCb);  //NOTE Topic
     Publisher waypoint_publisher = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",2);
     lanes2Costmap_publisher = n.advertise<sensor_msgs::LaserScan>("/lanes", 2);       //declared globally
-    ros::Time start_time = ros::Time::now();
     pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
     Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
     orientation = n.subscribe("/vn_ins/pitch",100,odomCallBack);
@@ -289,8 +288,6 @@ int main(int argc, char **argv)
 	    namedWindow("front_view_ransac",0);
 	}
 	
-	ros::Time current_time = ros::Time::now();
-
 	if(lanes_2.numModel == 1 && use_vision_global == true)
 	{
 
@@ -305,23 +302,12 @@ int main(int argc, char **argv)
 		side = 'l';
 	    }
 
-	    
-
 		// cout << "Hough started" << endl;
 
 	    if(check_whether_hough(hough_image,intersectionImages))
 	    {
 		if(is_debug) {cout << "Hough Code Initiated" << endl;}
 		used_hough = true;
-
-		if ((current_time.sec - start_time.sec) < 75 && (current_time.sec - start_time.sec) > 50) {
-	    	if (side == 'l') {
-	    		side = 'r';
-	    	}
-	    	else {
-	    		side = 'l';
-	    	}
-	    }
 
 		// cout << "Waypoint for hough started" << endl;
 		NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta);
