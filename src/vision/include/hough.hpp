@@ -122,12 +122,16 @@ bool check_whether_hough(Mat hough_img,Mat img)
   
   //cout << "reached till after angle: " << angle << endl;
   //Checking that the line slope is within a certain threshold angle from the x-axis
-  if(angle <= 20.00 && angle >= -20.00) {
+  if(angle <= 40.00 && angle >= -40.00) {
+    if (angle < -10) {
+      side = 'l';
+    }
+    if (angle > 10) {
+      side = 'r';
+    }
     return true;
   }
-
-  return false;
-      
+  return false; 
 }
 
 //Giving waypoint if hough initiated
