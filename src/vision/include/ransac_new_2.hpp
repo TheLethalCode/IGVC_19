@@ -518,7 +518,7 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
     marker_pub1.publish(points1);
     marker_pub2.publish(points2);
 
-    if its the first iteration make previous equal to current to avoid any problems
+    // if its the first iteration make previous equal to current to avoid any problems
     //return the output from classify_lanes in the first iteration
     static int count = 0;
     if(count < 10)
