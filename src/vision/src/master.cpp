@@ -171,6 +171,7 @@ int main(int argc, char **argv)
     orientation = n.subscribe("/vn_ins/pitch",100,odomCallBack);
     marker_pub1= n.advertise<visualization_msgs::Marker>("visualization_marker1", 10);   
     marker_pub2 = n.advertise<visualization_msgs::Marker>("visualization_marker2", 10);   
+
     if(1)
     {
         points1.header.frame_id = "/odom";     
@@ -526,16 +527,24 @@ int main(int argc, char **argv)
 	Mat top_ransac = top_view(lanes_front_view);
 
 	Mat costmap_topview_grayscale;
-	cvtColor(top_ransac, costmap_topview_grayscale, CV_BGR2GRAY);
 
-	for (int i = 0; i < intersectionImages.rows; i++) {
-    	for (int j = 0; j < intersectionImages.cols; j++) {
-    		if (costmap_published.at<uchar>(i,j) > 0) {
-    			costmap_topview_grayscale.at<uchar>(i,j) = 255;
-    		}
-    	}
-    }
 
+	if (costmap_publish_ransac) {
+		cvtColor(top_ransac, costmap_topview_grayscale, CV_BGR2GRAY);
+
+		for (int i = 0; i < intersectionImages.rows; i++) {
+	    	for (int j = 0; j < intersectionImages.cols; j++) {
+	    		if (costmap_published.at<uchar>(i,j) > 0) {
+	    			costmap_topview_grayscale.at<uchar>(i,j) = 255;
+	    		}
+	    	}
+	    }
+
+	}
+	else {
+		costmap_topview_grayscale = costmap_published.clone();
+	}
+	
 	sensor_msgs::LaserScan lane_gray;
 	lane_gray = laneLaser(costmap_topview_grayscale);
 	lanes2Costmap_publisher.publish(lane_gray);
@@ -548,14 +557,6 @@ int main(int argc, char **argv)
 
 	// Mat costmap_topview_grayscale(frame_topview.rows, frame_topview.cols, CV_8UC1, Scalar(0));
 	// costmap_topview_grayscale = drawLanes_top_gray(costmap_topview_grayscale, lanes_2);
-
-	if (costmap_publish_ransac == true) {
-	    Mat costmap_ransac(costmap.rows, costmap.cols, CV_8UC1, Scalar(0));
-	    costmap_ransac = drawLanes_top(costmap_ransac, lanes_2);
-	    sensor_msgs::LaserScan lane;
-	    lane = laneLaser(costmap_ransac);
-	    lanes2Costmap_publisher.publish(lane);
-	}
 
 	if(is_important || is_debug)
 	{

@@ -159,7 +159,9 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
     // line(fitLanes,p1,p2,Scalar(255, 0, 0),3,CV_AA);
 
     fullLine(fitLanes, p1, p2, Scalar(255, 0, 0));
-    fullLine(img, p1, p2, Scalar(255));
+    if (costmap_publish_ransac) {
+      fullLine(img, p1, p2, Scalar(255));
+    }
 
     // cout << "line ban gayi 1" << endl;
 
@@ -179,7 +181,9 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
     //cout << "line nahi bani 2" << endl;
     // line(fitLanes,p1, p2,Scalar(0, 0, 255),3,CV_AA);
     fullLine(fitLanes, p1, p2, Scalar(0, 0, 255));
-    fullLine(img, p1, p2, Scalar(255));
+    if (costmap_publish_ransac) {
+      fullLine(img, p1, p2, Scalar(255));
+    }
     //cout << "line ban gayi 2" << endl;
 
     // waypoint.y = upar;
