@@ -71,7 +71,7 @@ int hough_min_points = 100;
 int hough_min_line_length = 160;
 int hough_max_line_gap = 50;
 
-double r_hough = 0;
+double r_hough = 100;
 
 /* other global parameters */ 
 #endif
