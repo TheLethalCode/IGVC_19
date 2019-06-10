@@ -20,14 +20,13 @@ NOTE: For debugging couts:
 #include <time.h>
 #include <std_msgs/Bool.h>
 #include<std_msgs/Float64.h>
-
+#include <visualization_msgs/Marker.h> 
 using namespace std;
 using namespace cv;
 using namespace ros;
 
 Mat frame_orig;
 Mat fitLanes;
-
 
 bool is_current_single = false;
 bool is_current_single_left = false;
@@ -169,7 +168,6 @@ int main(int argc, char **argv)
     pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
     Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
     orientation = n.subscribe("/vn_ins/pitch",100,odomCallBack);
-
 
     int waypoint_count = -1;
 
@@ -609,7 +607,7 @@ int main(int argc, char **argv)
 	used_hough = false;
 
 
-        cout << "\n-------------------\n" << endl;
+    cout << "\n-------------------\n" << endl;
 	spinOnce();
     }
 

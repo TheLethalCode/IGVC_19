@@ -21,6 +21,9 @@ Point centroid_inliers_l(0,0);
  * The equation used for parabola is (y^2)= a(x-c).
  * Both a & c are found by solving simultaneous linear equations.
  */
+
+
+
 int debug=0;
 int change= 100;    //for sudden change function
 using namespace std;
@@ -36,7 +39,7 @@ typedef struct Parabola
     float a2 = 0.0;
     // float b2 = 0.0;
     float c2 = 0.0;
-} Parabola;
+}Parabola;
 
 Parabola swap(Parabola param) {
 
@@ -58,6 +61,9 @@ void printParabola(Parabola p) {
     cout << "a1: " << p.a1 << "\tc1: " << p.c1 << endl;
     cout << "a2: " << p.a2 << "\tc2: " << p.c2 << endl;
 }
+
+
+// previous.numModel=0;
 
 /*
 Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
@@ -295,7 +301,7 @@ Point centroid(float a,float c,Mat img);
 
 float dist(Point A,Point B)
 {
-    return (sqrt(pow(A.x-B.x,2)+pow(A.y-B.y,2)));
+    return ((double)sqrt(pow(A.x-B.x,2)+pow(A.y-B.y,2)));
 }
 
 geometry_msgs::PointStamped ros_centroid_r; 
@@ -352,33 +358,8 @@ float get_del(Point p, float a, float c)
     return min(errorx, errory);
 }
 
-
-Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<Point> ptArray1)
+void stamped_point_make(Mat img, geometry_msgs::PointStamped& left, geometry_msgs::PointStamped& right, Parabola lanes ,vector<Point> ptArray1)
 {
-
-
-    // ros_centroid_l.header.frame_id = "cam";
-    // ros_centroid_r.header.frame_id = "cam";
-    // ros_centroid_prev_r.header.frame_id = "/imu";
-    // ros_centroid_prev_l.header.frame_id = "/imu";
-    ros_centroid_bl_l.header.frame_id = "/base_link";
-    ros_centroid_bl_r.header.frame_id = "/base_link";
-
-    // ros_centroid_l.header.stamp = ros::Time::now();
-    // ros_centroid_r.header.stamp = ros::Time::now();
-    // ros_centroid_prev_r.header.stamp = ros::Time();
-    // ros_centroid_prev_l.header.stamp = ros::Time();
-    ros_centroid_bl_l.header.stamp = ros::Time();
-    ros_centroid_bl_r.header.stamp = ros::Time();
-
-    float a1=present.a1;
-    float a2=present.a2;
-    float c1=present.c1;
-    float c2=present.c2;
-
-    Point a,b,c;
-
-    int number_of_lanes=present.numModel;
     int count_l=0;
     int count_r=0;
     centroid_inliers_l.x = 0;
@@ -386,14 +367,17 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
     centroid_inliers_r.x = 0;
     centroid_inliers_r.y = 0;
     cout<<"0" <<endl;
-    if(present.numModel == 1)
+
+
+    //get current centroids(classified)
+    if(lanes.numModel == 1)
     {
         cout<<"1" <<endl;
-        if(present.a1 == 0  && present.c1 == 0)
+        if(lanes.a1 == 0  && lanes.c1 == 0)
         { 
             for(int i=0; i<ptArray1.size(); i++)
             {
-                if(get_del(ptArray1[i],present.a2,present.c2)<maxDist)
+                if(get_del(ptArray1[i],lanes.a2,lanes.c2)<maxDist)
                 {
                     Mat waypt = (Mat_<double>(3,1) << ptArray1[i].x , img.rows - ptArray1[i].y , 1);
                     Mat waypt_top = h*waypt;
@@ -410,13 +394,15 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
             centroid_inliers_r.y = centroid_inliers_r.y/count_r;
             ros_centroid_bl_r.point.x = (img.rows - centroid_inliers_r.y)/pixelsPerMetre;
             ros_centroid_bl_r.point.y = (img.cols/2 - centroid_inliers_r.x)/pixelsPerMetre;
+            ros_centroid_bl_l.point.x = 0;
+            ros_centroid_bl_l.point.y = 0;
         }   
 
         else
         {
             for(int i=0; i<ptArray1.size(); i++)
             {
-                if(get_del(ptArray1[i],present.a1,present.c1)<maxDist)
+                if(get_del(ptArray1[i],lanes.a1,lanes.c1)<maxDist)
                 {
                     Mat waypt = (Mat_<double>(3,1) << ptArray1[i].x , img.rows - ptArray1[i].y , 1);
                     Mat waypt_top = h*waypt;
@@ -433,15 +419,17 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
             centroid_inliers_l.y = centroid_inliers_l.y/count_l; 
             ros_centroid_bl_l.point.x = (img.rows - centroid_inliers_l.y)/pixelsPerMetre;
             ros_centroid_bl_l.point.y = (img.cols/2 - centroid_inliers_l.x)/pixelsPerMetre;
+            ros_centroid_bl_r.point.x = 0;
+            ros_centroid_bl_r.point.y = 0;
         }
     }
 
-    if(present.numModel == 2)
+    if(lanes.numModel == 2)
     {
         cout<<"2" <<endl;
         for(int i=0; i<ptArray1.size(); i++)
         {
-            if(get_del(ptArray1[i],present.a2,present.c2)<maxDist)
+            if(get_del(ptArray1[i],lanes.a2,lanes.c2)<maxDist)
             {
                 Mat waypt = (Mat_<double>(3,1) << ptArray1[i].x , img.rows - ptArray1[i].y , 1);
                 Mat waypt_top = h*waypt;
@@ -461,7 +449,7 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
 
         for(int i=0; i<ptArray1.size(); i++)
         {
-            if(get_del(ptArray1[i],present.a1,present.c1)<maxDist)
+            if(get_del(ptArray1[i],lanes.a1,lanes.c1)<maxDist)
             {
                 Mat waypt = (Mat_<double>(3,1) << ptArray1[i].x , img.rows - ptArray1[i].y , 1);
                 Mat waypt_top = h*waypt;
@@ -480,94 +468,107 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
         ros_centroid_bl_l.point.y = (img.cols/2 - centroid_inliers_l.x)/pixelsPerMetre;
 
     }
-    static tf::TransformListener listener;
-    // tf::StampedTransform transform;
-    // try{
-    //   listener.lookupTransform("/imu", "/base_link",  
-    //                            ros::Time(0), transform);
-    // }
-    // catch (tf::TransformException ex){
-    //   ROS_ERROR("%s",ex.what());
-    //   ros::Duration(1.0).sleep();
-    // }
+}
+Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<Point> ptArray1)
+{
+    Point a,b,c;
+    ros_centroid_bl_l.header.frame_id = "/base_link";
+    ros_centroid_bl_r.header.frame_id = "/base_link";
+    ros_centroid_bl_l.header.stamp = ros::Time();
+    ros_centroid_bl_r.header.stamp = ros::Time();
 
-    try{
+    float a1=present.a1;
+    float a2=present.a2;
+    float c1=present.c1;
+    float c2=present.c2;
+
+    present=classify_lanes(img, present, previous);
+    stamped_point_make(img, ros_centroid_bl_l, ros_centroid_bl_r, present, ptArray1);
+    cout << "Current Centroids in base_link frame\n" << endl;
+    cout<< "ros_centroid_bl_l: " << ros_centroid_bl_l.point.x << " " <<  ros_centroid_bl_l.point.y << endl;
+    cout<< "ros_centroid_bl_r: " << ros_centroid_bl_r.point.x << " " <<  ros_centroid_bl_r.point.y << endl;
+
+    //convert centroids to odom frame and store
+    static tf::TransformListener listener;
+    try
+    {
         listener.transformPoint("/odom", ros_centroid_bl_l, ros_centroid_l);
         listener.transformPoint("/odom", ros_centroid_bl_r, ros_centroid_r);
 
-        ROS_INFO("point_base: (%.2f, %.2f. %.2f) -----> point_odom: (%.2f, %.2f, %.2f) at time",
-                ros_centroid_bl_l.point.x, ros_centroid_bl_l.point.y, ros_centroid_bl_l.point.z,
-                ros_centroid_l.point.x, ros_centroid_l.point.y, ros_centroid_l.point.z);
+        // ROS_INFO("point_base: (%.2f, %.2f) -----> point_odom: (%.2f, %.2f)",ros_centroid_bl_l.point.x, ros_centroid_bl_l.point.y,ros_centroid_l.point.x, ros_centroid_l.point.y);
     }
-    catch(tf::TransformException& ex){
+    catch(tf::TransformException& ex)
+    {
         ROS_ERROR("%s", ex.what());
     }
 
-    if(number_of_lanes==2)
+    //markers publishing current centroids
+    // geometry_msgs::Point p1, p2;
+    // p1.x = ros_centroid_l.point.x;   
+    // p1.y = ros_centroid_l.point.y;       
+    // p1.z = 0; 
+    // p2.x = ros_centroid_r.point.x;   
+    // p2.y = ros_centroid_r.point.y;       
+    // p2.z = 0; 
+    // points1.points.clear();
+    // points2.points.clear();
+
+    // points1.points.push_back(p1);
+    // points2.points.push_back(p2);
+    // marker_pub1.publish(points1);
+    // marker_pub2.publish(points2);
+
+    //if its the first iteration make previous equal to current to avoid any problems
+    //return the output from classify_lanes in the first iteration
+    static int count = 0;
+    if(count < 10)
     {
-        if(c2<c1)
-        {
-            present=swap_odom(present);
-            return present;
-        }
-        else 
-            return present;
+        ros_centroid_prev_r.point.x = ros_centroid_r.point.x;
+        ros_centroid_prev_r.point.y = ros_centroid_r.point.y;
+        ros_centroid_prev_l.point.x = ros_centroid_l.point.y;
+        ros_centroid_prev_l.point.y = ros_centroid_l.point.y; 
+        count ++;
+        return present;
     }
 
-    else if(number_of_lanes==1)
+    
+    cout << "<<<<<<<<<<<<<<<<<<<<<<<Checking Distance of Previous centroids from current>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << endl;
+    Point pl, pr, l, r;
+    pl.x=ros_centroid_prev_l.point.x;
+    pl.y=ros_centroid_prev_l.point.y;
+
+    pr.x=ros_centroid_prev_r.point.x;
+    pr.y=ros_centroid_prev_r.point.y;
+
+    l.x=ros_centroid_l.point.x;
+    l.y=ros_centroid_l.point.y;
+
+    r.x=ros_centroid_r.point.x;
+    r.y=ros_centroid_r.point.y;
+    cout << "previous distances: " << dist(pl, l) << " " << dist(pr, r) << endl;
+    // return present;
+
+    if(present.numModel==1)
     {
-        if(previous.numModel == 0)
+        if(previous.numModel == 0) //old methods
         {
-            //if intersection on left or right lane possible
-            if(a1*c1<0 && a1*(img.cols-c1)>0)
-            {
-                float y1=sqrt(-1.0*a1*c1);
-                float y2=sqrt(a1*(img.cols-c1));
-
-                if(y1>(2*img.rows)/5 && y1<(3*img.rows)/5 && y2>(2*img.rows)/5 && y2<(3*img.rows)/5)
-                {
-                    return previous;
-                }
-
-            }
-
-            if(a2*c2<0 && a2*(img.cols-c2)>0)
-            {
-                float y1=sqrt(-1.0*a2*c2);
-                float y2=sqrt(a2*(img.cols-c2));
-
-                if(y1>(2*img.rows)/5 && y1<(3*img.rows)/5 && y2>(2*img.rows)/5 && y2<(3*img.rows)/5)
-                {
-                    return previous;
-                }
-            }
-
-            if((c1>(2*img.cols/5) && c1<(3*img.cols/5)) || (c2>(2*img.cols/5) && c2<(3*img.cols/5)))
-            {
-                return previous;
-            }
-
-            if(a1!=0 && c1>(img.cols/2))
-            {
-                present=swap_odom(present);
-                return present;
-            }
-
-            if(a2!=0 && c2<(img.cols/2))
-            {
-                present=swap_odom(present);
-                return present;
-            }
+            //check if previous frame was updated within 3-4 frames back, if yes then we can apply the distance like
+            //calculate distance between current centroid and previous stored centroid, if its less than 3m then NO_SWAP
+            //if the distance is greater than 3m then swap the lanes 
         }
 
         if(previous.numModel == 1)
         {
-            if(present.a1 == 0 && present.c1 == 0)
+            cout << "1111111111----------11111111111" << endl;
+            if(present.a1 == 0 && present.c1 == 0) //current lane detected is right
             {
-                a.x = ros_centroid_r.point.x;
+                //store current right lane centroids in a
+                a.x = ros_centroid_r.point.x; 
                 a.y = ros_centroid_r.point.y; 
-                if(previous.a1 == 0 && previous.c1 == 0)
+
+                if(previous.a1 == 0 && previous.c1 == 0) //previous lane was right
                 {
+                    //store previous right lanes params in b
                     b.x = ros_centroid_prev_r.point.x;
                     b.y = ros_centroid_prev_r.point.y;
                     cout<<"dist(a,b)  : "<<dist(a,b)<<endl;
@@ -580,8 +581,9 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
                     } 
 
                 }
-                else
+                else //previous lane was left
                 {
+                    //store previous left params in b
                     b.x = ros_centroid_prev_l.point.x;
                     b.y = ros_centroid_prev_l.point.y;
                     cout<<"dist(a,b)  : "<<dist(a,b)<<endl;
@@ -594,8 +596,9 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
                         return present;
                 }
             }
-            else if(present.a2 == 0 && present.c2 == 0)
+            else if(present.a2 == 0 && present.c2 == 0) //current lane is left according to us
             {
+                //store current left 
                 a.x = ros_centroid_l.point.x;
                 a.y = ros_centroid_l.point.y;
                 if(previous.a2 == 0 && previous.c2 == 0)
@@ -626,56 +629,26 @@ Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<
                 }
             }
         }
-
-        if(previous.numModel == 2)
-        {
-            // cout<<":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"<<endl;
-            if(present.a1 == 0 && present.c1 == 0)
-            {
-                a.x = ros_centroid_r.point.x;
-                a.y = ros_centroid_r.point.y;
-                b.x = ros_centroid_prev_r.point.x;
-                b.y = ros_centroid_prev_r.point.y;
-                c.x = ros_centroid_prev_l.point.x;
-                c.y = ros_centroid_prev_l.point.y;
-                cout<<"dist(a,b) , dist(a,c) : "<<dist(a,b)<<" , "<<dist(a,c)<<endl;
-                if(dist(a,b) < dist(a,c))
-                    return present;
-                else
-                {
-                    present = swap_odom(present);
-                    return present;
-                }
-
-            }
-            else
-            {
-                a.x = ros_centroid_l.point.x;
-                a.y = ros_centroid_l.point.y;
-                b.x = ros_centroid_prev_r.point.x;
-                b.y = ros_centroid_prev_r.point.y;
-                c.x = ros_centroid_prev_l.point.x;
-                c.y = ros_centroid_prev_l.point.y;
-                cout<<"dist(a,b) , dist(a,c) : "<<dist(a,b)<<" , "<<dist(a,c)<<endl;
-                if(dist(a,c) < dist(a,b))
-                    return present;
-                else
-                {
-                    present = swap_odom(present);
-                    return present;
-                }
-            }
-        }
     }
-
-    cout<<"ros_centroid_bl_l.point.x, ros_centroid_bl_l.point.y, ros_centroid_bl_l.point.z : "<<ros_centroid_bl_l.point.x<<","<<ros_centroid_bl_l.point.y<<","<<ros_centroid_bl_l.point.z<<endl;
-    cout<<"ros_centroid_bl_r.point.x, ros_centroid_bl_r.point.y, ros_centroid_bl_r.point.z : "<<ros_centroid_bl_r.point.x<<","<<ros_centroid_bl_r.point.y<<","<<ros_centroid_bl_r.point.z<<endl;
-    cout<<"ros_centroid_r.point.x, ros_centroid_r.point.y, ros_centroid_r.point.z : "<<ros_centroid_r.point.x<<","<<ros_centroid_r.point.y<<","<<ros_centroid_r.point.z<<endl;
-    cout<<"ros_centroid_l.point.x, ros_centroid_l.point.y, ros_centroid_l.point.z : "<<ros_centroid_l.point.x<<","<<ros_centroid_l.point.y<<","<<ros_centroid_l.point.z<<endl;
+    // cout<<"ros_centroid_bl_l.point.x, ros_centroid_bl_l.point.y, ros_centroid_bl_l.point.z : "<<ros_centroid_bl_l.point.x<<","<<ros_centroid_bl_l.point.y<<","<<ros_centroid_bl_l.point.z<<endl;
+    // cout<<"ros_centroid_bl_r.point.x, ros_centroid_bl_r.point.y, ros_centroid_bl_r.point.z : "<<ros_centroid_bl_r.point.x<<","<<ros_centroid_bl_r.point.y<<","<<ros_centroid_bl_r.point.z<<endl;
+    // cout<<"ros_centroid_r.point.x, ros_centroid_r.point.y, ros_centroid_r.point.z : "<<ros_centroid_r.point.x<<","<<ros_centroid_r.point.y<<","<<ros_centroid_r.point.z<<endl;
+    // cout<<"ros_centroid_l.point.x, ros_centroid_l.point.y, ros_centroid_l.point.z : "<<ros_centroid_l.point.x<<","<<ros_centroid_l.point.y<<","<<ros_centroid_l.point.z<<endl;
     ros_centroid_prev_r = ros_centroid_r;
     ros_centroid_prev_l = ros_centroid_l;
+    // namedWindow("noob",0);
+    // waitKey(0);
     return present;
 }
+
+// Parabola classify_lanes_odom(Mat img,Parabola present,Parabola previous, vector<Point> ptArray1)
+// {
+//     old_
+//     present=classify_lanes(img, present, previous);
+//     //applying odom check for 1-1 and 0-1 case
+//     //for that we need to store classified centroids of the previous frame and calculate centroid of the current frame
+
+// }
 
 //Getting a (purely mathematical)
 float get_a(Point p1, Point p2)
