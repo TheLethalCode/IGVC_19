@@ -7,7 +7,7 @@ bool is_important = true;
 bool use_pothole = false;
 bool use_ramp = false;
 bool use_odom_lane_classify = false;
-bool costmap_publish_ransac = false;
+bool costmap_publish_ransac = true;
 
 bool is_image_retrieved = false;
 bool use_video = false;

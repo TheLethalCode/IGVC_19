@@ -365,6 +365,8 @@ int main(int argc, char **argv)
 
 			// cout << "Waypoint for hough started" << endl;
 			NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta, lanes);
+
+			cout << "--------------\nside: " << side << "-------------" << endl;
 			// cout << "Waypoint for hough ended" << endl;
 
 			//theta is globally declared in hough.hpp
