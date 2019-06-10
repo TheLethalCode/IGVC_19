@@ -125,12 +125,18 @@ bool check_whether_hough(Mat hough_img, Mat img, Parabola lanes)
       lanes.numModel = 1;
       lanes.a2=0;
       lanes.c2=0;
+      lanes.a1=1;
+      lanes.c1=1;
+
     }
     if (angle > 10) {
       side = 'r';
       lanes.numModel = 1;
       lanes.a1=0;
       lanes.c1=0;
+      lanes.c2=1;
+      lanes.a2=1;
+
     }
     return true;
   }
@@ -174,6 +180,8 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta, Parabola lanes)
     lanes.numModel = 1;
     lanes.a2=0;
     lanes.c2=0;
+    lanes.a1=1;
+    lanes.c1=1;
 
     // cout << "line ban gayi 1" << endl;
 
@@ -202,6 +210,8 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta, Parabola lanes)
     lanes.numModel = 1;
     lanes.a1=0;
     lanes.c1=0;
+    lanes.a2=1;
+    lanes.c2=1;
 
     //cout << "line ban gayi 2" << endl;
 
