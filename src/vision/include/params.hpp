@@ -14,7 +14,7 @@ bool use_video = false;
 char side;
 bool used_hough = false;
 
-int costmap_median_blur = 3;
+int costmap_median_blur = 9;
 int costmap_median_blur_no_mans_land = 7;
 
 double wTh = 50; //set threshold for white color
@@ -29,8 +29,7 @@ int common_inliers_thresh = 10;
 
 int minPointsForRANSAC = 700;
 
-// float pixelsPerMetre = 37.7834;
-float pixelsPerMetre = 25.06265;
+float pixelsPerMetre = 42.19409;
 
 float stepsize = 225; //3.5*pixelsPerMeter
 
@@ -50,9 +49,9 @@ int obstacleWidth = 30;
 
 int medianBlurkernel = 7; //kernel size of medianBlur for cleaning intersectionImages
 
-int neighbourhoodSize = 25; //neighbourhood size or block size for adaptive thresholding
+int neighbourhoodSize = 99; //neighbourhood size or block size for adaptive thresholding
 
-int constantSubtracted = -45; //constant subtracted during adaptive thresholding
+int constantSubtracted = -60; //constant subtracted during adaptive thresholding
 
 int grid_size = 3;
 
