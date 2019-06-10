@@ -38,6 +38,10 @@ bool is_current_single_left = false;
 bool is_previous_single = false;
 bool is_previous_single_left = false;
 double imu_orientation; //Global IMU Orientation storage 
+int lidar_hard_points_count = 0;
+int lidar_hard_points = 0;
+
+
 
 //Custom Header files
 #include <params.hpp>
@@ -195,6 +199,11 @@ int main(int argc, char **argv)
     marker_pub1= n.advertise<visualization_msgs::Marker>("visualization_marker1", 10);   
     marker_pub2 = n.advertise<visualization_msgs::Marker>("visualization_marker2", 10);   
 
+    bool dense_obstacle_started = false;
+	ros::Time start_dense_time = ros::Time::now();
+	ros::Time current_time = ros::Time::now();
+	bool entered_dense = false;
+
     if(1)
     {
         points1.header.frame_id = "/odom";     
@@ -269,6 +278,13 @@ int main(int argc, char **argv)
 	frame_topview = top_view(frame_orig);
 
 	previous = lanes;
+	    
+	current_time = ros::Time::now();
+	 
+
+	if (current_time.sec - start_dense_time.sec > 40 && entered_dense==true) {
+		dense_obstacle_started = false;
+	}
 
 	/* For detecting potholes */
 	Mat bw;    
@@ -326,8 +342,43 @@ int main(int argc, char **argv)
 	merge(chan, 3, remove_obstacles_image);
 
 	/* Ramp detection */
+	lidar_hard_points = 0;
 	intersectionImages = remove_obstacles(remove_obstacles_image, intersectionImages, obs_by_lidar, !use_ramp, true); 
 	// cout << "Obstacles removed" << endl;
+
+	
+	if (lidar_hard_points > 150) {
+		lidar_hard_points_count++;
+	}
+	else {
+		lidar_hard_points_count = 0;;
+	}
+
+	
+	if (lidar_hard_points_count > 5 && dense_obstacle_started==false && entered_dense==false) {
+		geometry_msgs::PoseStamped waypoint_bot;
+		waypoint_bot.header.frame_id = "base_link";
+		waypoint_bot.header.stamp = ros::Time::now();  
+
+		waypoint_bot.pose.position.x = 6;
+		waypoint_bot.pose.position.y = 0;
+		waypoint_bot.pose.position.z = 0;
+		float theta = 0;
+
+		//converting to Quaternion from Yaw 
+		tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
+		waypoint_bot.pose.orientation.x = frame_qt.x();
+		waypoint_bot.pose.orientation.y = frame_qt.y();
+		waypoint_bot.pose.orientation.z = frame_qt.z();
+		waypoint_bot.pose.orientation.w = frame_qt.w();
+	    waypoint_publisher.publish(waypoint_bot);
+	    dense_obstacle_started = true;
+	    entered_dense = true;
+
+	    ros::Time start_dense_time = ros::Time::now();
+	    spinOnce();
+		continue;
+	}
 
 	if(is_debug || is_important){
 	    namedWindow("Obs_removed", WINDOW_NORMAL);
@@ -341,6 +392,7 @@ int main(int argc, char **argv)
 	{
 	    namedWindow("front_view_ransac",0);
 	    namedWindow("waypoint", WINDOW_NORMAL);
+
 	}
 	
 	if(use_vision_global == true)
@@ -454,7 +506,12 @@ int main(int argc, char **argv)
 			waypoint_bot.pose.orientation.z = frame_qt.z();
 			waypoint_bot.pose.orientation.w = frame_qt.w();
 
-			waypoint_publisher.publish(waypoint_bot);
+			if (waypoint_count == waypoints_to_skip && dense_obstacle_started==false) {
+		    	waypoint_publisher.publish(waypoint_bot);
+			    waypoint_count = 0;        
+			}
+			waypoint_count++;
+
 
 			waitKey(100);
 			spinOnce();
@@ -644,7 +701,7 @@ int main(int argc, char **argv)
 	waypoint_bot.pose.orientation.w = frame_qt.w();
 
 	//Publishing waypoint
-	if (waypoint_count == waypoints_to_skip) {
+	if (waypoint_count == waypoints_to_skip && dense_obstacle_started==false) {
 	    waypoint_publisher.publish(waypoint_bot);
 	    waypoint_count = 0;        
 	}

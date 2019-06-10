@@ -269,12 +269,26 @@ if(lidar)
 
   Mat lidar_img1(img1.rows, img1.cols, CV_8UC1, Scalar(0));
   Mat lidar_plot_check = frame_orig.clone();
+  Mat lidar_hard(img1.rows, img1.cols, CV_8UC1, Scalar(0));
   for (int i = 0; i < obs_lidar.size(); ++i)
   {
     circle(lidar_plot_check, Point(obs_lidar[i].x, obs_lidar[i].y), 3, Scalar(255,0,0), -1, 8, 0);
     lidar_img1.at<uchar>(obs_lidar[i].y, obs_lidar[i].x) = 255;
+    lidar_hard.at<uchar>(obs_lidar[i].y, obs_lidar[i].x) = 255;
   }
 
+  lidar_hard_points = 0;
+  for (int i = 0; i < lidar_hard.rows/3; i++) {
+    for (int j = 0; j < lidar_hard.cols; j++) {
+      if (lidar_hard.at<uchar>(i,j) > 0) {
+        lidar_hard_points++;
+      }
+    }
+  }
+
+  cout << "lidar_hard_points: " << lidar_hard_points << endl;
+
+  
   if (is_debug) {
     namedWindow("lidar_plot_check", 0);
     imshow("lidar_plot_check", lidar_plot_check);
