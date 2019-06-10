@@ -33,11 +33,11 @@ The -ve sign is introduced to change the origin from
 double Slope(int x0, int y0, int x1, int y1)
 {
   //NOTE the angle.
-  return (double)(y0-y1)/(x1-x0);
+  return -1.0*(double)(y0-y1)/(x1-x0);
 
 }
 
-double fullLine(Mat img, Point a, Point b, Scalar color)
+void fullLine(Mat img, Point a, Point b, Scalar color)
 {
     double slope = Slope(a.x, a.y, b.x, b.y);
 
@@ -49,10 +49,7 @@ double fullLine(Mat img, Point a, Point b, Scalar color)
     //line(*img,p,q,color,3,CV_AA);
 
     //Setting slope range for which hough code will initiate
-    if((atan(slope)*180/CV_PI) <= 30.00 && (atan(slope)*180/CV_PI) >= -30.00)
-      //line(img,p,q,color,3,CV_AA);
-    theta = atan(slope)*180/CV_PI;
-    return slope;
+    line(img,p,q,color,3,CV_AA);
 }
 
 /*
@@ -159,7 +156,11 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
     waypoint.x = 3*img.rows/4;
 
     // cout << "line nahi bani 1" << endl;
-    line(fitLanes,p1,p2,Scalar(255, 0, 0),3,CV_AA);
+    // line(fitLanes,p1,p2,Scalar(255, 0, 0),3,CV_AA);
+
+    fullLine(fitLanes, p1, p2, Scalar(255, 0, 0));
+    fullLine(img, p1, p2, Scalar(255));
+
     // cout << "line ban gayi 1" << endl;
 
     // waypoint.y = upar;
@@ -176,7 +177,9 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta)
     waypoint.x = 1*img.rows/4;
 
     //cout << "line nahi bani 2" << endl;
-    line(fitLanes,p1, p2,Scalar(0, 0, 255),3,CV_AA);
+    // line(fitLanes,p1, p2,Scalar(0, 0, 255),3,CV_AA);
+    fullLine(fitLanes, p1, p2, Scalar(0, 0, 255));
+    fullLine(img, p1, p2, Scalar(255));
     //cout << "line ban gayi 2" << endl;
 
     // waypoint.y = upar;

@@ -28,6 +28,7 @@ using namespace ros;
 Mat frame_orig;
 Mat fitLanes;
 
+
 bool is_current_single = false;
 bool is_current_single_left = false;
 bool is_previous_single = false;
@@ -337,11 +338,20 @@ int main(int argc, char **argv)
 
 		sensor_msgs::LaserScan lane;
 
-		Mat hough_published = intersectionImages.clone();
+		// Mat hough_published_ii = intersectionImages.clone();
+
+	    for (int i = 0; i < hough_image.rows; i++) {
+	    	for (int j = 0; j < hough_image.cols; j++) {
+	    		if (intersectionImages.at<uchar>(i,j) > 0) {
+	    			hough_image.at<uchar>(i,j) = 255;
+	    		}
+	    	}
+	    }
+		// Mat hough_published = intersectionImages.clone();
 		// imshow("hough_published", hough_published);
 
 		// medianBlur(hough_published, hough_published, 3);
-		lane = laneLaser(top_view(hough_published));
+		lane = laneLaser(top_view(hough_image));
 		lanes2Costmap_publisher.publish(lane);  
 
 
@@ -409,20 +419,20 @@ int main(int argc, char **argv)
 	/* Apply medianBlur to the costmap copy (costmap_published) ONLY for publishing to the rviz */
 
 	/* For GPS switching */ 
-	if (use_vision_global == false || costmap_publish_ransac == false) {
+    Mat costmap_published = costmap.clone();
+
+	if (use_vision_global == false) {
 	    Mat costmap_published = costmap.clone();
 	    
-	    if (use_vision_global == true) {
-	    	medianBlur(costmap_published, costmap_published, costmap_median_blur);
-		}
-		else {
-	    	medianBlur(costmap_published, costmap_published, costmap_median_blur_no_mans_land);
-		}
+
+    	medianBlur(costmap_published, costmap_published, costmap_median_blur_no_mans_land);
+		
 
 	    if (is_debug || is_important) {
-		namedWindow("costmap_published", 0);
-		imshow("costmap_published", costmap_published);
+			namedWindow("costmap_published", 0);
+			imshow("costmap_published", costmap_published);
 	    }
+
 
 	    /* Publishing laserscan of costmap */
 	    sensor_msgs::LaserScan lane;
@@ -435,6 +445,13 @@ int main(int argc, char **argv)
 		continue;
 	    }
 	}
+	medianBlur(costmap_published, costmap_published, costmap_median_blur);
+
+	if (is_debug || is_important) {
+		namedWindow("costmap_published", 0);
+		imshow("costmap_published", costmap_published);
+	}
+
 
 	/* Fitting Ransac */
 	// ptArray1 is the array of all points on which ransac will be fit (contents of grid image)
@@ -469,7 +486,7 @@ int main(int argc, char **argv)
 	/* Drawing the lanes of front view on original image */
 
 
-	fitLanes=drawLanes(fitLanes,lanes);
+	fitLanes = drawLanes(fitLanes,lanes);
 
 	if(is_important || is_debug)
 	{
@@ -480,10 +497,30 @@ int main(int argc, char **argv)
 	Mat lanes_front_view(frame_orig.rows, frame_orig.cols, CV_8UC3, Scalar(0,0,0));
 	lanes_front_view = drawLanes(lanes_front_view, lanes);
 	Mat top_ransac = top_view(lanes_front_view);
+
+	Mat costmap_topview_grayscale;
+	cvtColor(top_ransac, costmap_topview_grayscale, CV_BGR2GRAY);
+
+	for (int i = 0; i < intersectionImages.rows; i++) {
+    	for (int j = 0; j < intersectionImages.cols; j++) {
+    		if (costmap_published.at<uchar>(i,j) > 0) {
+    			costmap_topview_grayscale.at<uchar>(i,j) = 255;
+    		}
+    	}
+    }
+
+	sensor_msgs::LaserScan lane_gray;
+	lane_gray = laneLaser(costmap_topview_grayscale);
+	lanes2Costmap_publisher.publish(lane_gray);
+
+	
 	lanes_2 = getRansacModel_2(top_ransac,lanes_2);
 
 	/* Drawing lanes in top view */
 	frame_topview = drawLanes_top(frame_topview,lanes_2);
+
+	// Mat costmap_topview_grayscale(frame_topview.rows, frame_topview.cols, CV_8UC1, Scalar(0));
+	// costmap_topview_grayscale = drawLanes_top_gray(costmap_topview_grayscale, lanes_2);
 
 	if (costmap_publish_ransac == true) {
 	    Mat costmap_ransac(costmap.rows, costmap.cols, CV_8UC1, Scalar(0));

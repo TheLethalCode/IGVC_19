@@ -14,7 +14,6 @@
 #define dist_wayp_lane 2.5
 
 
-
 //check for y for 2 lqnes
 using namespace std;
 using namespace cv;

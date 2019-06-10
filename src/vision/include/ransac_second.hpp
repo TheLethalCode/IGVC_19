@@ -363,4 +363,39 @@ Mat drawLanes_top(Mat output, Parabola2 lanes)
     return output;
 }
 
+
+Mat drawLanes_top_gray(Mat output, Parabola2 lanes) 
+{
+    vector<Point2f> left_lane, right_lane;
+    float a1 = lanes.a1, a2 = lanes.a2, b1 = lanes.b1 , b2 = lanes.b2 , c1 = lanes.c1, c2 = lanes.c2;
+
+    for (int j = 0; j < output.rows; j++){
+
+        float x, y;
+        if (a1 != 0 && c1 != 0 && b1 != 0) {
+            y = j;
+            x = (y*y)*(a1) + b1*y + c1;
+            left_lane.push_back(Point2f(x, j));
+        }
+
+        if (a2 != 0 && c2 != 0 && b2!=0) {
+            y = j;
+            x = (y*y)*(a2) + b2*y + c2;
+            right_lane.push_back(Point2f(x, j));
+        }
+
+    }
+
+    //Left lane in Blue
+    Mat left_curve(left_lane, true);
+    left_curve.convertTo(left_curve, CV_32S); //adapt type for polylines
+    polylines(output, left_curve, false, Scalar(255), 3, CV_AA);
+
+    //Right lane in Red
+    Mat right_curve(right_lane, true);
+    right_curve.convertTo(right_curve, CV_32S); //adapt type for polylines
+    polylines(output, right_curve, false, Scalar(255), 3, CV_AA);
+
+    return output;
+}
 #endif
