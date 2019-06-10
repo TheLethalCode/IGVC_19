@@ -9,9 +9,9 @@
 #include "ransac_new_2.hpp"
 
 #define dist_y2 4  //y for two lanes
-#define dist_y_vert 5
-#define dist_y_horiz 3.5
-#define dist_wayp_lane 2.5
+#define dist_y_vert 3.5
+#define dist_y_horiz 2.5
+#define dist_wayp_lane 1
 
 
 //check for y for 2 lqnes

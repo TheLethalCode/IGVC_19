@@ -281,9 +281,12 @@ int main(int argc, char **argv)
 	    
 	current_time = ros::Time::now();
 	 
-
+	cout << "current_time: " << current_time.sec << endl;
+	cout << "diff time: " << (current_time.sec - start_dense_time.sec) << endl;
 	if (current_time.sec - start_dense_time.sec > 40 && entered_dense==true) {
 		dense_obstacle_started = false;
+		cout << "``````````````````````````````````````dense exited`````````````````````````````````" << endl;
+
 	}
 
 	/* For detecting potholes */
@@ -356,6 +359,7 @@ int main(int argc, char **argv)
 
 	
 	if (lidar_hard_points_count > 5 && dense_obstacle_started==false && entered_dense==false) {
+		cout << "``````````````````````````````````````dense entered`````````````````````````````````" << endl;
 		geometry_msgs::PoseStamped waypoint_bot;
 		waypoint_bot.header.frame_id = "base_link";
 		waypoint_bot.header.stamp = ros::Time::now();  
@@ -375,7 +379,7 @@ int main(int argc, char **argv)
 	    dense_obstacle_started = true;
 	    entered_dense = true;
 
-	    ros::Time start_dense_time = ros::Time::now();
+	    start_dense_time = ros::Time::now();
 	    spinOnce();
 		continue;
 	}
@@ -392,8 +396,11 @@ int main(int argc, char **argv)
 	{
 	    namedWindow("front_view_ransac",0);
 	    namedWindow("waypoint", WINDOW_NORMAL);
+	    namedWindow("hough", 0);
 
 	}
+
+
 	
 	if(use_vision_global == true)
 	{
@@ -470,6 +477,8 @@ int main(int argc, char **argv)
 			lane = laneLaser(top_view(hough_image));
 			lanes2Costmap_publisher.publish(lane);  
 
+			imshow("hough", hough_image);
+
 
 			//transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
 			/* Waypoint from hough */
@@ -519,6 +528,9 @@ int main(int argc, char **argv)
 
 	    }
 	}
+
+	imshow("hough", hough_image);
+
 
 	// cout << "Hough ended" << endl;
 
