@@ -59,7 +59,7 @@ Takes for input:
     * Blank image for plotting the hough line (hough_img)
 */
 Vec4i l;
-bool check_whether_hough(Mat hough_img, Mat img, Parabola lanes)
+bool check_whether_hough(Mat hough_img, Mat img, Parabola &lanes)
 {
   vector<Vec4i> lines;  //NOTE the vector type
   
@@ -115,12 +115,13 @@ bool check_whether_hough(Mat hough_img, Mat img, Parabola lanes)
 
   double slope = (double)(p2.y*1.0 - p1.y*1.0)/(p2.x-p1.x + 1e-3);
   double angle = (atan(slope) * 180)/CV_PI;
-  //cout << "angle: " << angle << endl;
   
   //cout << "reached till after angle: " << angle << endl;
   //Checking that the line slope is within a certain threshold angle from the x-axis
   if(angle <= 40.00 && angle >= -40.00) {
+
     if (angle < -10) {
+      //cout << "khud se l" << endl;
       side = 'l';
       lanes.numModel = 1;
       lanes.a2=0;
@@ -130,6 +131,7 @@ bool check_whether_hough(Mat hough_img, Mat img, Parabola lanes)
 
     }
     if (angle > 10) {
+      //cout << "khud se r" << endl;
       side = 'r';
       lanes.numModel = 1;
       lanes.a1=0;
@@ -144,7 +146,7 @@ bool check_whether_hough(Mat hough_img, Mat img, Parabola lanes)
 }
 
 //Giving waypoint if hough initiated
-NavPoint waypoint_for_hough(Mat img, char c, float theta, Parabola lanes)
+NavPoint waypoint_for_hough(Mat img, char c, float theta, Parabola &lanes)
 {
 
   Point p1, p2;
@@ -245,7 +247,12 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta, Parabola lanes)
 
   // arrowedLine(costmap, origin, dest, Scalar(0,255,0), 3, 8, 0, 0.1);
   
-  // line(transform, Point(p1_top.x, p1_top.y), Point(p2_top.x, p2_top.y), Scalar(127) ,3, CV_AA);
+  if (side == 'l') {
+    line(frame_topview, Point(p1_top.x, p1_top.y), Point(p2_top.x, p2_top.y), Scalar(255, 0, 0) ,3, CV_AA);
+  }
+  else if (side == 'r') {
+    line(frame_topview, Point(p1_top.x, p1_top.y), Point(p2_top.x, p2_top.y), Scalar(0, 0, 255) ,3, CV_AA);
+  }
   // Point
   // arrowedLine(transform, Point(waypoint.x, waypoint.y), Point(p2_top.x, p2_top.y), Scalar(127), 3, 8, 0);
   // imshow("transformHoughed", transform);
@@ -273,10 +280,17 @@ NavPoint waypoint_for_hough(Mat img, char c, float theta, Parabola lanes)
 
   angle -= CV_PI/2;
 
+  // cout << "angle: " << (angle*180)/CV_PI << endl;
+
+
   // angle *= -1;
     
-  // if(c=='l') angle = -(fabs(slope));
-  // if(c=='r') angle = (fabs(slope));
+  if(side=='l') {
+    angle = -(fabs(angle));
+  }
+  if(side=='r') {
+    angle = (fabs(angle));
+  }
   
   waypoint.angle = angle;
   // waypoint= h*waypoint;

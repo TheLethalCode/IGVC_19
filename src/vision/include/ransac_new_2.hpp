@@ -42,7 +42,7 @@ typedef struct Parabola
     float c2 = 0.0;
 }Parabola;
 
-Parabola swap(Parabola param) {
+Parabola swap(Parabola &param) {
 
     float temp1, temp3;
     temp1=param.a1;
@@ -140,7 +140,7 @@ Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
 */
 
 
-Parabola classify_lanes(Mat img,Parabola present,Parabola previous)
+Parabola classify_lanes(Mat img,Parabola &present,Parabola &previous)
 {
 
     /*
@@ -862,7 +862,7 @@ Parabola no_sudden_change(Parabola bestTempParam, Mat img, Parabola previous)
 }
 
 //choose Parabola parameters of best fit curve basis on randomly selected 4 points
-Parabola ransac(vector<Point> ptArray, Parabola param, Mat img, Parabola previous)
+Parabola ransac(vector<Point> ptArray, Parabola &param, Mat img, Parabola &previous)
 {
     int numDataPts = ptArray.size();
 
@@ -1174,7 +1174,7 @@ Point centroid(float a,float c,Mat img)
 
 
 
-Parabola getRansacModel(Mat img,Parabola previous, std::vector<Point> &ptArray1)
+Parabola getRansacModel(Mat img,Parabola &previous, std::vector<Point> &ptArray1)
 {
     //apply ransac for first time it will converge for one lane
 

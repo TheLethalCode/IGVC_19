@@ -11,7 +11,7 @@ bool costmap_publish_ransac = true;
 
 bool is_image_retrieved = false;
 bool use_video = false;
-char side;
+char side = 'n';
 bool used_hough = false;
 
 int costmap_median_blur = 9;

@@ -30,6 +30,7 @@ using namespace ros;
 
 Mat frame_orig;
 Mat fitLanes;
+Mat frame_topview; 
 Publisher marker_pub1, marker_pub2;
 visualization_msgs::Marker points1, points2;
 bool is_current_single = false;
@@ -264,10 +265,10 @@ int main(int argc, char **argv)
 	fitLanes=frame_orig.clone();
 
 	/* Converting frame to top view */
-	Mat frame_topview = top_view(frame_orig);
+	frame_topview = top_view(frame_orig);
 
 	previous = lanes;
-	
+
 	/* For detecting potholes */
 	Mat bw;    
 	if (use_pothole == true) {        
@@ -346,16 +347,20 @@ int main(int argc, char **argv)
 
 	    // cout << "Hough line detected" << endl;
 
-	    if((lanes.a1 == 0 && lanes.c1 == 0)&&(lanes.a2 == 0 && lanes.c2 == 0))
-	    {
-	    	side = 'n';	
-	    }
+		// cout << "previous.numModel: " << previous.numModel << endl;
+		// cout << "previous.a1: " << previous.a1 << "previous.c1: " << previous.c1 << endl;
+		// cout << "previous.a2: " << previous.a2 << "previous.c2: " << previous.c2 << endl;
+
+	    // if((previous.a1 == 0 && previous.c1 == 0)&&(previous.a2 == 0 && previous.c2 == 0))
+	    // {
+	    // 	side = 'n';	
+	    // }
 	    //Checking if lane is left or right
-	    else if(lanes.a1 == 0 && lanes.c1 == 0) {
+	    if(previous.a1 == 0 && previous.c1 == 0) {
 			side = 'r';
 	    }
 
-	    else if(lanes.a2 == 0 && lanes.c2 == 0) {
+	    else if(previous.a2 == 0 && previous.c2 == 0) {
 			side = 'l';
 	    }
 
@@ -366,11 +371,12 @@ int main(int argc, char **argv)
 			if(previous.numModel==0)
 			if(is_debug) {cout << "Hough Code Initiated" << endl;}
 			used_hough = true;
+			// cout << "side: " << side << endl;
 
 			// cout << "Waypoint for hough started" << endl;
 			NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta, lanes);
 
-			cout << "--------------\nside: " << side << "-------------" << endl;
+			// cout << "side: " << side << "\n-------------" << endl;
 			// cout << "Waypoint for hough ended" << endl;
 
 			//theta is globally declared in hough.hpp
