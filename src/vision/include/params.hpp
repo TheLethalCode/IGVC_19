@@ -72,6 +72,10 @@ int hough_max_line_gap = 50;
 
 double r_hough = 100;
 
+double hough_ratio_from_left = 0;
+int waypoints_to_skip = 3;
+
+
 /* other global parameters */ 
 #endif
 

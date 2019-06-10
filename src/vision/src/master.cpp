@@ -21,6 +21,9 @@ NOTE: For debugging couts:
 #include <std_msgs/Bool.h>
 #include<std_msgs/Float64.h>
 #include <visualization_msgs/Marker.h> 
+#include <sensor_msgs/Imu.h>
+#include <tf/transform_datatypes.h>
+#include <tf/transform_broadcaster.h>
 using namespace std;
 using namespace cv;
 using namespace ros;
@@ -33,6 +36,7 @@ bool is_current_single = false;
 bool is_current_single_left = false;
 bool is_previous_single = false;
 bool is_previous_single_left = false;
+double imu_orientation; //Global IMU Orientation storage 
 
 //Custom Header files
 #include <params.hpp>
@@ -110,6 +114,10 @@ void callback(node::TutorialsConfig &config, uint32_t level)
     costmap_median_blur = config.costmap_median_blur;
     costmap_median_blur_no_mans_land = config.costmap_median_blur_no_mans_land;
     r_hough = config.r_hough;
+
+    hough_ratio_from_left = config.hough_ratio_from_left;
+
+    waypoints_to_skip = config.waypoints_to_skip;
 }
 
 Publisher lanes2Costmap_publisher;  //For putting lanes in costmap
@@ -149,6 +157,18 @@ void odomCallBack(const std_msgs::Float64::ConstPtr& msg)
     pitch = msg->data;
 }
 
+void imuCallback(const sensor_msgs::Imu msg)
+{
+    
+    tf::Quaternion quat;
+    tf::quaternionMsgToTF(msg.orientation, quat);
+    // the tf::Quaternion has a method to acess roll pitch and yaw
+    double roll, pitch, yaw;
+    tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+    imu_orientation = yaw;
+}
+
+
 int main(int argc, char **argv)
 { 
     init(argc,argv,"master");
@@ -169,6 +189,8 @@ int main(int argc, char **argv)
     pot2staticCostmap_publisher = n.advertise<sensor_msgs::LaserScan>("/nav_msgs/OccupancyGrid", 2);       //declared globally
     Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
     orientation = n.subscribe("/vn_ins/pitch",100,odomCallBack);
+    ros::Subscriber imu_sub=n.subscribe<sensor_msgs::Imu>("/imu",50,imuCallback);
+
     marker_pub1= n.advertise<visualization_msgs::Marker>("visualization_marker1", 10);   
     marker_pub2 = n.advertise<visualization_msgs::Marker>("visualization_marker2", 10);   
     if(1)
@@ -318,7 +340,7 @@ int main(int argc, char **argv)
 	    namedWindow("waypoint", WINDOW_NORMAL);
 	}
 	
-	if(lanes_2.numModel == 1 && use_vision_global == true)
+	if(use_vision_global == true)
 	{
 
 	    // cout << "Hough line detected" << endl;
@@ -334,94 +356,95 @@ int main(int argc, char **argv)
 
 		// cout << "Hough started" << endl;
 
-	    if(check_whether_hough(hough_image,intersectionImages))
+	    if(check_whether_hough(hough_image,intersectionImages,lanes))
 	    {
-		if(is_debug) {cout << "Hough Code Initiated" << endl;}
-		used_hough = true;
+			if(previous.numModel==0)
+			if(is_debug) {cout << "Hough Code Initiated" << endl;}
+			used_hough = true;
 
-		// cout << "Waypoint for hough started" << endl;
-		NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta);
-		// cout << "Waypoint for hough ended" << endl;
+			// cout << "Waypoint for hough started" << endl;
+			NavPoint waypoint_image = waypoint_for_hough(hough_image, side, theta, lanes);
+			// cout << "Waypoint for hough ended" << endl;
 
-		//theta is globally declared in hough.hpp
-		
-		// cout << "Plotting waypoint started" << endl;
-		// cout << "Plotting waypoint ended" << endl;
+			//theta is globally declared in hough.hpp
+			
+			// cout << "Plotting waypoint started" << endl;
+			// cout << "Plotting waypoint ended" << endl;
 
-		// Giving waypt.'s x, y & z co-ordinates(here z= 1)
+			// Giving waypt.'s x, y & z co-ordinates(here z= 1)
 
-		Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
-		//Converting waypt. in top view
-		Mat waypt_top = h*waypt;    //NOTE that the h is PRE-multiplied 
-		// & it takes a 3-D pt.
+			Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
+			//Converting waypt. in top view
+			Mat waypt_top = h*waypt;    //NOTE that the h is PRE-multiplied 
+			// & it takes a 3-D pt.
 
-		//Actual 2-D x= x/z & y= y/z 
-		double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
-		double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
+			//Actual 2-D x= x/z & y= y/z 
+			double x_top = waypt_top.at<double>(0,0)/waypt_top.at<double>(2,0);
+			double y_top = waypt_top.at<double>(1,0)/waypt_top.at<double>(2,0);
 
-		//waypoint transform for hough line
-		waypoint_image.x=x_top;
-		waypoint_image.y=y_top;
+			//waypoint transform for hough line
+			waypoint_image.x=x_top;
+			waypoint_image.y=y_top;
 
-		sensor_msgs::LaserScan lane;
+			sensor_msgs::LaserScan lane;
 
-		// Mat hough_published_ii = intersectionImages.clone();
+			// Mat hough_published_ii = intersectionImages.clone();
 
-	    for (int i = 0; i < hough_image.rows; i++) {
-	    	for (int j = 0; j < hough_image.cols; j++) {
-	    		if (intersectionImages.at<uchar>(i,j) > 0) {
-	    			hough_image.at<uchar>(i,j) = 255;
-	    		}
-	    	}
-	    }
-		// Mat hough_published = intersectionImages.clone();
-		// imshow("hough_published", hough_published);
+		    for (int i = 0; i < hough_image.rows; i++) {
+		    	for (int j = 0; j < hough_image.cols; j++) {
+		    		if (intersectionImages.at<uchar>(i,j) > 0) {
+		    			hough_image.at<uchar>(i,j) = 255;
+		    		}
+		    	}
+		    }
+			// Mat hough_published = intersectionImages.clone();
+			// imshow("hough_published", hough_published);
 
-		// medianBlur(hough_published, hough_published, 3);
-		lane = laneLaser(top_view(hough_image));
-		lanes2Costmap_publisher.publish(lane);  
+			// medianBlur(hough_published, hough_published, 3);
+			lane = laneLaser(top_view(hough_image));
+			lanes2Costmap_publisher.publish(lane);  
 
 
-		//transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
-		/* Waypoint from hough */
-		geometry_msgs::PoseStamped waypoint_bot;
-		waypoint_bot.header.frame_id = "base_link";
-		waypoint_bot.header.stamp = ros::Time::now();   //Important
+			//transforming waypoint to ros convention (x forward, y left, angle from x and positive clockwise) (in metres)
+			/* Waypoint from hough */
+			geometry_msgs::PoseStamped waypoint_bot;
+			waypoint_bot.header.frame_id = "base_link";
+			waypoint_bot.header.stamp = ros::Time::now();   //Important
 
-		waypoint_image.y = waypoint_image.y - r_hough*cos(waypoint_image.angle);
-		waypoint_image.x = waypoint_image.x - r_hough*sin(waypoint_image.angle);
+			waypoint_image.y = waypoint_image.y - r_hough*cos(waypoint_image.angle);
+			waypoint_image.x = waypoint_image.x - r_hough*sin(waypoint_image.angle);
 
-		/* for smoothening waypoints */
-		waypoint_image.y = (waypoint_image.y + waypoint_previous.y)/2;
-		waypoint_image.x = (waypoint_image.x + waypoint_previous.x)/2;
+			/* for smoothening waypoints */
+			waypoint_image.y = (waypoint_image.y + waypoint_previous.y)/2;
+			waypoint_image.x = (waypoint_image.x + waypoint_previous.x)/2;
 
-		waypoint_previous.x = waypoint_image.x;
-		waypoint_previous.y = waypoint_image.y;
-		/* for smoothening waypoints */
+			waypoint_previous.x = waypoint_image.x;
+			waypoint_previous.y = waypoint_image.y;
+			/* for smoothening waypoints */
 
-		frame_topview = plotWaypoint(frame_topview, waypoint_image);
+			frame_topview = plotWaypoint(frame_topview, waypoint_image);
 
-		//changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
-		waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
-		waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
-		waypoint_bot.pose.position.z = 0;
-		float theta = (waypoint_image.angle);
+			//changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
+			waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
+			waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
+			waypoint_bot.pose.position.z = 0;
+			float theta = (waypoint_image.angle);
 
-		imshow("front_view_ransac", fitLanes);
-		imshow("waypoint", frame_topview);
+			imshow("front_view_ransac", fitLanes);
+			imshow("waypoint", frame_topview);
 
-		//converting to Quaternion from Yaw 
-		tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
-		waypoint_bot.pose.orientation.x = frame_qt.x();
-		waypoint_bot.pose.orientation.y = frame_qt.y();
-		waypoint_bot.pose.orientation.z = frame_qt.z();
-		waypoint_bot.pose.orientation.w = frame_qt.w();
+			//converting to Quaternion from Yaw 
+			tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
+			waypoint_bot.pose.orientation.x = frame_qt.x();
+			waypoint_bot.pose.orientation.y = frame_qt.y();
+			waypoint_bot.pose.orientation.z = frame_qt.z();
+			waypoint_bot.pose.orientation.w = frame_qt.w();
 
-		waypoint_publisher.publish(waypoint_bot);
+			waypoint_publisher.publish(waypoint_bot);
 
-		waitKey(100);
-		spinOnce();
-		continue;
+			waitKey(100);
+			spinOnce();
+			continue;
 
 	    }
 	}
@@ -607,7 +630,7 @@ int main(int argc, char **argv)
 	waypoint_bot.pose.orientation.w = frame_qt.w();
 
 	//Publishing waypoint
-	if (waypoint_count == 3) {
+	if (waypoint_count == waypoints_to_skip) {
 	    waypoint_publisher.publish(waypoint_bot);
 	    waypoint_count = 0;        
 	}
