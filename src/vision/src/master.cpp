@@ -113,6 +113,7 @@ void callback(node::TutorialsConfig &config, uint32_t level)
 
 Publisher lanes2Costmap_publisher;  //For putting lanes in costmap
 Publisher pot2staticCostmap_publisher;  //For putting potholes in costmap
+Point waypoint_previous;
 
 //Parameter for GPS switching. Set to false when GPS waypoint starts
 bool use_vision_global = true;
@@ -168,7 +169,8 @@ int main(int argc, char **argv)
     Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
     orientation = n.subscribe("/vn_ins/pitch",100,odomCallBack);
 
-    int waypoint_count = 0;
+
+    int waypoint_count = -1;
 
     Parabola lanes;		//For Ransac implementation(it is a structure)
     lanes.a1=0;         //For definition lookup ransac_new_2.hpp
@@ -199,7 +201,6 @@ int main(int argc, char **argv)
     while(ros::ok())
     {
 
-
 	/* Checking if image has been received */
 	while ((!is_image_retrieved || !is_laserscan_retrieved) && ros::ok())
 	{
@@ -215,7 +216,7 @@ int main(int argc, char **argv)
 	Mat frame_topview = top_view(frame_orig);
 
 	previous = lanes;
-
+	
 	/* For detecting potholes */
 	Mat bw;    
 	if (use_pothole == true) {        
@@ -320,6 +321,7 @@ int main(int argc, char **argv)
 		// cout << "Plotting waypoint ended" << endl;
 
 		// Giving waypt.'s x, y & z co-ordinates(here z= 1)
+
 		Mat waypt = (Mat_<double>(3,1) << waypoint_image.x , waypoint_image.y , 1);
 		//Converting waypt. in top view
 		Mat waypt_top = h*waypt;    //NOTE that the h is PRE-multiplied 
@@ -349,12 +351,20 @@ int main(int argc, char **argv)
 		waypoint_bot.header.frame_id = "base_link";
 		waypoint_bot.header.stamp = ros::Time::now();   //Important
 
-		//changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
 		waypoint_image.y = waypoint_image.y - r_hough*cos(waypoint_image.angle);
 		waypoint_image.x = waypoint_image.x - r_hough*sin(waypoint_image.angle);
 
+		/* for smoothening waypoints */
+		waypoint_image.y = (waypoint_image.y + waypoint_previous.y)/2;
+		waypoint_image.x = (waypoint_image.x + waypoint_previous.x)/2;
+
+		waypoint_previous.x = waypoint_image.x;
+		waypoint_previous.y = waypoint_image.y;
+		/* for smoothening waypoints */
+
 		frame_topview = plotWaypoint(frame_topview, waypoint_image);
 
+		//changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
 		waypoint_bot.pose.position.x = (intersectionImages.rows - waypoint_image.y)/pixelsPerMetre;
 		waypoint_bot.pose.position.y = (intersectionImages.cols/2 - waypoint_image.x)/pixelsPerMetre;
 		waypoint_bot.pose.position.z = 0;
@@ -499,6 +509,21 @@ int main(int argc, char **argv)
 	if (is_important || is_debug) {
 	    imshow("waypoint", frame_topview);
 	}
+
+	/* for smoothening waypoints */
+	if (waypoint_count == -1) {
+		waypoint_previous.x = waypoint_image.x;
+		waypoint_previous.y = waypoint_image.y;
+	}
+
+	if (lanes.numModel != 0) {
+		waypoint_image.y = (waypoint_image.y + waypoint_previous.y)/2;
+		waypoint_image.x = (waypoint_image.x + waypoint_previous.x)/2;
+
+		waypoint_previous.x = waypoint_image.x;
+		waypoint_previous.y = waypoint_image.y;
+	}
+	/* for smoothening waypoints */
 
 	/* Publishing waypoint */
 	//changing waypoint position from LIDAR to image frame (conversion of y makes it clear)
