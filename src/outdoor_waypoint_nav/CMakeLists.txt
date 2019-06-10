@@ -29,6 +29,9 @@ target_link_libraries(switchgps ${catkin_LIBRARIES})
 add_executable(switchgps_old src/switchgps_old.cpp)
 target_link_libraries(switchgps_old ${catkin_LIBRARIES})
 
+add_executable(switchgps_dense src/switchgps_dense.cpp)
+target_link_libraries(switchgps_dense ${catkin_LIBRARIES})
+
 #add_executable(qualification_odom src/qualification_odom.cpp)
 #target_link_libraries(qualification_odom ${catkin_LIBRARIES})
 
