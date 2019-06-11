@@ -185,7 +185,7 @@ void odomCallback(const nav_msgs::Odometry msg)
     double roll, pitch, yaw;
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
     yaw_odom = yaw;
-    waitKey(0);
+    // waitKey(0); 
 }
 
 int main(int argc, char **argv)
