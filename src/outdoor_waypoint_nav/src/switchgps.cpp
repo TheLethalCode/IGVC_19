@@ -11,6 +11,7 @@
 using namespace std;
 using namespace ros;
 #define radius 1
+#define switch_radius 3
 #define pi 3.14159265359
 
 
@@ -135,14 +136,14 @@ int main(int argc, char** argv)
             cout<< "radius4: " << radius4 << endl;
             cout << "--------------" << endl;
 
-            if (radius1 < radius) {
+            if (radius1 <switch_radius) {
                 count1++;
             }
             else {
                 count1 = 0;
             }
 
-            if (radius3 < radius) {
+            if (radius3 < switch_radius) {
                 count2++;
             }
             else {

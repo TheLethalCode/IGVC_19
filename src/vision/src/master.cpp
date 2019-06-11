@@ -377,8 +377,8 @@ int main(int argc, char **argv)
 		geometry_msgs::PointStamped waypoint_bot, waypoint_bot_odom;
 		waypoint_bot.header.frame_id = "base_link";
 		waypoint_bot.header.stamp = ros::Time::now();  
-		waypoint_bot.point.x = 10;
-		waypoint_bot.point.y = 0;
+		waypoint_bot.point.x = 7;
+		waypoint_bot.point.y = 1.5;
 		waypoint_bot.point.z = 0;
 
 	    try
