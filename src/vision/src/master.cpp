@@ -13,6 +13,8 @@ NOTE: For debugging couts:
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/Image.h>
+#include <nav_msgs/Odometry.h>
+
 #include "geometry_msgs/PoseStamped.h"
 #include <tf/transform_datatypes.h>
 #include <dynamic_reconfigure/server.h>
@@ -24,6 +26,7 @@ NOTE: For debugging couts:
 #include <sensor_msgs/Imu.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 using namespace std;
 using namespace cv;
 using namespace ros;
@@ -40,6 +43,8 @@ bool is_previous_single_left = false;
 double imu_orientation; //Global IMU Orientation storage 
 int lidar_hard_points_count = 0;
 int lidar_hard_points = 0;
+double yaw_odom =0;
+
 
 
 
@@ -172,7 +177,16 @@ void imuCallback(const sensor_msgs::Imu msg)
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
     imu_orientation = yaw;
 }
-
+void odomCallback(const nav_msgs::Odometry msg)
+{
+	tf::Quaternion quat;
+    tf::quaternionMsgToTF(msg.pose.pose.orientation, quat);
+    // the tf::Quaternion has a method to acess roll pitch and yaw
+    double roll, pitch, yaw;
+    tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+    yaw_odom = yaw;
+    waitKey(0);
+}
 
 int main(int argc, char **argv)
 { 
@@ -195,6 +209,8 @@ int main(int argc, char **argv)
     Subscriber use_vision_subscriber = n.subscribe("/use_vision", 1, &use_vision_callback);
     orientation = n.subscribe("/vn_ins/pitch",100,odomCallBack);
     ros::Subscriber imu_sub=n.subscribe<sensor_msgs::Imu>("/imu",50,imuCallback);
+    ros::Subscriber odom_sub=n.subscribe<nav_msgs::Odometry>("/odometry/filtered_odom",50,odomCallback);
+
 
     marker_pub1= n.advertise<visualization_msgs::Marker>("visualization_marker1", 10);   
     marker_pub2 = n.advertise<visualization_msgs::Marker>("visualization_marker2", 10);   
@@ -203,6 +219,8 @@ int main(int argc, char **argv)
 	ros::Time start_dense_time = ros::Time::now();
 	ros::Time current_time = ros::Time::now();
 	bool entered_dense = false;
+	static tf::TransformListener listener;
+    geometry_msgs::PoseStamped wpt_t;
 
     if(1)
     {
@@ -281,12 +299,9 @@ int main(int argc, char **argv)
 	    
 	current_time = ros::Time::now();
 	 
-	cout << "current_time: " << current_time.sec << endl;
 	cout << "diff time: " << (current_time.sec - start_dense_time.sec) << endl;
 	if (current_time.sec - start_dense_time.sec > 40 && entered_dense==true) {
 		dense_obstacle_started = false;
-		cout << "``````````````````````````````````````dense exited`````````````````````````````````" << endl;
-
 	}
 
 	/* For detecting potholes */
@@ -359,29 +374,48 @@ int main(int argc, char **argv)
 
 	
 	if (lidar_hard_points_count > 5 && dense_obstacle_started==false && entered_dense==false) {
-		cout << "``````````````````````````````````````dense entered`````````````````````````````````" << endl;
-		geometry_msgs::PoseStamped waypoint_bot;
+		geometry_msgs::PointStamped waypoint_bot, waypoint_bot_odom;
 		waypoint_bot.header.frame_id = "base_link";
 		waypoint_bot.header.stamp = ros::Time::now();  
+		waypoint_bot.point.x = 10;
+		waypoint_bot.point.y = 0;
+		waypoint_bot.point.z = 0;
 
-		waypoint_bot.pose.position.x = 6;
-		waypoint_bot.pose.position.y = 0;
-		waypoint_bot.pose.position.z = 0;
-		float theta = 0;
+	    try
+	    {
+	    	listener.waitForTransform("base_link", "odom", ros::Time::now(), ros::Duration(0.5));
+	        listener.transformPoint("/odom", waypoint_bot,waypoint_bot_odom);
+	        // ROS_INFO("point_base: (%.2f, %.2f) -----> point_odom: (%.2f, %.2f)",ros_centroid_bl_l.point.x, ros_centroid_bl_l.point.y,ros_centroid_l.point.x, ros_centroid_l.point.y);
+	    }
+	    catch(tf::TransformException& ex)
+	    {
+	        ROS_ERROR("%s", ex.what());
+	    }
+		// float theta = 0;
+    	
+		wpt_t.header.stamp = ros::Time::now();  
+		wpt_t.header.frame_id = "odom";
+    	wpt_t.pose.position.x = waypoint_bot_odom.point.x;
+		wpt_t.pose.position.y =  waypoint_bot_odom.point.y;
+		wpt_t.pose.position.z = 0;
 
 		//converting to Quaternion from Yaw 
-		tf::Quaternion frame_qt = tf::createQuaternionFromYaw(theta);
-		waypoint_bot.pose.orientation.x = frame_qt.x();
-		waypoint_bot.pose.orientation.y = frame_qt.y();
-		waypoint_bot.pose.orientation.z = frame_qt.z();
-		waypoint_bot.pose.orientation.w = frame_qt.w();
-	    waypoint_publisher.publish(waypoint_bot);
+		tf::Quaternion frame_qt = tf::createQuaternionFromYaw(yaw_odom);
+		wpt_t.pose.orientation.x = frame_qt.x();
+		wpt_t.pose.orientation.y = frame_qt.y();
+		wpt_t.pose.orientation.z = frame_qt.z();
+		wpt_t.pose.orientation.w = frame_qt.w();
+	    waypoint_publisher.publish(wpt_t);
 	    dense_obstacle_started = true;
 	    entered_dense = true;
 
 	    start_dense_time = ros::Time::now();
 	    spinOnce();
 		continue;
+	}
+
+	if (dense_obstacle_started == true) {
+	    waypoint_publisher.publish(wpt_t);
 	}
 
 	if(is_debug || is_important){

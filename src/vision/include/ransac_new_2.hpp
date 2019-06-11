@@ -1139,11 +1139,11 @@ Parabola ransac(vector<Point> ptArray, Parabola &param, Mat img, Parabola &previ
     cout  <<"score_l_gl : "<< score_l_gl <<" score_r_gl : "<< score_r_gl <<endl;
 
 
-    if(true){
-        cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
-        cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
-        cout<<"bestTempParam.a2 : "<<bestTempParam.a2<<" bestTempParam.c2 : "<<bestTempParam.c2<<endl;
-    }
+    // if(true){
+    //     cout<<"bestTempParam.numModel : "<<bestTempParam.numModel<<endl;
+    //     cout<<"bestTempParam.a1 : "<<bestTempParam.a1<<" bestTempParam.c1 : "<<bestTempParam.c1<<endl;
+    //     cout<<"bestTempParam.a2 : "<<bestTempParam.a2<<" bestTempParam.c2 : "<<bestTempParam.c2<<endl;
+    // }
     return bestTempParam;
 }
 
