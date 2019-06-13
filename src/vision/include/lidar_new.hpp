@@ -19,7 +19,7 @@ bool is_laserscan_retrieved = false;
 sensor_msgs::LaserScan lidar_scan;
 void laserscan(sensor_msgs::LaserScan msg)   /// CALLBACK FOR LIDAR DATA
 {
-    lidar_scan = msg;
-    is_laserscan_retrieved = true;
+  lidar_scan = msg;
+  is_laserscan_retrieved = true;
 }
 #endif
