@@ -215,12 +215,7 @@ int main(int argc, char **argv)
     marker_pub1= n.advertise<visualization_msgs::Marker>("visualization_marker1", 10);   
     marker_pub2 = n.advertise<visualization_msgs::Marker>("visualization_marker2", 10);   
 
-    bool dense_obstacle_started = false;
-	ros::Time start_dense_time = ros::Time::now();
-	ros::Time current_time = ros::Time::now();
-	bool entered_dense = false;
 	static tf::TransformListener listener;
-    geometry_msgs::PoseStamped wpt_t;
 
     if(1)
     {
@@ -297,13 +292,6 @@ int main(int argc, char **argv)
 
 	previous = lanes;
 	    
-	current_time = ros::Time::now();
-	 
-	cout << "diff time: " << (current_time.sec - start_dense_time.sec) << endl;
-	if (current_time.sec - start_dense_time.sec > 40 && entered_dense==true) {
-		dense_obstacle_started = false;
-	}
-
 	/* For detecting potholes */
 	Mat bw;    
 	if (use_pothole == true) {        
@@ -360,63 +348,8 @@ int main(int argc, char **argv)
 	merge(chan, 3, remove_obstacles_image);
 
 	/* Ramp detection */
-	lidar_hard_points = 0;
 	intersectionImages = remove_obstacles(remove_obstacles_image, intersectionImages, obs_by_lidar, !use_ramp, true); 
 	// cout << "Obstacles removed" << endl;
-
-	
-	if (lidar_hard_points > 150) {
-		lidar_hard_points_count++;
-	}
-	else {
-		lidar_hard_points_count = 0;;
-	}
-
-	
-	if (lidar_hard_points_count > 5 && dense_obstacle_started==false && entered_dense==false) {
-		geometry_msgs::PointStamped waypoint_bot, waypoint_bot_odom;
-		waypoint_bot.header.frame_id = "base_link";
-		waypoint_bot.header.stamp = ros::Time::now();  
-		waypoint_bot.point.x = 7;
-		waypoint_bot.point.y = 1.5;
-		waypoint_bot.point.z = 0;
-
-	    try
-	    {
-	    	listener.waitForTransform("base_link", "odom", ros::Time::now(), ros::Duration(0.5));
-	        listener.transformPoint("/odom", waypoint_bot,waypoint_bot_odom);
-	        // ROS_INFO("point_base: (%.2f, %.2f) -----> point_odom: (%.2f, %.2f)",ros_centroid_bl_l.point.x, ros_centroid_bl_l.point.y,ros_centroid_l.point.x, ros_centroid_l.point.y);
-	    }
-	    catch(tf::TransformException& ex)
-	    {
-	        ROS_ERROR("%s", ex.what());
-	    }
-		// float theta = 0;
-    	
-		wpt_t.header.stamp = ros::Time::now();  
-		wpt_t.header.frame_id = "odom";
-    	wpt_t.pose.position.x = waypoint_bot_odom.point.x;
-		wpt_t.pose.position.y =  waypoint_bot_odom.point.y;
-		wpt_t.pose.position.z = 0;
-
-		//converting to Quaternion from Yaw 
-		tf::Quaternion frame_qt = tf::createQuaternionFromYaw(yaw_odom);
-		wpt_t.pose.orientation.x = frame_qt.x();
-		wpt_t.pose.orientation.y = frame_qt.y();
-		wpt_t.pose.orientation.z = frame_qt.z();
-		wpt_t.pose.orientation.w = frame_qt.w();
-	    waypoint_publisher.publish(wpt_t);
-	    dense_obstacle_started = true;
-	    entered_dense = true;
-
-	    start_dense_time = ros::Time::now();
-	    spinOnce();
-		continue;
-	}
-
-	if (dense_obstacle_started == true) {
-	    waypoint_publisher.publish(wpt_t);
-	}
 
 	if(is_debug || is_important){
 	    namedWindow("Obs_removed", WINDOW_NORMAL);
@@ -549,7 +482,7 @@ int main(int argc, char **argv)
 			waypoint_bot.pose.orientation.z = frame_qt.z();
 			waypoint_bot.pose.orientation.w = frame_qt.w();
 
-			if (waypoint_count == waypoints_to_skip && dense_obstacle_started==false) {
+			if (waypoint_count == waypoints_to_skip) {
 		    	waypoint_publisher.publish(waypoint_bot);
 			    waypoint_count = 0;        
 			}
@@ -747,7 +680,7 @@ int main(int argc, char **argv)
 	waypoint_bot.pose.orientation.w = frame_qt.w();
 
 	//Publishing waypoint
-	if (waypoint_count == waypoints_to_skip && dense_obstacle_started==false) {
+	if (waypoint_count == waypoints_to_skip) {
 	    waypoint_publisher.publish(waypoint_bot);
 	    waypoint_count = 0;        
 	}
